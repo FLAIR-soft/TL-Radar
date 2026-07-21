@@ -123,24 +123,51 @@ export function effectiveNow(): Date {
   return new Date(now.getTime() - msSinceLastCutoff);
 }
 
-function closedPauseDurations(pauses: TaskPause[], end: Date): number {
-  let total = 0;
+export interface TimeInterval {
+  start: number;
+  end: number;
+}
+
+// Intervaly vremeni v statuse in_progress za vsyu istoriyu zadachi, do momenta `end`
+// (zakrytye pauzy vyrezayutsya iz obshchego promezhutka started_at..end/completed_at;
+// otkrytaya pauza ne vyrezaetsya — eto sushchestvuyushcheye povedeniye,
+// accumulatedInProgressDuration nizhe prosto summiruet eti intervaly).
+// Ispol'zuetsya i dlya kartochki zadachi, i dlya analitiki (Etap 6) — pri peresechenii
+// s oknom [added_at, removed_at] konkretnogo ispolnitelya.
+export function inProgressIntervals(task: Task, pauses: TaskPause[], end: Date): TimeInterval[] {
+  if (!task.started_at) return [];
+  const endMs = task.completed_at ? new Date(task.completed_at).getTime() : end.getTime();
+  const startMs = new Date(task.started_at).getTime();
+  if (endMs <= startMs) return [];
+
+  let intervals: TimeInterval[] = [{ start: startMs, end: endMs }];
+
   for (const p of pauses) {
-    if (p.paused_at && p.resumed_at) {
-      const pausedAt = new Date(p.paused_at).getTime();
-      const resumedAt = new Date(p.resumed_at).getTime();
-      total += Math.max(0, Math.min(resumedAt, end.getTime()) - pausedAt);
+    if (!p.paused_at || !p.resumed_at) continue;
+    const pausedAt = new Date(p.paused_at).getTime();
+    const resumedAt = Math.min(new Date(p.resumed_at).getTime(), end.getTime());
+    if (resumedAt <= pausedAt) continue;
+
+    const next: TimeInterval[] = [];
+    for (const iv of intervals) {
+      if (resumedAt <= iv.start || pausedAt >= iv.end) {
+        next.push(iv);
+        continue;
+      }
+      if (pausedAt > iv.start) next.push({ start: iv.start, end: Math.min(pausedAt, iv.end) });
+      if (resumedAt < iv.end) next.push({ start: Math.max(resumedAt, iv.start), end: iv.end });
     }
+    intervals = next;
   }
-  return total;
+
+  return intervals.filter((iv) => iv.end > iv.start);
 }
 
 // Summarnoye vremya v statuse in_progress za vsyu istoriyu zadachi, do momenta `end`.
 export function accumulatedInProgressDuration(task: Task, pauses: TaskPause[], end: Date): number | null {
   if (!task.started_at) return null;
-  const endMs = task.completed_at ? new Date(task.completed_at).getTime() : end.getTime();
-  const startMs = new Date(task.started_at).getTime();
-  return Math.max(0, endMs - startMs - closedPauseDurations(pauses, end));
+  const total = inProgressIntervals(task, pauses, end).reduce((sum, iv) => sum + (iv.end - iv.start), 0);
+  return Math.max(0, total);
 }
 
 // Vremya s poslednego perekhoda v in_progress (posle resume ili s samogo nachala).

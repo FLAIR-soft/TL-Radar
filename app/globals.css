@@ -711,6 +711,23 @@ p.section-sub {
   padding: 10px 2px;
 }
 
+/* ---------- Analytics ---------- */
+.period-switcher {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+.analytics-chart {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 16px 8px;
+  margin-bottom: 18px;
+}
+.analytics-table-wrap {
+  max-width: 560px;
+}
+
 /* ---------- Loading skeletons ---------- */
 @keyframes shimmer {
   from {
