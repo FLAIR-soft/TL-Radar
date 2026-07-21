@@ -28,7 +28,25 @@
   ```sql
   update profiles set role = 'admin' where id = '<uuid пользователя>';
   ```
-  UI для самоназначения `admin` сознательно не делается.
+  UI для самоназначения `admin` сознательно не делается. После назначения
+  роли админ получает доступ к странице `/admin` (пункт «Admin» в топбаре),
+  откуда может сбросить пароль любому пользователю — см. раздел
+  «Сброс пароля администратором» ниже.
+
+### Сброс пароля администратором
+
+- `lib/supabase/admin.ts` — клиент Supabase на service role key
+  (`SUPABASE_SERVICE_ROLE_KEY` в `.env.local`, без префикса `NEXT_PUBLIC_`,
+  используется только внутри Server Actions, никогда не попадает в клиентский
+  бандл).
+- `app/(app)/admin/actions.ts` — `resetUserPassword(userId, newPassword)`:
+  проверяет, что текущий пользователь имеет роль `admin` (иначе редирект на
+  `/dashboard`), затем вызывает `supabaseAdmin.auth.admin.updateUserById`.
+- `app/(app)/admin/page.tsx` — список всех пользователей (имя + роль) с
+  формой сброса пароля у каждого; недоступна без роли `admin`.
+- На Vercel обязательно должна быть задана переменная окружения
+  `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → Environment Variables),
+  иначе `/admin` будет падать при попытке сброса пароля.
 
 ## Локальная разработка
 

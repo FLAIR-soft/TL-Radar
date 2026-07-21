@@ -31,6 +31,7 @@ const de = {
     dashboard: 'Dashboard',
     newTask: 'Neue Aufgabe',
     archive: 'Archiv',
+    admin: 'Admin',
     logout: 'Abmelden',
   },
   dashboard: {
@@ -96,6 +97,16 @@ const de = {
   duration: {
     hourShort: 'Std',
     minuteShort: 'Min',
+  },
+  admin: {
+    title: 'Admin',
+    subtitle: 'Passwort für jeden Benutzer zurücksetzen.',
+    roleEditor: 'Editor',
+    roleAdmin: 'Admin',
+    newPasswordPlaceholder: 'Neues Passwort',
+    resetButton: 'Passwort zurücksetzen',
+    resetConfirm: 'Passwort für diesen Benutzer zurücksetzen?',
+    resetSuccess: 'Passwort aktualisiert.',
   },
   intlLocale: 'de-DE',
 } satisfies Dictionary;

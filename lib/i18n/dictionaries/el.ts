@@ -31,6 +31,7 @@ const el = {
     dashboard: 'Πίνακας',
     newTask: 'Νέα εργασία',
     archive: 'Αρχείο',
+    admin: 'Διαχείριση',
     logout: 'Αποσύνδεση',
   },
   dashboard: {
@@ -96,6 +97,16 @@ const el = {
   duration: {
     hourShort: 'ω',
     minuteShort: 'λ',
+  },
+  admin: {
+    title: 'Διαχείριση',
+    subtitle: 'Επαναφορά κωδικού πρόσβασης για οποιονδήποτε χρήστη.',
+    roleEditor: 'συντάκτης',
+    roleAdmin: 'διαχειριστής',
+    newPasswordPlaceholder: 'Νέος κωδικός πρόσβασης',
+    resetButton: 'Επαναφορά κωδικού',
+    resetConfirm: 'Επαναφορά κωδικού πρόσβασης για αυτόν τον χρήστη;',
+    resetSuccess: 'Ο κωδικός ενημερώθηκε.',
   },
   intlLocale: 'el-GR',
 } satisfies Dictionary;

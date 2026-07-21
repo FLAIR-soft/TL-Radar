@@ -20,11 +20,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, locale')
+    .select('name, role, locale')
     .eq('id', user.id)
     .single();
 
   const name = profile?.name ?? user.email ?? 'Пользователь';
+  const role = profile?.role ?? 'editor';
   const locale = profile?.locale ?? 'de';
   const dict = getDictionary(locale);
   const theme = await getThemeCookie();
@@ -38,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="brand-dot"></span>
               <span>TL-Radar</span>
             </div>
-            <TopTabs />
+            <TopTabs role={role} />
           </div>
           <div className="who">
             <ThemeToggle theme={theme} />

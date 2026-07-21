@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import type { UserRole } from '@/lib/supabase/types';
 
-export function TopTabs() {
+export function TopTabs({ role }: { role: UserRole }) {
   const pathname = usePathname();
   const dict = useDictionary();
   const tabs = [
     { href: '/dashboard', label: dict.topbar.dashboard },
     { href: '/dashboard/new', label: dict.topbar.newTask },
     { href: '/archive', label: dict.topbar.archive },
+    ...(role === 'admin' ? [{ href: '/admin', label: dict.topbar.admin }] : []),
   ];
 
   return (

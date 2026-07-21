@@ -29,6 +29,7 @@ const ru = {
     dashboard: 'Дешборд',
     newTask: 'Новая задача',
     archive: 'Архив',
+    admin: 'Админ',
     logout: 'Выйти',
   },
   dashboard: {
@@ -94,6 +95,16 @@ const ru = {
   duration: {
     hourShort: 'ч',
     minuteShort: 'м',
+  },
+  admin: {
+    title: 'Админ',
+    subtitle: 'Сброс пароля для любого пользователя.',
+    roleEditor: 'редактор',
+    roleAdmin: 'админ',
+    newPasswordPlaceholder: 'Новый пароль',
+    resetButton: 'Сбросить пароль',
+    resetConfirm: 'Сбросить пароль для этого пользователя?',
+    resetSuccess: 'Пароль обновлён.',
   },
   intlLocale: 'ru-RU',
 };
