@@ -19,7 +19,12 @@ export default async function ArchivePage() {
   const dict = getDictionary(profile?.locale ?? 'de');
 
   const [{ data: tasks }, { data: profiles }] = await Promise.all([
-    supabase.from('tasks').select('*').eq('status', 'done').order('created_at', { ascending: false }),
+    supabase
+      .from('tasks')
+      .select('*')
+      .eq('status', 'done')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, name'),
   ]);
 

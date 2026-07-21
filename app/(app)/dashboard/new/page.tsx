@@ -22,7 +22,12 @@ export default async function NewTaskPage({
     return <TaskForm action={createTask} editing={null} assignees={assignees} currentUserId={user!.id} />;
   }
 
-  const { data: task } = await supabase.from('tasks').select('*').eq('id', edit).single();
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', edit)
+    .is('deleted_at', null)
+    .single();
   if (!task) notFound();
 
   return (

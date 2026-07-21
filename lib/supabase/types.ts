@@ -21,6 +21,8 @@ export type Task = {
   started_at: string | null;
   completed_at: string | null;
   created_by: string | null;
+  updated_by: string | null;
+  deleted_at: string | null;
   assignee_id: string | null;
 };
 
@@ -30,6 +32,7 @@ export type TaskPause = {
   paused_at: string;
   resumed_at: string | null;
   auto: boolean;
+  created_by: string | null;
 };
 
 export interface Database {

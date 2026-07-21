@@ -51,6 +51,7 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
     ...fields,
     status: 'waiting',
     created_by: userId,
+    updated_by: userId,
   });
 
   if (error) {
@@ -66,14 +67,17 @@ export async function editTaskFields(
   _prevState: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const { supabase, dict } = await requireAuth();
+  const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
 
-  const { error } = await supabase.from('tasks').update(fields).eq('id', taskId);
+  const { error } = await supabase
+    .from('tasks')
+    .update({ ...fields, updated_by: userId })
+    .eq('id', taskId);
 
   if (error) {
     return { error: error.message };
@@ -84,14 +88,17 @@ export async function editTaskFields(
 }
 
 export async function deleteTask(taskId: string) {
-  const { supabase } = await requireAuth();
-  await supabase.from('tasks').delete().eq('id', taskId);
+  const { supabase, userId } = await requireAuth();
+  await supabase
+    .from('tasks')
+    .update({ deleted_at: new Date().toISOString(), updated_by: userId })
+    .eq('id', taskId);
   revalidatePath('/dashboard');
   revalidatePath('/archive');
 }
 
 export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<{ error?: string }> {
-  const { supabase, dict } = await requireAuth();
+  const { supabase, userId, dict } = await requireAuth();
 
   if (!isWithinWorkHours()) {
     return { error: dict.taskCard.outsideWorkHours };
@@ -106,8 +113,14 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
   if (!task) return {};
 
   const now = new Date().toISOString();
-  const update: { status: TaskStatus; started_at?: string; completed_at?: string } = {
+  const update: {
+    status: TaskStatus;
+    started_at?: string;
+    completed_at?: string;
+    updated_by: string;
+  } = {
     status: newStatus,
+    updated_by: userId,
   };
 
   if (newStatus === 'in_progress' && !task.started_at) {
@@ -115,7 +128,9 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
   }
 
   if (task.status === 'in_progress' && newStatus === 'paused') {
-    await supabase.from('task_pauses').insert({ task_id: taskId, paused_at: now, resumed_at: null, auto: false });
+    await supabase
+      .from('task_pauses')
+      .insert({ task_id: taskId, paused_at: now, resumed_at: null, auto: false, created_by: userId });
   }
 
   if (task.status === 'paused' && newStatus === 'in_progress') {

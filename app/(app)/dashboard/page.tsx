@@ -22,7 +22,12 @@ export default async function DashboardPage() {
   const dict = getDictionary(profile?.locale ?? 'de');
 
   const [{ data: tasks }, { data: profiles }] = await Promise.all([
-    supabase.from('tasks').select('*').neq('status', 'done').order('created_at', { ascending: true }),
+    supabase
+      .from('tasks')
+      .select('*')
+      .neq('status', 'done')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true }),
     supabase.from('profiles').select('id, name'),
   ]);
 
