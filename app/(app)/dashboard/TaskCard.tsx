@@ -9,6 +9,7 @@ import {
   fmtDateTime,
   fmtDuration,
   isOverdue,
+  isWithinWorkHours,
   accumulatedInProgressDuration,
   currentSessionDuration,
   currentPauseDuration,
@@ -46,11 +47,20 @@ export function TaskCard({
     ],
   };
   const actions = nextActions[task.status] || [];
+  const withinWorkHours = isWithinWorkHours();
 
   function handleDelete() {
     if (!confirm(dict.taskCard.deleteConfirm)) return;
     startTransition(() => {
       deleteTask(task.id);
+    });
+  }
+
+  function handleStatus(to: TaskStatus) {
+    startTransition(() => {
+      setStatus(task.id, to).then((result) => {
+        if (result?.error) alert(result.error);
+      });
     });
   }
 
@@ -106,17 +116,16 @@ export function TaskCard({
           </div>
         )}
       </div>
+      {!withinWorkHours && actions.length > 0 && (
+        <div className="t-locked-note">{dict.taskCard.outsideWorkHours}</div>
+      )}
       <div className="t-actions">
-        {actions.map((a) => (
-          <button
-            key={a.to}
-            className="btn btn-ghost"
-            disabled={isPending}
-            onClick={() => startTransition(() => setStatus(task.id, a.to))}
-          >
-            {a.label}
-          </button>
-        ))}
+        {withinWorkHours &&
+          actions.map((a) => (
+            <button key={a.to} className="btn btn-ghost" disabled={isPending} onClick={() => handleStatus(a.to)}>
+              {a.label}
+            </button>
+          ))}
         <Link href={`/dashboard/new?edit=${task.id}`} className="icon-btn" title={dict.taskCard.editTitle}>
           ✎
         </Link>

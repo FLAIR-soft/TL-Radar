@@ -77,28 +77,50 @@ export function isOverdue(task: Task): boolean {
   return now.hour >= CUTOFF_HOUR;
 }
 
-// Taymery na aktivnyh zadachah ne dolzhny "tikat'" posle 16:00 po Myunhenu —
-// tot zhe cutoff, chto u avtopauzy i prosrochki. Esli seychas po Berlinu posle
-// 16:00, "effektivnoye seychas" zamorazhivaetsya rovno na 16:00:00.000 segodnyashney
-// (po Berlinu) daty; do 16:00 — eto prosto real'noye vremya.
-export function effectiveNow(): Date {
-  const now = new Date();
+// Rabochiye chasy: 07:30–16:00 po Myunhenu. Vne etogo okna (16:00 do 7:30
+// sleduyushchego dnya) taymery ne dolzhny tikat', a smena statusa zadachi zapreshchena.
+const WORK_START_SEC = 7 * 3600 + 30 * 60; // 07:30
+const WORK_END_SEC = CUTOFF_HOUR * 3600; // 16:00
+const SECONDS_PER_DAY = 24 * 3600;
+
+function berlinSecondsOfDay(date: Date): { secondsOfDay: number; ms: number } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Europe/Berlin',
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).formatToParts(now);
+  }).formatToParts(date);
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
   const hour = get('hour') % 24;
   const minute = get('minute');
   const second = get('second');
+  return { secondsOfDay: hour * 3600 + minute * 60 + second, ms: date.getMilliseconds() };
+}
 
-  if (hour < CUTOFF_HOUR) return now;
+export function isWithinWorkHours(date: Date = new Date()): boolean {
+  const { secondsOfDay } = berlinSecondsOfDay(date);
+  return secondsOfDay >= WORK_START_SEC && secondsOfDay < WORK_END_SEC;
+}
 
-  const msPastCutoff = ((hour - CUTOFF_HOUR) * 3600 + minute * 60 + second) * 1000 + now.getMilliseconds();
-  return new Date(now.getTime() - msPastCutoff);
+// Taymery na aktivnyh zadachah ne dolzhny "tikat'" s 16:00 do 7:30 sleduyushchego
+// dnya po Myunhenu — tot zhe cutoff, chto u avtopauzy. Vne rabochih chasov
+// "effektivnoye seychas" zamorazhivaetsya rovno na momente poslednego 16:00
+// (segodnyashnego ili vcherashnego, v zavisimosti ot togo, uzhe li proshli 7:30);
+// vnutri rabochih chasov — eto prosto real'noye vremya.
+export function effectiveNow(): Date {
+  const now = new Date();
+  const { secondsOfDay, ms } = berlinSecondsOfDay(now);
+
+  if (secondsOfDay >= WORK_START_SEC && secondsOfDay < WORK_END_SEC) return now;
+
+  const secondsSinceLastCutoff =
+    secondsOfDay >= WORK_END_SEC
+      ? secondsOfDay - WORK_END_SEC
+      : SECONDS_PER_DAY - WORK_END_SEC + secondsOfDay;
+
+  const msSinceLastCutoff = secondsSinceLastCutoff * 1000 + ms;
+  return new Date(now.getTime() - msSinceLastCutoff);
 }
 
 function closedPauseDurations(pauses: TaskPause[], end: Date): number {

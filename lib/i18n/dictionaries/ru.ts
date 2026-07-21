@@ -50,6 +50,7 @@ const ru = {
     timeWaiting: 'В ожидании',
     timeCurrentSession: 'В процессе с',
     timePaused: 'На паузе',
+    outsideWorkHours: 'Смена статуса недоступна с 16:00 до 7:30.',
   },
   taskForm: {
     newTitle: 'Новая задача',

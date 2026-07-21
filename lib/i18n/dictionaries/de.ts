@@ -52,6 +52,7 @@ const de = {
     timeWaiting: 'Wartet seit',
     timeCurrentSession: 'In Bearbeitung seit',
     timePaused: 'Pausiert seit',
+    outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',
   },
   taskForm: {
     newTitle: 'Neue Aufgabe',

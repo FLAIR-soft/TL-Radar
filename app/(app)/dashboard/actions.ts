@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { isWithinWorkHours } from '@/lib/logic/tasks';
 import type { TaskStatus } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -89,8 +90,12 @@ export async function deleteTask(taskId: string) {
   revalidatePath('/archive');
 }
 
-export async function setStatus(taskId: string, newStatus: TaskStatus) {
-  const { supabase } = await requireAuth();
+export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<{ error?: string }> {
+  const { supabase, dict } = await requireAuth();
+
+  if (!isWithinWorkHours()) {
+    return { error: dict.taskCard.outsideWorkHours };
+  }
 
   const { data: task } = await supabase
     .from('tasks')
@@ -98,7 +103,7 @@ export async function setStatus(taskId: string, newStatus: TaskStatus) {
     .eq('id', taskId)
     .single();
 
-  if (!task) return;
+  if (!task) return {};
 
   const now = new Date().toISOString();
   const update: { status: TaskStatus; started_at?: string; completed_at?: string } = {
@@ -147,4 +152,5 @@ export async function setStatus(taskId: string, newStatus: TaskStatus) {
 
   revalidatePath('/dashboard');
   if (newStatus === 'done') revalidatePath('/archive');
+  return {};
 }
