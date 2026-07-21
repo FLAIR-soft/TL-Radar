@@ -13,7 +13,6 @@ export function TaskForm({
 }: {
   action: (prevState: TaskFormState, formData: FormData) => Promise<TaskFormState>;
   editing: {
-    person: string;
     title: string;
     description: string;
     location: string;
@@ -30,21 +29,6 @@ export function TaskForm({
       <div className="form-card">
         <form action={formAction}>
           {state.error && <div className="error-note">{state.error}</div>}
-          <div className="row2">
-            <div className="field">
-              <label>{dict.taskForm.person}</label>
-              <input
-                type="text"
-                name="person"
-                defaultValue={editing?.person}
-                placeholder={dict.taskForm.personPlaceholder}
-              />
-            </div>
-            <div className="field">
-              <label>{dict.taskForm.deadline}</label>
-              <input type="date" name="deadline" defaultValue={editing?.deadline} />
-            </div>
-          </div>
           <div className="field">
             <label>{dict.taskForm.title}</label>
             <input
@@ -54,21 +38,27 @@ export function TaskForm({
               placeholder={dict.taskForm.titlePlaceholder}
             />
           </div>
+          <div className="row2">
+            <div className="field">
+              <label>{dict.taskForm.deadline}</label>
+              <input type="date" name="deadline" defaultValue={editing?.deadline} />
+            </div>
+            <div className="field">
+              <label>{dict.taskForm.location}</label>
+              <input
+                type="text"
+                name="location"
+                defaultValue={editing?.location}
+                placeholder={dict.taskForm.locationPlaceholder}
+              />
+            </div>
+          </div>
           <div className="field">
             <label>{dict.taskForm.description}</label>
             <textarea
               name="description"
               defaultValue={editing?.description}
               placeholder={dict.taskForm.descriptionPlaceholder}
-            />
-          </div>
-          <div className="field">
-            <label>{dict.taskForm.location}</label>
-            <input
-              type="text"
-              name="location"
-              defaultValue={editing?.location}
-              placeholder={dict.taskForm.locationPlaceholder}
             />
           </div>
           <div className="form-actions">

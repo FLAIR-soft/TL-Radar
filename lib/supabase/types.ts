@@ -12,7 +12,6 @@ export type Profile = {
 
 export type Task = {
   id: string;
-  person: string;
   title: string;
   description: string;
   location: string;
@@ -43,7 +42,7 @@ export interface Database {
       };
       tasks: {
         Row: Task;
-        Insert: Partial<Task> & Pick<Task, 'person' | 'title'>;
+        Insert: Partial<Task> & Pick<Task, 'title'>;
         Update: Partial<Task>;
         Relationships: [];
       };

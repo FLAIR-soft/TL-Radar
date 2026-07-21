@@ -34,7 +34,6 @@ export interface TaskFormState {
 
 function readTaskFields(formData: FormData) {
   return {
-    person: String(formData.get('person') || '').trim(),
     title: String(formData.get('title') || '').trim(),
     description: String(formData.get('description') || '').trim(),
     location: String(formData.get('location') || '').trim(),
@@ -46,7 +45,7 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
   const { supabase, userId, dict } = await requireEditor();
   const fields = readTaskFields(formData);
 
-  if (!fields.person || !fields.title) {
+  if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
 
@@ -72,7 +71,7 @@ export async function editTaskFields(
   const { supabase, dict } = await requireEditor();
   const fields = readTaskFields(formData);
 
-  if (!fields.person || !fields.title) {
+  if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
 

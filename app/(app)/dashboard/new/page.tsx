@@ -36,7 +36,6 @@ export default async function NewTaskPage({
     <TaskForm
       action={editTaskFields.bind(null, task.id)}
       editing={{
-        person: task.person,
         title: task.title,
         description: task.description ?? '',
         location: task.location ?? '',

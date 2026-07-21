@@ -81,8 +81,6 @@ export default async function ArchivePage() {
                 <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                   <td>
                     <strong>{t.title}</strong>
-                    <br />
-                    <span className="mono">{t.person}</span>
                   </td>
                   <td>{t.location || '—'}</td>
                   <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>

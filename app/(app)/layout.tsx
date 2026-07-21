@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
+import { getThemeCookie } from '@/lib/theme/cookie';
 import { TopTabs } from './TopTabs';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const role = profile?.role ?? 'viewer';
   const locale = profile?.locale ?? 'de';
   const dict = getDictionary(locale);
+  const theme = await getThemeCookie();
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
@@ -39,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <TopTabs role={role} />
           </div>
           <div className="who">
+            <ThemeToggle theme={theme} />
             <LanguageSwitcher />
             <span className={`role-badge role-${role}`}>
               {role === 'editor' ? dict.topbar.roleEditor : dict.topbar.roleViewer}

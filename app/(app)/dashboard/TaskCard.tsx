@@ -45,7 +45,6 @@ export function TaskCard({
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
       style={{ borderLeftColor: STATUS_COLOR[task.status], ...style }}
     >
-      <div className="t-person">{task.person}</div>
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
