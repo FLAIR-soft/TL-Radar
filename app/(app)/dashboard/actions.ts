@@ -30,12 +30,16 @@ export interface TaskFormState {
 }
 
 function readTaskFields(formData: FormData) {
+  const estimatedRaw = String(formData.get('estimatedMinutes') || '').trim();
+  const estimatedMinutes = estimatedRaw ? Number(estimatedRaw) : null;
+
   return {
     title: String(formData.get('title') || '').trim(),
     description: String(formData.get('description') || '').trim(),
     location: String(formData.get('location') || '').trim(),
     deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
     project_id: (String(formData.get('projectId') || '').trim() || null) as string | null,
+    estimated_minutes: estimatedMinutes && estimatedMinutes > 0 ? Math.round(estimatedMinutes) : null,
   };
 }
 

@@ -71,6 +71,10 @@ export function TaskCard({
   const pauseElapsed = currentPauseDuration(task, pauses, now);
   const waiting = waitingDuration(task, now);
 
+  const estimateMs = task.estimated_minutes ? task.estimated_minutes * 60000 : null;
+  const estimatePercent = estimateMs && total !== null ? (total / estimateMs) * 100 : null;
+  const estimateOver = estimatePercent !== null && estimatePercent > 100;
+
   return (
     <div
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
@@ -98,6 +102,22 @@ export function TaskCard({
           <div className="t-timer-row">
             <span>{dict.taskCard.timeTotal}</span>
             <span className="mono">{fmtDuration(total, dict.duration)}</span>
+          </div>
+        )}
+        {estimateMs !== null && total !== null && (
+          <div className="t-estimate">
+            <div className="t-timer-row">
+              <span>{dict.taskCard.estimate}</span>
+              <span className="mono">
+                {fmtDuration(total, dict.duration)} / {fmtDuration(estimateMs, dict.duration)}
+              </span>
+            </div>
+            <div className="t-estimate-bar">
+              <div
+                className={`t-estimate-fill ${estimateOver ? 't-estimate-over' : ''}`}
+                style={{ width: `${Math.min(100, estimatePercent ?? 0)}%` }}
+              />
+            </div>
           </div>
         )}
         {waiting !== null && (

@@ -571,6 +571,25 @@ p.section-sub {
   color: var(--ink);
   font-weight: 600;
 }
+.t-estimate {
+  padding: 2px 0 1px;
+}
+.t-estimate-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.t-estimate-fill {
+  height: 100%;
+  background: var(--progress);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.t-estimate-fill.t-estimate-over {
+  background: var(--brand);
+}
 .t-locked-note {
   font-size: 11.5px;
   color: var(--ink-muted);
@@ -731,7 +750,7 @@ p.section-sub {
 }
 .skeleton-table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr 1fr;
   gap: 12px;
   padding: 12px;
   border-bottom: 1px solid var(--border);

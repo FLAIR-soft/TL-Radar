@@ -22,6 +22,7 @@ export function TaskForm({
     deadline: string;
     assigneeIds: string[];
     projectId: string;
+    estimatedMinutes: string;
   } | null;
   assignees: { id: string; name: string }[];
   projects: { id: string; name: string }[];
@@ -78,6 +79,17 @@ export function TaskForm({
               <label>{dict.taskForm.deadline}</label>
               <input type="date" name="deadline" defaultValue={editing?.deadline} />
             </div>
+          </div>
+          <div className="field">
+            <label>{dict.taskForm.estimate}</label>
+            <input
+              type="number"
+              name="estimatedMinutes"
+              min={1}
+              step={1}
+              defaultValue={editing?.estimatedMinutes}
+              placeholder={dict.taskForm.estimatePlaceholder}
+            />
           </div>
           <div className="field">
             <label>{dict.taskForm.location}</label>

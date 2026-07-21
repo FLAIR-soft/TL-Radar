@@ -54,6 +54,7 @@ const de = {
     timeWaiting: 'Wartet seit',
     timeCurrentSession: 'In Bearbeitung seit',
     timePaused: 'Pausiert seit',
+    estimate: 'Schätzung',
     outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',
   },
   taskForm: {
@@ -64,6 +65,8 @@ const de = {
     project: 'Projekt',
     noProject: '— kein Projekt —',
     deadline: 'Frist',
+    estimate: 'Zeitschätzung (Minuten)',
+    estimatePlaceholder: 'z. B. 90',
     title: 'Aufgabentitel',
     titlePlaceholder: 'Kurz, worum es geht',
     description: 'Beschreibung',
@@ -92,6 +95,7 @@ const de = {
     colCompleted: 'Abgeschlossen',
     colPauses: 'Pausen',
     colNetDuration: 'Nettozeit',
+    colEstimate: 'Ist / Schätzung',
   },
   status: {
     waiting: 'Wartend',

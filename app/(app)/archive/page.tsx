@@ -96,6 +96,7 @@ export default async function ArchivePage() {
               <th>{dict.archive.colCompleted}</th>
               <th>{dict.archive.colPauses}</th>
               <th>{dict.archive.colNetDuration}</th>
+              <th>{dict.archive.colEstimate}</th>
             </tr>
           </thead>
           <tbody>
@@ -131,6 +132,14 @@ export default async function ArchivePage() {
                     )}
                   </td>
                   <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
+                  <td className="mono">
+                    {t.estimated_minutes
+                      ? `${net !== null ? fmtDuration(net, dict.duration) : '—'} / ${fmtDuration(
+                          t.estimated_minutes * 60000,
+                          dict.duration
+                        )}`
+                      : '—'}
+                  </td>
                 </tr>
               );
             })}

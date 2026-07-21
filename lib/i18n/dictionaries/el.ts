@@ -54,6 +54,7 @@ const el = {
     timeWaiting: 'Σε αναμονή από',
     timeCurrentSession: 'Σε εξέλιξη από',
     timePaused: 'Σε παύση από',
+    estimate: 'Εκτίμηση',
     outsideWorkHours: 'Η αλλαγή κατάστασης δεν είναι διαθέσιμη από τις 16:00 έως τις 7:30.',
   },
   taskForm: {
@@ -64,6 +65,8 @@ const el = {
     project: 'Έργο',
     noProject: '— χωρίς έργο —',
     deadline: 'Προθεσμία',
+    estimate: 'Εκτίμηση χρόνου (λεπτά)',
+    estimatePlaceholder: 'π.χ. 90',
     title: 'Τίτλος εργασίας',
     titlePlaceholder: 'Σύντομα, η ουσία της εργασίας',
     description: 'Περιγραφή',
@@ -92,6 +95,7 @@ const el = {
     colCompleted: 'Ολοκληρώθηκε',
     colPauses: 'Παύσεις',
     colNetDuration: 'Καθαρός χρόνος',
+    colEstimate: 'Πραγμ. / Εκτίμηση',
   },
   status: {
     waiting: 'Αναμονή',

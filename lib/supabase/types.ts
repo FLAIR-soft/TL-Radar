@@ -24,6 +24,7 @@ export type Task = {
   updated_by: string | null;
   deleted_at: string | null;
   project_id: string | null;
+  estimated_minutes: number | null;
 };
 
 export type Project = {

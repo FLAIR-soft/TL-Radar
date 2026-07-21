@@ -58,6 +58,7 @@ export default async function NewTaskPage({
         deadline: task.deadline ?? '',
         assigneeIds: (currentAssignees ?? []).map((a) => a.assignee_id),
         projectId: task.project_id ?? '',
+        estimatedMinutes: task.estimated_minutes ? String(task.estimated_minutes) : '',
       }}
       assignees={assignees}
       projects={projects}

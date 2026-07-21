@@ -52,6 +52,7 @@ const ru = {
     timeWaiting: 'В ожидании',
     timeCurrentSession: 'В процессе с',
     timePaused: 'На паузе',
+    estimate: 'Оценка',
     outsideWorkHours: 'Смена статуса недоступна с 16:00 до 7:30.',
   },
   taskForm: {
@@ -62,6 +63,8 @@ const ru = {
     project: 'Проект',
     noProject: '— без проекта —',
     deadline: 'Дедлайн',
+    estimate: 'Оценка времени (минуты)',
+    estimatePlaceholder: 'например, 90',
     title: 'Название задачи',
     titlePlaceholder: 'Кратко, суть задачи',
     description: 'Описание',
@@ -90,6 +93,7 @@ const ru = {
     colCompleted: 'Завершена',
     colPauses: 'Паузы',
     colNetDuration: 'Чистое время',
+    colEstimate: 'Факт / Оценка',
   },
   status: {
     waiting: 'Ожидание',

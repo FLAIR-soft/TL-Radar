@@ -15,6 +15,7 @@ export default function ArchiveLoading() {
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '70%' }} />
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '85%' }} />
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '50%' }} />
+              <div className="skeleton skeleton-line" style={{ margin: 0, width: '65%' }} />
             </div>
           ))}
         </div>
