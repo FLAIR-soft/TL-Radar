@@ -1,15 +1,15 @@
 import type { TaskStatus, Task, TaskPause } from '@/lib/supabase/types';
 
-export const STATUS: Record<TaskStatus, { label: string; color: string }> = {
-  waiting: { label: 'Ожидание', color: 'var(--waiting)' },
-  in_progress: { label: 'В процессе', color: 'var(--progress)' },
-  paused: { label: 'Пауза', color: 'var(--paused)' },
-  done: { label: 'Сделано', color: 'var(--done)' },
+export const STATUS_COLOR: Record<TaskStatus, string> = {
+  waiting: 'var(--waiting)',
+  in_progress: 'var(--progress)',
+  paused: 'var(--paused)',
+  done: 'var(--done)',
 };
 
-export function fmtDateTime(iso: string | null): string {
+export function fmtDateTime(iso: string | null, intlLocale: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(intlLocale, {
     timeZone: 'Europe/Berlin',
     day: '2-digit',
     month: '2-digit',
@@ -19,9 +19,9 @@ export function fmtDateTime(iso: string | null): string {
   });
 }
 
-export function fmtDate(iso: string | null): string {
+export function fmtDate(iso: string | null, intlLocale: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('ru-RU', {
+  return new Date(iso).toLocaleDateString(intlLocale, {
     timeZone: 'Europe/Berlin',
     day: '2-digit',
     month: '2-digit',
@@ -29,12 +29,12 @@ export function fmtDate(iso: string | null): string {
   });
 }
 
-export function fmtDuration(ms: number): string {
+export function fmtDuration(ms: number, units: { hourShort: string; minuteShort: string }): string {
   if (ms < 0) ms = 0;
   const totalMin = Math.round(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  return (h > 0 ? h + 'ч ' : '') + m + 'м';
+  return (h > 0 ? h + units.hourShort + ' ' : '') + m + units.minuteShort;
 }
 
 // Chistoye vremya vypolneniya: (completed_at - started_at) minus summa pauz.

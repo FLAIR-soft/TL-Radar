@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
 import type { TaskStatus } from '@/lib/supabase/types';
 
 async function requireEditor() {
@@ -14,15 +15,17 @@ async function requireEditor() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, locale')
     .eq('id', user.id)
     .single();
 
+  const dict = getDictionary(profile?.locale ?? 'de');
+
   if (!profile || (profile.role !== 'editor' && profile.role !== 'admin')) {
-    throw new Error('Недостаточно прав.');
+    throw new Error(dict.taskForm.errors.notAuthorized);
   }
 
-  return { supabase, userId: user.id };
+  return { supabase, userId: user.id, dict };
 }
 
 export interface TaskFormState {
@@ -40,11 +43,11 @@ function readTaskFields(formData: FormData) {
 }
 
 export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
-  const { supabase, userId } = await requireEditor();
+  const { supabase, userId, dict } = await requireEditor();
   const fields = readTaskFields(formData);
 
   if (!fields.person || !fields.title) {
-    return { error: 'Заполните хотя бы «Человек» и «Название задачи».' };
+    return { error: dict.taskForm.errors.missingFields };
   }
 
   const { error } = await supabase.from('tasks').insert({
@@ -66,11 +69,11 @@ export async function editTaskFields(
   _prevState: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const { supabase } = await requireEditor();
+  const { supabase, dict } = await requireEditor();
   const fields = readTaskFields(formData);
 
   if (!fields.person || !fields.title) {
-    return { error: 'Заполните хотя бы «Человек» и «Название задачи».' };
+    return { error: dict.taskForm.errors.missingFields };
   }
 
   const { error } = await supabase.from('tasks').update(fields).eq('id', taskId);

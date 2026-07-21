@@ -1,11 +1,13 @@
 export type UserRole = 'viewer' | 'editor' | 'admin';
 export type TaskStatus = 'waiting' | 'in_progress' | 'paused' | 'done';
+export type Locale = 'ru' | 'de' | 'el';
 
 export type Profile = {
   id: string;
   name: string;
   role: UserRole;
   created_at: string;
+  locale: Locale;
 };
 
 export type Task = {

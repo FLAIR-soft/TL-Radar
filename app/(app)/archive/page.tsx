@@ -1,9 +1,22 @@
 import { createClient } from '@/lib/supabase/server';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
 import type { TaskPause } from '@/lib/supabase/types';
 
 export default async function ArchivePage() {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('locale')
+    .eq('id', user!.id)
+    .single();
+
+  const dict = getDictionary(profile?.locale ?? 'de');
 
   const { data: tasks } = await supabase
     .from('tasks')
@@ -35,66 +48,65 @@ export default async function ArchivePage() {
 
   if (!done.length) {
     return (
-      <>
-        <h2 className="section-title">Архив</h2>
-        <p className="section-sub">Сюда попадают завершённые задачи.</p>
-        <div className="empty-note">Архив пока пуст.</div>
-      </>
+      <div className="page-fade">
+        <h2 className="section-title">{dict.archive.title}</h2>
+        <p className="section-sub">{dict.archive.emptyTitle}</p>
+        <div className="empty-note">{dict.archive.empty}</div>
+      </div>
     );
   }
 
   return (
-    <>
-      <h2 className="section-title">Архив</h2>
-      <p className="section-sub">
-        Завершённые задачи, отсортированы по времени внесения (новые сверху).
-      </p>
+    <div className="page-fade">
+      <h2 className="section-title">{dict.archive.title}</h2>
+      <p className="section-sub">{dict.archive.subtitle}</p>
       <div className="archive-scroll">
         <table className="archive-table">
           <thead>
             <tr>
-              <th>Задача / человек</th>
-              <th>Место</th>
-              <th>Внесена</th>
-              <th>Начата</th>
-              <th>Завершена</th>
-              <th>Паузы</th>
-              <th>Чистое время</th>
+              <th>{dict.archive.colTask}</th>
+              <th>{dict.archive.colLocation}</th>
+              <th>{dict.archive.colCreated}</th>
+              <th>{dict.archive.colStarted}</th>
+              <th>{dict.archive.colCompleted}</th>
+              <th>{dict.archive.colPauses}</th>
+              <th>{dict.archive.colNetDuration}</th>
             </tr>
           </thead>
           <tbody>
-            {done.map((t) => {
+            {done.map((t, i) => {
               const taskPauses = pausesByTask.get(t.id) ?? [];
               const net = netDuration(t, taskPauses);
               return (
-                <tr key={t.id}>
+                <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                   <td>
                     <strong>{t.title}</strong>
                     <br />
                     <span className="mono">{t.person}</span>
                   </td>
                   <td>{t.location || '—'}</td>
-                  <td className="mono">{fmtDateTime(t.created_at)}</td>
-                  <td className="mono">{fmtDateTime(t.started_at)}</td>
-                  <td className="mono">{fmtDateTime(t.completed_at)}</td>
+                  <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
+                  <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
+                  <td className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</td>
                   <td>
                     {taskPauses.length ? (
                       taskPauses.map((p) => (
                         <div className="pause-line" key={p.id}>
-                          ⏸ {fmtDateTime(p.paused_at)} → ▶ {p.resumed_at ? fmtDateTime(p.resumed_at) : '—'}
+                          ⏸ {fmtDateTime(p.paused_at, dict.intlLocale)} → ▶{' '}
+                          {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
                         </div>
                       ))
                     ) : (
                       <span className="mono">—</span>
                     )}
                   </td>
-                  <td className="mono">{net !== null ? fmtDuration(net) : '—'}</td>
+                  <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 }

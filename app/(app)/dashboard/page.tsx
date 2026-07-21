@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { STATUS } from '@/lib/logic/tasks';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { STATUS_COLOR } from '@/lib/logic/tasks';
 import { TaskCard } from './TaskCard';
 import type { TaskStatus } from '@/lib/supabase/types';
 
@@ -14,11 +15,12 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, locale')
     .eq('id', user!.id)
     .single();
 
   const editable = profile?.role === 'editor' || profile?.role === 'admin';
+  const dict = getDictionary(profile?.locale ?? 'de');
 
   const { data: tasks } = await supabase
     .from('tasks')
@@ -29,32 +31,39 @@ export default async function DashboardPage() {
   const active = tasks ?? [];
 
   return (
-    <>
-      <h2 className="section-title">Дешборд</h2>
-      <p className="section-sub">Активные задачи по статусам, в реальном времени.</p>
+    <div className="page-fade">
+      <h2 className="section-title">{dict.dashboard.title}</h2>
+      <p className="section-sub">{dict.dashboard.subtitle}</p>
       <div className="kanban">
-        {COLUMNS.map((s) => {
+        {COLUMNS.map((s, colIndex) => {
           const items = active.filter((t) => t.status === s);
           return (
             <div className="kanban-col" key={s}>
               <div className="col-head">
                 <span
                   className={`signal ${s === 'in_progress' ? 'pulsing' : ''}`}
-                  style={{ background: STATUS[s].color }}
+                  style={{ background: STATUS_COLOR[s] }}
                 ></span>
-                {STATUS[s].label} <span className="col-count">{items.length}</span>
+                {dict.status[s]} <span className="col-count">{items.length}</span>
               </div>
               <div className="card-stack">
                 {items.length ? (
-                  items.map((t) => <TaskCard key={t.id} task={t} editable={editable} />)
+                  items.map((t, i) => (
+                    <TaskCard
+                      key={t.id}
+                      task={t}
+                      editable={editable}
+                      style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
+                    />
+                  ))
                 ) : (
-                  <div className="empty-note">Пусто.</div>
+                  <div className="empty-note">{dict.dashboard.empty}</div>
                 )}
               </div>
             </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 }

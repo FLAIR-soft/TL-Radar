@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TL-Radar",
-  description: "Кто чем занят и где — без лишних вопросов.",
+  description: "Wer macht was und wo — ohne lange Nachfragen.",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="de">
       <body>{children}</body>
     </html>
   );
