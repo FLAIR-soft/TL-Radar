@@ -18,7 +18,7 @@ export default async function ArchivePage() {
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }] = await Promise.all([
+  const [{ data: tasks }, { data: profiles }, { data: projects }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*')
@@ -26,10 +26,12 @@ export default async function ArchivePage() {
       .is('deleted_at', null)
       .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, name'),
+    supabase.from('projects').select('id, name'),
   ]);
 
   const done = tasks ?? [];
   const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
   if (done.length) {
@@ -70,6 +72,7 @@ export default async function ArchivePage() {
           <thead>
             <tr>
               <th>{dict.archive.colTask}</th>
+              <th>{dict.archive.colProject}</th>
               <th>{dict.archive.colLocation}</th>
               <th>{dict.archive.colCreated}</th>
               <th>{dict.archive.colStarted}</th>
@@ -93,6 +96,7 @@ export default async function ArchivePage() {
                       </>
                     )}
                   </td>
+                  <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
                   <td>{t.location || '—'}</td>
                   <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
                   <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>

@@ -23,11 +23,13 @@ export function TaskCard({
   task,
   pauses,
   assigneeName,
+  projectName,
   style,
 }: {
   task: Task;
   pauses: TaskPause[];
   assigneeName: string | null;
+  projectName: string | null;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -78,6 +80,7 @@ export function TaskCard({
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
+        {projectName && <span className="project-tag">📁 {projectName}</span>}
         {task.location && <span>📍 {task.location}</span>}
         {task.deadline && (
           <span className={overdue ? 'overdue' : ''}>

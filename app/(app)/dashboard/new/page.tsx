@@ -15,11 +15,23 @@ export default async function NewTaskPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profiles } = await supabase.from('profiles').select('id, name').order('name');
+  const [{ data: profiles }, { data: activeProjects }] = await Promise.all([
+    supabase.from('profiles').select('id, name').order('name'),
+    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+  ]);
   const assignees = profiles ?? [];
+  const projects = activeProjects ?? [];
 
   if (!edit) {
-    return <TaskForm action={createTask} editing={null} assignees={assignees} currentUserId={user!.id} />;
+    return (
+      <TaskForm
+        action={createTask}
+        editing={null}
+        assignees={assignees}
+        projects={projects}
+        currentUserId={user!.id}
+      />
+    );
   }
 
   const { data: task } = await supabase
@@ -39,8 +51,10 @@ export default async function NewTaskPage({
         location: task.location ?? '',
         deadline: task.deadline ?? '',
         assigneeId: task.assignee_id ?? '',
+        projectId: task.project_id ?? '',
       }}
       assignees={assignees}
+      projects={projects}
       currentUserId={user!.id}
     />
   );

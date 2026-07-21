@@ -21,7 +21,7 @@ export default async function DashboardPage() {
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }] = await Promise.all([
+  const [{ data: tasks }, { data: profiles }, { data: projects }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*')
@@ -29,10 +29,12 @@ export default async function DashboardPage() {
       .is('deleted_at', null)
       .order('created_at', { ascending: true }),
     supabase.from('profiles').select('id, name'),
+    supabase.from('projects').select('id, name'),
   ]);
 
   const active = tasks ?? [];
   const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
   if (active.length) {
@@ -76,6 +78,7 @@ export default async function DashboardPage() {
                       task={t}
                       pauses={pausesByTask.get(t.id) ?? []}
                       assigneeName={t.assignee_id ? assigneeNames.get(t.assignee_id) ?? null : null}
+                      projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />
                   ))

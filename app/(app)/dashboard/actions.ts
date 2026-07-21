@@ -36,6 +36,7 @@ function readTaskFields(formData: FormData) {
     location: String(formData.get('location') || '').trim(),
     deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
     assignee_id: (String(formData.get('assigneeId') || '').trim() || null) as string | null,
+    project_id: (String(formData.get('projectId') || '').trim() || null) as string | null,
   };
 }
 

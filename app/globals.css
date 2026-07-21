@@ -731,7 +731,7 @@ p.section-sub {
 }
 .skeleton-table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.4fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1.4fr 1fr;
   gap: 12px;
   padding: 12px;
   border-bottom: 1px solid var(--border);
@@ -820,4 +820,49 @@ p.section-sub {
   color: var(--done);
   font-size: 12px;
   flex-basis: 100%;
+}
+
+/* ---------- Projects ---------- */
+.project-new-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  max-width: 480px;
+  flex-wrap: wrap;
+}
+.project-new-form input {
+  flex: 1;
+  min-width: 200px;
+}
+.project-new-form .btn-primary {
+  width: auto;
+}
+.project-new-form .error-note {
+  flex-basis: 100%;
+  margin-bottom: 0;
+}
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+}
+.project-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  animation: fadeSlideIn 0.3s ease both;
+}
+.project-row-name {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.t-meta .project-tag {
+  color: var(--ink-muted);
 }

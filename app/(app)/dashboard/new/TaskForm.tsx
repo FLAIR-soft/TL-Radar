@@ -11,6 +11,7 @@ export function TaskForm({
   action,
   editing,
   assignees,
+  projects,
   currentUserId,
 }: {
   action: (prevState: TaskFormState, formData: FormData) => Promise<TaskFormState>;
@@ -20,8 +21,10 @@ export function TaskForm({
     location: string;
     deadline: string;
     assigneeId: string;
+    projectId: string;
   } | null;
   assignees: { id: string; name: string }[];
+  projects: { id: string; name: string }[];
   currentUserId: string;
 }) {
   const dict = useDictionary();
@@ -58,6 +61,17 @@ export function TaskForm({
               <label>{dict.taskForm.deadline}</label>
               <input type="date" name="deadline" defaultValue={editing?.deadline} />
             </div>
+          </div>
+          <div className="field">
+            <label>{dict.taskForm.project}</label>
+            <select name="projectId" defaultValue={editing?.projectId ?? ''}>
+              <option value="">{dict.taskForm.noProject}</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="field">
             <label>{dict.taskForm.location}</label>

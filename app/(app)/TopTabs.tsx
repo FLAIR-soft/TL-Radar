@@ -12,6 +12,7 @@ export function TopTabs({ role }: { role: UserRole }) {
     { href: '/dashboard', label: dict.topbar.dashboard },
     { href: '/dashboard/new', label: dict.topbar.newTask },
     { href: '/archive', label: dict.topbar.archive },
+    { href: '/projects', label: dict.topbar.projects },
     ...(role === 'admin' ? [{ href: '/admin', label: dict.topbar.admin }] : []),
   ];
 

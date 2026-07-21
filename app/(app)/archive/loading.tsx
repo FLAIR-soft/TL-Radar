@@ -8,6 +8,7 @@ export default function ArchiveLoading() {
           {[0, 1, 2, 3].map((row) => (
             <div className="skeleton-table-row" key={row}>
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '80%' }} />
+              <div className="skeleton skeleton-line" style={{ margin: 0, width: '55%' }} />
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '60%' }} />
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '70%' }} />
               <div className="skeleton skeleton-line" style={{ margin: 0, width: '70%' }} />
