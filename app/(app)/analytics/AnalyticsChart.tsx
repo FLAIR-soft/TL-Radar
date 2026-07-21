@@ -27,7 +27,11 @@ export function AnalyticsChart({
         <ResponsiveContainer width="100%" height={Math.max(220, data.length * 44)}>
           <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-            <XAxis type="number" tick={{ fontSize: 12 }} />
+            <XAxis
+              type="number"
+              tick={{ fontSize: 12 }}
+              domain={[0, (dataMax: number) => Math.max(dataMax, availableHours) * 1.05]}
+            />
             <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12.5 }} />
             <Tooltip
               formatter={(_value, _name, item) => [
