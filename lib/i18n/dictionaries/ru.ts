@@ -45,6 +45,11 @@ const ru = {
     deleteTitle: 'Удалить',
     deleteConfirm: 'Удалить эту задачу без возможности восстановления?',
     overdue: 'просрочено',
+    timeCreated: 'Создана',
+    timeTotal: 'Всего в работе',
+    timeWaiting: 'В ожидании',
+    timeCurrentSession: 'В процессе с',
+    timePaused: 'На паузе',
   },
   taskForm: {
     newTitle: 'Новая задача',

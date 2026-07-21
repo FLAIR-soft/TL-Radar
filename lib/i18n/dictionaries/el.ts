@@ -47,6 +47,11 @@ const el = {
     deleteTitle: 'Διαγραφή',
     deleteConfirm: 'Διαγραφή αυτής της εργασίας χωρίς δυνατότητα επαναφοράς;',
     overdue: 'εκπρόθεσμο',
+    timeCreated: 'Δημιουργήθηκε',
+    timeTotal: 'Σύνολο σε εξέλιξη',
+    timeWaiting: 'Σε αναμονή από',
+    timeCurrentSession: 'Σε εξέλιξη από',
+    timePaused: 'Σε παύση από',
   },
   taskForm: {
     newTitle: 'Νέα εργασία',

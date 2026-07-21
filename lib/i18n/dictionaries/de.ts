@@ -47,6 +47,11 @@ const de = {
     deleteTitle: 'Löschen',
     deleteConfirm: 'Diese Aufgabe unwiderruflich löschen?',
     overdue: 'überfällig',
+    timeCreated: 'Erstellt',
+    timeTotal: 'Gesamt in Bearbeitung',
+    timeWaiting: 'Wartet seit',
+    timeCurrentSession: 'In Bearbeitung seit',
+    timePaused: 'Pausiert seit',
   },
   taskForm: {
     newTitle: 'Neue Aufgabe',

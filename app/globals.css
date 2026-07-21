@@ -548,6 +548,29 @@ p.section-sub {
   color: var(--brand);
   font-weight: 700;
 }
+.t-timers {
+  border-top: 1px solid var(--border);
+  margin-bottom: 10px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.t-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+.t-timer-row .mono {
+  font-size: 11.5px;
+}
+.t-timer-live .mono {
+  color: var(--ink);
+  font-weight: 600;
+}
 .t-actions {
   display: flex;
   gap: 6px;

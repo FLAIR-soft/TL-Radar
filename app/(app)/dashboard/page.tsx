@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { STATUS_COLOR } from '@/lib/logic/tasks';
 import { TaskCard } from './TaskCard';
-import type { TaskStatus } from '@/lib/supabase/types';
+import type { TaskPause, TaskStatus } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
 
@@ -29,6 +29,24 @@ export default async function DashboardPage() {
   const active = tasks ?? [];
   const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
 
+  let pauses: TaskPause[] = [];
+  if (active.length) {
+    const { data } = await supabase
+      .from('task_pauses')
+      .select('*')
+      .in(
+        'task_id',
+        active.map((t) => t.id)
+      );
+    pauses = data ?? [];
+  }
+  const pausesByTask = new Map<string, TaskPause[]>();
+  for (const p of pauses) {
+    const list = pausesByTask.get(p.task_id) ?? [];
+    list.push(p);
+    pausesByTask.set(p.task_id, list);
+  }
+
   return (
     <div className="page-fade">
       <h2 className="section-title">{dict.dashboard.title}</h2>
@@ -51,6 +69,7 @@ export default async function DashboardPage() {
                     <TaskCard
                       key={t.id}
                       task={t}
+                      pauses={pausesByTask.get(t.id) ?? []}
                       assigneeName={t.assignee_id ? assigneeNames.get(t.assignee_id) ?? null : null}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />
