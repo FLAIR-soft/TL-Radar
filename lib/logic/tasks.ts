@@ -49,7 +49,30 @@ export function netDuration(task: Task, pauses: TaskPause[]): number | null {
   return total;
 }
 
+// Dedlayn — eto data bez vremeni: zadacha schitaetsya prosrochennoy tol'ko posle
+// 16:00 po Myunhenu toy zhe daty (tot zhe cutoff, chto i u avtopauzy), a ne s polunochi UTC.
+const OVERDUE_CUTOFF_HOUR = 16;
+
+function berlinDateParts(date: Date): { year: number; month: number; day: number; hour: number } {
+  const berlin = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  return {
+    year: berlin.getFullYear(),
+    month: berlin.getMonth() + 1,
+    day: berlin.getDate(),
+    hour: berlin.getHours(),
+  };
+}
+
 export function isOverdue(task: Task): boolean {
-  if (!task.deadline) return false;
-  return new Date(task.deadline) < new Date() && task.status !== 'done';
+  if (!task.deadline || task.status === 'done') return false;
+
+  const [deadlineYear, deadlineMonth, deadlineDay] = task.deadline.split('-').map(Number);
+  const now = berlinDateParts(new Date());
+
+  const deadlineKey = deadlineYear * 10000 + deadlineMonth * 100 + deadlineDay;
+  const todayKey = now.year * 10000 + now.month * 100 + now.day;
+
+  if (todayKey > deadlineKey) return true;
+  if (todayKey < deadlineKey) return false;
+  return now.hour >= OVERDUE_CUTOFF_HOUR;
 }
