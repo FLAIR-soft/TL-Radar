@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { deriveSyntheticEmail } from '@/lib/auth/synthetic-email';
 import type { UserRole } from '@/lib/supabase/types';
 
 export interface AuthFormState {
@@ -19,14 +20,16 @@ async function friendlyAuthError(message: string): Promise<string> {
 }
 
 export async function signIn(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const email = String(formData.get('email') || '').trim();
+  const firstName = String(formData.get('firstName') || '').trim();
+  const lastName = String(formData.get('lastName') || '').trim();
   const password = String(formData.get('password') || '');
   const dict = getDictionary(await getLocaleCookie());
 
-  if (!email || !password) {
+  if (!firstName || !lastName || !password) {
     return { error: dict.auth.errors.missingSignIn };
   }
 
+  const email = deriveSyntheticEmail(firstName, lastName);
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -38,20 +41,22 @@ export async function signIn(_prevState: AuthFormState, formData: FormData): Pro
 }
 
 export async function signUp(_prevState: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const name = String(formData.get('name') || '').trim();
-  const email = String(formData.get('email') || '').trim();
+  const firstName = String(formData.get('firstName') || '').trim();
+  const lastName = String(formData.get('lastName') || '').trim();
   const password = String(formData.get('password') || '');
   const role = String(formData.get('role') || 'viewer') as UserRole;
   const dict = getDictionary(await getLocaleCookie());
   const locale = await getLocaleCookie();
 
-  if (!name || !email || !password) {
+  if (!firstName || !lastName || !password) {
     return { error: dict.auth.errors.missingSignUp };
   }
   if (role !== 'viewer' && role !== 'editor') {
     return { error: dict.auth.errors.invalidRole };
   }
 
+  const name = `${firstName} ${lastName}`;
+  const email = deriveSyntheticEmail(firstName, lastName);
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
 

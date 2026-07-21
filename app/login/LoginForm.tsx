@@ -42,9 +42,15 @@ export function LoginForm({ dict }: { dict: Dictionary }) {
         {mode === 'signin' ? (
           <form action={signInAction}>
             {signInState.error && <div className="error-note">{signInState.error}</div>}
-            <div className="field">
-              <label>{dict.auth.emailLabel}</label>
-              <input type="email" name="email" required placeholder="you@example.com" />
+            <div className="row2">
+              <div className="field">
+                <label>{dict.auth.nameLabel}</label>
+                <input type="text" name="firstName" required placeholder={dict.auth.namePlaceholder} />
+              </div>
+              <div className="field">
+                <label>{dict.auth.lastNameLabel}</label>
+                <input type="text" name="lastName" required placeholder={dict.auth.lastNamePlaceholder} />
+              </div>
             </div>
             <div className="field">
               <label>{dict.auth.passwordLabel}</label>
@@ -58,13 +64,15 @@ export function LoginForm({ dict }: { dict: Dictionary }) {
         ) : (
           <form action={signUpAction}>
             {signUpState.error && <div className="error-note">{signUpState.error}</div>}
-            <div className="field">
-              <label>{dict.auth.nameLabel}</label>
-              <input type="text" name="name" required placeholder={dict.auth.namePlaceholder} />
-            </div>
-            <div className="field">
-              <label>{dict.auth.emailLabel}</label>
-              <input type="email" name="email" required placeholder="you@example.com" />
+            <div className="row2">
+              <div className="field">
+                <label>{dict.auth.nameLabel}</label>
+                <input type="text" name="firstName" required placeholder={dict.auth.namePlaceholder} />
+              </div>
+              <div className="field">
+                <label>{dict.auth.lastNameLabel}</label>
+                <input type="text" name="lastName" required placeholder={dict.auth.lastNamePlaceholder} />
+              </div>
             </div>
             <div className="field">
               <label>{dict.auth.passwordLabel}</label>
