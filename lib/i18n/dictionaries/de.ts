@@ -60,7 +60,7 @@ const de = {
     newTitle: 'Neue Aufgabe',
     editTitle: 'Aufgabe bearbeiten',
     subtitle: 'Felder ausfüllen — die Aufgabe erscheint im Dashboard mit dem Status „Wartend“.',
-    assignee: 'Zuständige Person',
+    assignees: 'Zuständige Personen',
     project: 'Projekt',
     noProject: '— kein Projekt —',
     deadline: 'Frist',
@@ -75,6 +75,7 @@ const de = {
     cancel: 'Abbrechen',
     errors: {
       missingFields: 'Bitte „Aufgabentitel“ ausfüllen.',
+      missingAssignee: 'Bitte mindestens eine zuständige Person auswählen.',
       notAuthorized: 'Keine ausreichenden Rechte.',
     },
   },

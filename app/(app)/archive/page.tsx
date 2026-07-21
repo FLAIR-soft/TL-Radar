@@ -30,20 +30,37 @@ export default async function ArchivePage() {
   ]);
 
   const done = tasks ?? [];
-  const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const profileNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
   const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
+  const assigneeNamesByTask = new Map<string, string[]>();
   if (done.length) {
-    const { data } = await supabase
-      .from('task_pauses')
-      .select('*')
-      .in(
-        'task_id',
-        done.map((t) => t.id)
-      )
-      .order('paused_at', { ascending: true });
-    pauses = data ?? [];
+    const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
+      supabase
+        .from('task_pauses')
+        .select('*')
+        .in(
+          'task_id',
+          done.map((t) => t.id)
+        )
+        .order('paused_at', { ascending: true }),
+      supabase
+        .from('task_assignees')
+        .select('task_id, assignee_id')
+        .in(
+          'task_id',
+          done.map((t) => t.id)
+        )
+        .is('removed_at', null),
+    ]);
+    pauses = pauseData ?? [];
+    for (const a of assigneeData ?? []) {
+      const list = assigneeNamesByTask.get(a.task_id) ?? [];
+      const name = profileNames.get(a.assignee_id);
+      if (name) list.push(name);
+      assigneeNamesByTask.set(a.task_id, list);
+    }
   }
 
   const pausesByTask = new Map<string, TaskPause[]>();
@@ -89,10 +106,10 @@ export default async function ArchivePage() {
                 <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                   <td>
                     <strong>{t.title}</strong>
-                    {t.assignee_id && assigneeNames.get(t.assignee_id) && (
+                    {(assigneeNamesByTask.get(t.id) ?? []).length > 0 && (
                       <>
                         <br />
-                        <span className="mono">{assigneeNames.get(t.assignee_id)}</span>
+                        <span className="mono">{(assigneeNamesByTask.get(t.id) ?? []).join(', ')}</span>
                       </>
                     )}
                   </td>

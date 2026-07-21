@@ -35,29 +35,53 @@ function readTaskFields(formData: FormData) {
     description: String(formData.get('description') || '').trim(),
     location: String(formData.get('location') || '').trim(),
     deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
-    assignee_id: (String(formData.get('assigneeId') || '').trim() || null) as string | null,
     project_id: (String(formData.get('projectId') || '').trim() || null) as string | null,
   };
+}
+
+function readAssigneeIds(formData: FormData): string[] {
+  return formData
+    .getAll('assigneeIds')
+    .map((v) => String(v).trim())
+    .filter(Boolean);
 }
 
 export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
   const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
+  const assigneeIds = readAssigneeIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
-
-  const { error } = await supabase.from('tasks').insert({
-    ...fields,
-    status: 'waiting',
-    created_by: userId,
-    updated_by: userId,
-  });
-
-  if (error) {
-    return { error: error.message };
+  if (!assigneeIds.length) {
+    return { error: dict.taskForm.errors.missingAssignee };
   }
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .insert({
+      ...fields,
+      status: 'waiting',
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select('id')
+    .single();
+
+  if (error || !task) {
+    return { error: error?.message ?? dict.taskForm.errors.missingFields };
+  }
+
+  const now = new Date().toISOString();
+  await supabase.from('task_assignees').insert(
+    assigneeIds.map((assignee_id) => ({
+      task_id: task.id,
+      assignee_id,
+      added_at: now,
+      added_by: userId,
+    }))
+  );
 
   revalidatePath('/dashboard');
   redirect('/dashboard');
@@ -70,9 +94,13 @@ export async function editTaskFields(
 ): Promise<TaskFormState> {
   const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
+  const assigneeIds = readAssigneeIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
+  }
+  if (!assigneeIds.length) {
+    return { error: dict.taskForm.errors.missingAssignee };
   }
 
   const { error } = await supabase
@@ -82,6 +110,39 @@ export async function editTaskFields(
 
   if (error) {
     return { error: error.message };
+  }
+
+  const { data: current } = await supabase
+    .from('task_assignees')
+    .select('id, assignee_id')
+    .eq('task_id', taskId)
+    .is('removed_at', null);
+
+  const currentIds = new Set((current ?? []).map((a) => a.assignee_id));
+  const newIds = new Set(assigneeIds);
+  const now = new Date().toISOString();
+
+  const toRemove = (current ?? []).filter((a) => !newIds.has(a.assignee_id));
+  const toAdd = assigneeIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    await supabase
+      .from('task_assignees')
+      .update({ removed_at: now, removed_by: userId })
+      .in(
+        'id',
+        toRemove.map((a) => a.id)
+      );
+  }
+  if (toAdd.length) {
+    await supabase.from('task_assignees').insert(
+      toAdd.map((assignee_id) => ({
+        task_id: taskId,
+        assignee_id,
+        added_at: now,
+        added_by: userId,
+      }))
+    );
   }
 
   revalidatePath('/dashboard');

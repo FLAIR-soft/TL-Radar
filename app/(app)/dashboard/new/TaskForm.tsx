@@ -20,7 +20,7 @@ export function TaskForm({
     description: string;
     location: string;
     deadline: string;
-    assigneeId: string;
+    assigneeIds: string[];
     projectId: string;
   } | null;
   assignees: { id: string; name: string }[];
@@ -46,13 +46,30 @@ export function TaskForm({
               placeholder={dict.taskForm.titlePlaceholder}
             />
           </div>
+          <div className="field">
+            <label>{dict.taskForm.assignees}</label>
+            <div className="assignee-checklist">
+              {assignees.map((a) => (
+                <label key={a.id} className="assignee-check-item">
+                  <input
+                    type="checkbox"
+                    name="assigneeIds"
+                    value={a.id}
+                    defaultChecked={editing ? editing.assigneeIds.includes(a.id) : a.id === currentUserId}
+                  />
+                  {a.name}
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="row2">
             <div className="field">
-              <label>{dict.taskForm.assignee}</label>
-              <select name="assigneeId" defaultValue={editing?.assigneeId ?? currentUserId} required>
-                {assignees.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
+              <label>{dict.taskForm.project}</label>
+              <select name="projectId" defaultValue={editing?.projectId ?? ''}>
+                <option value="">{dict.taskForm.noProject}</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
                   </option>
                 ))}
               </select>
@@ -61,17 +78,6 @@ export function TaskForm({
               <label>{dict.taskForm.deadline}</label>
               <input type="date" name="deadline" defaultValue={editing?.deadline} />
             </div>
-          </div>
-          <div className="field">
-            <label>{dict.taskForm.project}</label>
-            <select name="projectId" defaultValue={editing?.projectId ?? ''}>
-              <option value="">{dict.taskForm.noProject}</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
           </div>
           <div className="field">
             <label>{dict.taskForm.location}</label>

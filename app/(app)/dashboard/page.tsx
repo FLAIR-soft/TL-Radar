@@ -33,19 +33,36 @@ export default async function DashboardPage() {
   ]);
 
   const active = tasks ?? [];
-  const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const profileNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
   const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
+  const assigneeNamesByTask = new Map<string, string[]>();
   if (active.length) {
-    const { data } = await supabase
-      .from('task_pauses')
-      .select('*')
-      .in(
-        'task_id',
-        active.map((t) => t.id)
-      );
-    pauses = data ?? [];
+    const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
+      supabase
+        .from('task_pauses')
+        .select('*')
+        .in(
+          'task_id',
+          active.map((t) => t.id)
+        ),
+      supabase
+        .from('task_assignees')
+        .select('task_id, assignee_id')
+        .in(
+          'task_id',
+          active.map((t) => t.id)
+        )
+        .is('removed_at', null),
+    ]);
+    pauses = pauseData ?? [];
+    for (const a of assigneeData ?? []) {
+      const list = assigneeNamesByTask.get(a.task_id) ?? [];
+      const name = profileNames.get(a.assignee_id);
+      if (name) list.push(name);
+      assigneeNamesByTask.set(a.task_id, list);
+    }
   }
   const pausesByTask = new Map<string, TaskPause[]>();
   for (const p of pauses) {
@@ -77,7 +94,7 @@ export default async function DashboardPage() {
                       key={t.id}
                       task={t}
                       pauses={pausesByTask.get(t.id) ?? []}
-                      assigneeName={t.assignee_id ? assigneeNames.get(t.assignee_id) ?? null : null}
+                      assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                       projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />

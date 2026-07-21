@@ -23,7 +23,6 @@ export type Task = {
   created_by: string | null;
   updated_by: string | null;
   deleted_at: string | null;
-  assignee_id: string | null;
   project_id: string | null;
 };
 
@@ -42,6 +41,16 @@ export type TaskPause = {
   resumed_at: string | null;
   auto: boolean;
   created_by: string | null;
+};
+
+export type TaskAssignee = {
+  id: string;
+  task_id: string;
+  assignee_id: string;
+  added_at: string;
+  added_by: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
 };
 
 export interface Database {
@@ -69,6 +78,12 @@ export interface Database {
         Row: Project;
         Insert: Partial<Project> & Pick<Project, 'name'>;
         Update: Partial<Project>;
+        Relationships: [];
+      };
+      task_assignees: {
+        Row: TaskAssignee;
+        Insert: Partial<TaskAssignee> & Pick<TaskAssignee, 'task_id' | 'assignee_id'>;
+        Update: Partial<TaskAssignee>;
         Relationships: [];
       };
       system_state: {

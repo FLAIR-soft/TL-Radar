@@ -42,6 +42,12 @@ export default async function NewTaskPage({
     .single();
   if (!task) notFound();
 
+  const { data: currentAssignees } = await supabase
+    .from('task_assignees')
+    .select('assignee_id')
+    .eq('task_id', task.id)
+    .is('removed_at', null);
+
   return (
     <TaskForm
       action={editTaskFields.bind(null, task.id)}
@@ -50,7 +56,7 @@ export default async function NewTaskPage({
         description: task.description ?? '',
         location: task.location ?? '',
         deadline: task.deadline ?? '',
-        assigneeId: task.assignee_id ?? '',
+        assigneeIds: (currentAssignees ?? []).map((a) => a.assignee_id),
         projectId: task.project_id ?? '',
       }}
       assignees={assignees}

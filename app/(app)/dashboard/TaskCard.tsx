@@ -22,13 +22,13 @@ import { setStatus, deleteTask } from './actions';
 export function TaskCard({
   task,
   pauses,
-  assigneeName,
+  assigneeNames,
   projectName,
   style,
 }: {
   task: Task;
   pauses: TaskPause[];
-  assigneeName: string | null;
+  assigneeNames: string[];
   projectName: string | null;
   style?: React.CSSProperties;
 }) {
@@ -76,7 +76,7 @@ export function TaskCard({
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
       style={{ borderLeftColor: STATUS_COLOR[task.status], ...style }}
     >
-      {assigneeName && <div className="t-assignee">{assigneeName}</div>}
+      {assigneeNames.length > 0 && <div className="t-assignee">{assigneeNames.join(', ')}</div>}
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">

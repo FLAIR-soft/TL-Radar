@@ -58,7 +58,7 @@ const ru = {
     newTitle: 'Новая задача',
     editTitle: 'Редактирование задачи',
     subtitle: 'Заполните поля — задача появится на дешборде со статусом «Ожидание».',
-    assignee: 'Исполнитель',
+    assignees: 'Исполнители',
     project: 'Проект',
     noProject: '— без проекта —',
     deadline: 'Дедлайн',
@@ -73,6 +73,7 @@ const ru = {
     cancel: 'Отмена',
     errors: {
       missingFields: 'Заполните «Название задачи».',
+      missingAssignee: 'Выберите хотя бы одного исполнителя.',
       notAuthorized: 'Недостаточно прав.',
     },
   },
