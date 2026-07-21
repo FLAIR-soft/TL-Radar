@@ -11,7 +11,6 @@ const initialState: AuthFormState = { error: null };
 
 export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [role, setRole] = useState<'viewer' | 'editor'>('viewer');
   const [signInState, signInAction, signInPending] = useActionState(signIn, initialState);
   const [signUpState, signUpAction, signUpPending] = useActionState(signUp, initialState);
 
@@ -86,31 +85,6 @@ export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
             <div className="field">
               <label>{dict.auth.passwordLabel}</label>
               <input type="password" name="password" required minLength={6} />
-            </div>
-            <div className="field">
-              <label>{dict.auth.roleLabel}</label>
-              <div className="radio-row">
-                <label className={`radio-opt ${role === 'viewer' ? 'sel' : ''}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="viewer"
-                    checked={role === 'viewer'}
-                    onChange={() => setRole('viewer')}
-                  />
-                  {dict.auth.roleViewer}
-                </label>
-                <label className={`radio-opt ${role === 'editor' ? 'sel' : ''}`}>
-                  <input
-                    type="radio"
-                    name="role"
-                    value="editor"
-                    checked={role === 'editor'}
-                    onChange={() => setRole('editor')}
-                  />
-                  {dict.auth.roleEditor}
-                </label>
-              </div>
             </div>
             <button className="btn btn-primary" disabled={signUpPending} type="submit">
               {signUpPending && <span className="btn-spinner" />}

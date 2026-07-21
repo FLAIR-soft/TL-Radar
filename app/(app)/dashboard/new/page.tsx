@@ -1,4 +1,4 @@
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createTask, editTaskFields } from '../actions';
 import { TaskForm } from './TaskForm';
@@ -15,18 +15,11 @@ export default async function NewTaskPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user!.id)
-    .single();
-
-  if (profile?.role !== 'editor' && profile?.role !== 'admin') {
-    redirect('/dashboard');
-  }
+  const { data: profiles } = await supabase.from('profiles').select('id, name').order('name');
+  const assignees = profiles ?? [];
 
   if (!edit) {
-    return <TaskForm action={createTask} editing={null} />;
+    return <TaskForm action={createTask} editing={null} assignees={assignees} currentUserId={user!.id} />;
   }
 
   const { data: task } = await supabase.from('tasks').select('*').eq('id', edit).single();
@@ -40,7 +33,10 @@ export default async function NewTaskPage({
         description: task.description ?? '',
         location: task.location ?? '',
         deadline: task.deadline ?? '',
+        assigneeId: task.assignee_id ?? '',
       }}
+      assignees={assignees}
+      currentUserId={user!.id}
     />
   );
 }

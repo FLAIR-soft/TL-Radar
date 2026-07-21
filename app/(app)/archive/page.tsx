@@ -18,13 +18,13 @@ export default async function ArchivePage() {
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('status', 'done')
-    .order('created_at', { ascending: false });
+  const [{ data: tasks }, { data: profiles }] = await Promise.all([
+    supabase.from('tasks').select('*').eq('status', 'done').order('created_at', { ascending: false }),
+    supabase.from('profiles').select('id, name'),
+  ]);
 
   const done = tasks ?? [];
+  const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
   if (done.length) {
@@ -81,6 +81,12 @@ export default async function ArchivePage() {
                 <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                   <td>
                     <strong>{t.title}</strong>
+                    {t.assignee_id && assigneeNames.get(t.assignee_id) && (
+                      <>
+                        <br />
+                        <span className="mono">{assigneeNames.get(t.assignee_id)}</span>
+                      </>
+                    )}
                   </td>
                   <td>{t.location || '—'}</td>
                   <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>

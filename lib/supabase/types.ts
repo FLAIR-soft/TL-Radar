@@ -21,6 +21,7 @@ export type Task = {
   started_at: string | null;
   completed_at: string | null;
   created_by: string | null;
+  assignee_id: string | null;
 };
 
 export type TaskPause = {

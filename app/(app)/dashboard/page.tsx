@@ -15,20 +15,19 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, locale')
+    .select('locale')
     .eq('id', user!.id)
     .single();
 
-  const editable = profile?.role === 'editor' || profile?.role === 'admin';
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('*')
-    .neq('status', 'done')
-    .order('created_at', { ascending: true });
+  const [{ data: tasks }, { data: profiles }] = await Promise.all([
+    supabase.from('tasks').select('*').neq('status', 'done').order('created_at', { ascending: true }),
+    supabase.from('profiles').select('id, name'),
+  ]);
 
   const active = tasks ?? [];
+  const assigneeNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
 
   return (
     <div className="page-fade">
@@ -52,7 +51,7 @@ export default async function DashboardPage() {
                     <TaskCard
                       key={t.id}
                       task={t}
-                      editable={editable}
+                      assigneeName={t.assignee_id ? assigneeNames.get(t.assignee_id) ?? null : null}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />
                   ))

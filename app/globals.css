@@ -512,6 +512,14 @@ p.section-sub {
   opacity: 0.55;
   pointer-events: none;
 }
+.task-card .t-assignee {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 3px;
+}
 .task-card .t-title {
   font-weight: 700;
   font-size: 14.5px;
@@ -653,22 +661,6 @@ p.section-sub {
   color: var(--ink-muted);
   font-size: 13px;
   padding: 10px 2px;
-}
-.role-badge {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 100px;
-}
-.role-viewer {
-  background: var(--tint-indigo-bg);
-  color: var(--tint-indigo-ink);
-}
-.role-editor {
-  background: var(--tint-red-bg-2);
-  color: var(--brand-dark);
 }
 
 /* ---------- Loading skeletons ---------- */

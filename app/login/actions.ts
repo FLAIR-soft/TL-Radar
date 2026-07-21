@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { deriveSyntheticEmail } from '@/lib/auth/synthetic-email';
-import type { UserRole } from '@/lib/supabase/types';
 
 export interface AuthFormState {
   error: string | null;
@@ -44,15 +43,11 @@ export async function signUp(_prevState: AuthFormState, formData: FormData): Pro
   const firstName = String(formData.get('firstName') || '').trim();
   const lastName = String(formData.get('lastName') || '').trim();
   const password = String(formData.get('password') || '');
-  const role = String(formData.get('role') || 'viewer') as UserRole;
   const dict = getDictionary(await getLocaleCookie());
   const locale = await getLocaleCookie();
 
   if (!firstName || !lastName || !password) {
     return { error: dict.auth.errors.missingSignUp };
-  }
-  if (role !== 'viewer' && role !== 'editor') {
-    return { error: dict.auth.errors.invalidRole };
   }
 
   const name = `${firstName} ${lastName}`;
@@ -69,7 +64,7 @@ export async function signUp(_prevState: AuthFormState, formData: FormData): Pro
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: data.user.id, name, role, locale });
+    .insert({ id: data.user.id, name, role: 'editor', locale });
 
   if (profileError) {
     return { error: dict.auth.errors.profileSaveFailed + ' ' + profileError.message };

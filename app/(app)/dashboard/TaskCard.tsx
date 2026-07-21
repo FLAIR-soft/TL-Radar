@@ -9,11 +9,11 @@ import { setStatus, deleteTask } from './actions';
 
 export function TaskCard({
   task,
-  editable,
+  assigneeName,
   style,
 }: {
   task: Task;
-  editable: boolean;
+  assigneeName: string | null;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -45,6 +45,7 @@ export function TaskCard({
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
       style={{ borderLeftColor: STATUS_COLOR[task.status], ...style }}
     >
+      {assigneeName && <div className="t-assignee">{assigneeName}</div>}
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
@@ -56,26 +57,24 @@ export function TaskCard({
           </span>
         )}
       </div>
-      {editable && (
-        <div className="t-actions">
-          {actions.map((a) => (
-            <button
-              key={a.to}
-              className="btn btn-ghost"
-              disabled={isPending}
-              onClick={() => startTransition(() => setStatus(task.id, a.to))}
-            >
-              {a.label}
-            </button>
-          ))}
-          <Link href={`/dashboard/new?edit=${task.id}`} className="icon-btn" title={dict.taskCard.editTitle}>
-            ✎
-          </Link>
-          <button className="icon-btn" title={dict.taskCard.deleteTitle} disabled={isPending} onClick={handleDelete}>
-            ✕
+      <div className="t-actions">
+        {actions.map((a) => (
+          <button
+            key={a.to}
+            className="btn btn-ghost"
+            disabled={isPending}
+            onClick={() => startTransition(() => setStatus(task.id, a.to))}
+          >
+            {a.label}
           </button>
-        </div>
-      )}
+        ))}
+        <Link href={`/dashboard/new?edit=${task.id}`} className="icon-btn" title={dict.taskCard.editTitle}>
+          ✎
+        </Link>
+        <button className="icon-btn" title={dict.taskCard.deleteTitle} disabled={isPending} onClick={handleDelete}>
+          ✕
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import type { TaskStatus } from '@/lib/supabase/types';
 
-async function requireEditor() {
+async function requireAuth() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,15 +15,11 @@ async function requireEditor() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, locale')
+    .select('locale')
     .eq('id', user.id)
     .single();
 
   const dict = getDictionary(profile?.locale ?? 'de');
-
-  if (!profile || (profile.role !== 'editor' && profile.role !== 'admin')) {
-    throw new Error(dict.taskForm.errors.notAuthorized);
-  }
 
   return { supabase, userId: user.id, dict };
 }
@@ -38,11 +34,12 @@ function readTaskFields(formData: FormData) {
     description: String(formData.get('description') || '').trim(),
     location: String(formData.get('location') || '').trim(),
     deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
+    assignee_id: (String(formData.get('assigneeId') || '').trim() || null) as string | null,
   };
 }
 
 export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
-  const { supabase, userId, dict } = await requireEditor();
+  const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
 
   if (!fields.title) {
@@ -68,7 +65,7 @@ export async function editTaskFields(
   _prevState: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const { supabase, dict } = await requireEditor();
+  const { supabase, dict } = await requireAuth();
   const fields = readTaskFields(formData);
 
   if (!fields.title) {
@@ -86,14 +83,14 @@ export async function editTaskFields(
 }
 
 export async function deleteTask(taskId: string) {
-  const { supabase } = await requireEditor();
+  const { supabase } = await requireAuth();
   await supabase.from('tasks').delete().eq('id', taskId);
   revalidatePath('/dashboard');
   revalidatePath('/archive');
 }
 
 export async function setStatus(taskId: string, newStatus: TaskStatus) {
-  const { supabase } = await requireEditor();
+  const { supabase } = await requireAuth();
 
   const { data: task } = await supabase
     .from('tasks')
