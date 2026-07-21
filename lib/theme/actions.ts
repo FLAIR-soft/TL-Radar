@@ -11,5 +11,6 @@ export async function setTheme(theme: Theme) {
   cookieStore.set(THEME_COOKIE, theme, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 
   revalidatePath('/', 'layout');
+  revalidatePath('/login', 'layout');
   revalidatePath('/dashboard', 'layout');
 }

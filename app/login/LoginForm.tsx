@@ -2,11 +2,14 @@
 
 import { useActionState, useState } from 'react';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
+import type { Theme } from '@/lib/theme/cookie';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { signIn, signUp, type AuthFormState } from './actions';
 
 const initialState: AuthFormState = { error: null };
 
-export function LoginForm({ dict }: { dict: Dictionary }) {
+export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [role, setRole] = useState<'viewer' | 'editor'>('viewer');
   const [signInState, signInAction, signInPending] = useActionState(signIn, initialState);
@@ -15,9 +18,15 @@ export function LoginForm({ dict }: { dict: Dictionary }) {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <div className="brand-mark">
-          <span className="brand-dot"></span>
-          <span>MIFCOM</span>
+        <div className="auth-topbar">
+          <div className="brand-mark">
+            <span className="brand-dot"></span>
+            <span>MIFCOM</span>
+          </div>
+          <div className="auth-controls">
+            <ThemeToggle theme={theme} />
+            <LanguageSwitcher />
+          </div>
         </div>
         <h1>TL-Radar</h1>
         <p className="sub">{dict.auth.subtitle}</p>

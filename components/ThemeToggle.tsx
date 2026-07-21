@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import type { Theme } from '@/lib/theme/cookie';
-import { setTheme } from './theme-actions';
+import { setTheme } from '@/lib/theme/actions';
 
 export function ThemeToggle({ theme }: { theme: Theme }) {
   const [isPending, startTransition] = useTransition();

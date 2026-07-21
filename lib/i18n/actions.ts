@@ -21,5 +21,6 @@ export async function setLocale(locale: string) {
   const cookieStore = await cookies();
   cookieStore.set(LOCALE_COOKIE, locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
 
+  revalidatePath('/login', 'layout');
   revalidatePath('/dashboard', 'layout');
 }

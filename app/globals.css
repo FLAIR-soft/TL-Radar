@@ -132,7 +132,18 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 6px;
+}
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .brand-dot {
   width: 10px;
