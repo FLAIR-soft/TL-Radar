@@ -2,6 +2,7 @@ import { Pause, Play, Archive as ArchiveIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
+import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
@@ -134,14 +135,19 @@ export default async function ArchivePage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ t, taskPauses, net, assignees }, i) => (
+            {rows.map(({ t, taskPauses, net, assignees }, i) => {
+              const RowIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+              return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                 <td>
                   <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
                     {dict.status.done}
                   </span>
                   <br />
-                  <strong>{t.title}</strong>
+                  <strong className="archive-card-title">
+                    {RowIcon && <RowIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
+                    {t.title}
+                  </strong>
                   {assignees.length > 0 && (
                     <>
                       <br />
@@ -166,19 +172,25 @@ export default async function ArchivePage() {
                   />
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className="archive-cards">
-        {rows.map(({ t, taskPauses, net, assignees }, i) => (
+        {rows.map(({ t, taskPauses, net, assignees }, i) => {
+          const CardIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+          return (
           <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
             <div className="archive-card-head">
               <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
                 {dict.status.done}
               </span>
-              <span className="archive-card-title">{t.title}</span>
+              <span className="archive-card-title">
+                {CardIcon && <CardIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
+                {t.title}
+              </span>
               <TaskDetailPanel
                 task={t}
                 assigneeNames={assignees}
@@ -222,7 +234,8 @@ export default async function ArchivePage() {
               {pausesCell(taskPauses)}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

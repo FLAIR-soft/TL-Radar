@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { isWithinWorkHours } from '@/lib/logic/tasks';
 import { logActivity } from '@/lib/logic/activity-log';
-import type { TaskStatus } from '@/lib/supabase/types';
+import type { TaskStatus, Priority } from '@/lib/supabase/types';
 
 async function requireAuth() {
   const supabase = await createClient();
@@ -30,6 +30,13 @@ export interface TaskFormState {
   error: string | null;
 }
 
+const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
+
+function readPriority(formData: FormData): Priority | null {
+  const raw = String(formData.get('priority') || '').trim();
+  return (PRIORITIES as string[]).includes(raw) ? (raw as Priority) : null;
+}
+
 function readTaskFields(formData: FormData) {
   const estimatedRaw = String(formData.get('estimatedMinutes') || '').trim();
   const estimatedMinutes = estimatedRaw ? Number(estimatedRaw) : null;
@@ -41,6 +48,8 @@ function readTaskFields(formData: FormData) {
     deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
     project_id: (String(formData.get('projectId') || '').trim() || null) as string | null,
     estimated_minutes: estimatedMinutes && estimatedMinutes > 0 ? Math.round(estimatedMinutes) : null,
+    icon: (String(formData.get('icon') || '').trim() || null) as string | null,
+    priority: readPriority(formData),
   };
 }
 

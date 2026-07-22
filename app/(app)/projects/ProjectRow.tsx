@@ -4,6 +4,8 @@ import { useState, useTransition, useMemo } from 'react';
 import { Trash2, Pencil, MapPin, User } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import type { Project } from '@/lib/supabase/types';
+import { PRIORITY_COLOR } from '@/lib/logic/priority';
+import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { deleteProject, editProject } from './actions';
 import { ProjectForm } from './ProjectForm';
 import { ProjectDetailPanel } from './ProjectDetailPanel';
@@ -41,6 +43,8 @@ export function ProjectRow({
             description: project.description ?? '',
             location: project.location ?? '',
             ownerId: project.owner_id ?? '',
+            icon: project.icon ?? '',
+            priority: project.priority ?? '',
           }}
           profiles={profiles}
           onSaved={() => setEditing(false)}
@@ -50,11 +54,19 @@ export function ProjectRow({
     );
   }
 
+  const ProjectIcon = isIconName(project.icon) ? ICON_MAP[project.icon] : undefined;
+
   return (
-    <div className={`project-row ${isPending ? 'task-card-pending' : ''}`} style={style}>
+    <div
+      className={`project-row ${isPending ? 'task-card-pending' : ''}`}
+      style={{ borderLeftColor: project.priority ? PRIORITY_COLOR[project.priority] : 'var(--border)', ...style }}
+    >
       <div className="project-row-main">
         <div className="project-row-head">
-          <span className="project-row-name">{project.name}</span>
+          <span className="project-row-name">
+            {ProjectIcon && <ProjectIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+            {project.name}
+          </span>
           <div className="project-row-actions">
             <button
               className="icon-btn"

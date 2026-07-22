@@ -4,6 +4,8 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeSelect } from './AssigneeSelect';
+import { IconPicker } from '@/components/IconPicker';
+import { PrioritySelect } from '@/components/PrioritySelect';
 import type { TaskFormState } from '../actions';
 
 const initialState: TaskFormState = { error: null };
@@ -24,6 +26,8 @@ export function TaskForm({
     assigneeIds: string[];
     projectId: string;
     estimatedMinutes: string;
+    icon: string;
+    priority: string;
   } | null;
   assignees: { id: string; name: string }[];
   projects: { id: string; name: string }[];
@@ -41,12 +45,15 @@ export function TaskForm({
           {state.error && <div className="error-note">{state.error}</div>}
           <div className="field">
             <label>{dict.taskForm.title}</label>
-            <input
-              type="text"
-              name="title"
-              defaultValue={editing?.title}
-              placeholder={dict.taskForm.titlePlaceholder}
-            />
+            <div className="title-with-icon">
+              <IconPicker name="icon" defaultValue={editing?.icon ?? null} />
+              <input
+                type="text"
+                name="title"
+                defaultValue={editing?.title}
+                placeholder={dict.taskForm.titlePlaceholder}
+              />
+            </div>
           </div>
           <div className="field">
             <label>{dict.taskForm.assignees}</label>
@@ -71,6 +78,10 @@ export function TaskForm({
               <label>{dict.taskForm.deadline}</label>
               <input type="date" name="deadline" defaultValue={editing?.deadline} />
             </div>
+          </div>
+          <div className="field">
+            <label>{dict.priority.label}</label>
+            <PrioritySelect name="priority" defaultValue={editing?.priority ?? null} />
           </div>
           <div className="field">
             <label>{dict.taskForm.estimate}</label>

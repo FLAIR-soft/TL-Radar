@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
+import type { Priority } from '@/lib/supabase/types';
 
 async function requireAuth() {
   const supabase = await createClient();
@@ -28,16 +29,22 @@ export interface ProjectFormState {
   error: string | null;
 }
 
+const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
+
 function readProjectFields(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const description = String(formData.get('description') || '').trim();
   const location = String(formData.get('location') || '').trim();
   const ownerId = String(formData.get('ownerId') || '').trim();
+  const icon = String(formData.get('icon') || '').trim();
+  const priorityRaw = String(formData.get('priority') || '').trim();
   return {
     name,
     description: description || null,
     location: location || null,
     owner_id: ownerId || null,
+    icon: icon || null,
+    priority: ((PRIORITIES as string[]).includes(priorityRaw) ? priorityRaw : null) as Priority | null,
   };
 }
 

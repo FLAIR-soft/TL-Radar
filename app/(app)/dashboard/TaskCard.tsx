@@ -17,6 +17,8 @@ import {
   totalPausedDuration,
   waitingDuration,
 } from '@/lib/logic/tasks';
+import { PRIORITY_COLOR } from '@/lib/logic/priority';
+import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useNowTick } from '@/lib/hooks/useNowTick';
 import { setStatus, deleteTask } from './actions';
@@ -95,10 +97,12 @@ export function TaskCard({
           ? { label: dict.taskCard.timePaused, value: pauseElapsed }
           : null;
 
+  const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
+
   return (
     <div
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
-      style={{ borderLeftColor: STATUS_COLOR[task.status], ...style }}
+      style={{ borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)', ...style }}
     >
       <div className="t-card-header">
         {assigneeNames.length > 0 ? (
@@ -110,7 +114,10 @@ export function TaskCard({
           {dict.status[task.status]}
         </span>
       </div>
-      <div className="t-title">{task.title}</div>
+      <div className="t-title">
+        {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+        {task.title}
+      </div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
         {projectName && (

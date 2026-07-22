@@ -113,6 +113,17 @@ const de = {
     paused: 'Pausiert',
     done: 'Erledigt',
   },
+  priority: {
+    label: 'Priorität',
+    none: '— keine Priorität —',
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
+    urgent: 'Dringend',
+  },
+  iconPicker: {
+    label: 'Symbol',
+  },
   duration: {
     hourShort: 'Std',
     minuteShort: 'Min',

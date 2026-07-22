@@ -7,6 +7,8 @@ import { ActivityLogList } from '@/components/ActivityLogList';
 import { getActivityLog } from '@/lib/logic/activity-log-query';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
+import { PRIORITY_COLOR } from '@/lib/logic/priority';
+import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { Task, ActivityLog } from '@/lib/supabase/types';
 
 export function TaskDetailPanel({
@@ -29,6 +31,8 @@ export function TaskDetailPanel({
     getActivityLog('task', task.id).then(setLogs);
   }, [open, logs, task.id]);
 
+  const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
+
   return (
     <>
       <button
@@ -41,9 +45,17 @@ export function TaskDetailPanel({
       </button>
       <SlideOver open={open} onClose={() => setOpen(false)} title={task.title}>
         <div className="detail-section">
-          <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
-            {dict.status[task.status]}
-          </span>
+          <div className="detail-pills">
+            {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+            <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+              {dict.status[task.status]}
+            </span>
+            {task.priority && (
+              <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
+                {dict.priority[task.priority]}
+              </span>
+            )}
+          </div>
           {task.description && <p className="detail-desc">{task.description}</p>}
           <div className="t-meta detail-meta">
             {projectName && (

@@ -111,6 +111,17 @@ const ru = {
     paused: 'Пауза',
     done: 'Сделано',
   },
+  priority: {
+    label: 'Приоритет',
+    none: '— без приоритета —',
+    low: 'Низкий',
+    medium: 'Средний',
+    high: 'Высокий',
+    urgent: 'Срочный',
+  },
+  iconPicker: {
+    label: 'Иконка',
+  },
   duration: {
     hourShort: 'ч',
     minuteShort: 'м',

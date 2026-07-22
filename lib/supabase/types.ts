@@ -1,6 +1,7 @@
 export type UserRole = 'viewer' | 'editor' | 'admin';
 export type TaskStatus = 'waiting' | 'in_progress' | 'paused' | 'done';
 export type Locale = 'ru' | 'de' | 'en';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export type Profile = {
   id: string;
@@ -26,6 +27,8 @@ export type Task = {
   deleted_at: string | null;
   project_id: string | null;
   estimated_minutes: number | null;
+  icon: string | null;
+  priority: Priority | null;
 };
 
 export type Project = {
@@ -37,6 +40,8 @@ export type Project = {
   created_at: string;
   created_by: string | null;
   deleted_at: string | null;
+  icon: string | null;
+  priority: Priority | null;
 };
 
 export type TaskPause = {

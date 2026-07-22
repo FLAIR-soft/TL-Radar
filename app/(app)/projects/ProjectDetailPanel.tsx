@@ -6,6 +6,8 @@ import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
 import { getActivityLog } from '@/lib/logic/activity-log-query';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { PRIORITY_COLOR } from '@/lib/logic/priority';
+import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { Project, ActivityLog } from '@/lib/supabase/types';
 
 export function ProjectDetailPanel({
@@ -26,6 +28,8 @@ export function ProjectDetailPanel({
     getActivityLog('project', project.id).then(setLogs);
   }, [open, logs, project.id]);
 
+  const ProjectIcon = isIconName(project.icon) ? ICON_MAP[project.icon] : undefined;
+
   return (
     <>
       <button
@@ -38,6 +42,16 @@ export function ProjectDetailPanel({
       </button>
       <SlideOver open={open} onClose={() => setOpen(false)} title={project.name}>
         <div className="detail-section">
+          {(ProjectIcon || project.priority) && (
+            <div className="detail-pills">
+              {ProjectIcon && <ProjectIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+              {project.priority && (
+                <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[project.priority] }}>
+                  {dict.priority[project.priority]}
+                </span>
+              )}
+            </div>
+          )}
           {project.description && <p className="detail-desc">{project.description}</p>}
           {(project.location || ownerName) && (
             <div className="t-meta detail-meta">
