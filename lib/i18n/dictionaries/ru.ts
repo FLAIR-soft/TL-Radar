@@ -54,6 +54,7 @@ const ru = {
     timeCurrentSession: 'В процессе с',
     timePaused: 'На паузе',
     estimate: 'Оценка',
+    details: 'Подробнее',
     outsideWorkHours: 'Смена статуса недоступна с 16:00 до 7:30.',
   },
   taskForm: {

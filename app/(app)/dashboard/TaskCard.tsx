@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useTransition } from 'react';
-import { Folder, MapPin, CalendarClock, Pencil, Trash2 } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown } from 'lucide-react';
 import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -34,6 +34,7 @@ export function TaskCard({
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const dict = useDictionary();
   const overdue = isOverdue(task);
   const now = useNowTick();
@@ -76,12 +77,32 @@ export function TaskCard({
   const estimatePercent = estimateMs && total !== null ? (total / estimateMs) * 100 : null;
   const estimateOver = estimatePercent !== null && estimatePercent > 100;
 
+  // Klyuchevaya metrika, vidimaya srazu — rovno odna iz trekh (zavisit ot
+  // statusa), ostal'noye (sozdana, vsego v rabote, otsenka) — po disclosure.
+  const primaryMetric =
+    waiting !== null
+      ? { label: dict.taskCard.timeWaiting, value: waiting }
+      : session !== null
+        ? { label: dict.taskCard.timeCurrentSession, value: session }
+        : pauseElapsed !== null
+          ? { label: dict.taskCard.timePaused, value: pauseElapsed }
+          : null;
+
   return (
     <div
       className={`task-card ${isPending ? 'task-card-pending' : ''}`}
       style={{ borderLeftColor: STATUS_COLOR[task.status], ...style }}
     >
-      {assigneeNames.length > 0 && <div className="t-assignee">{assigneeNames.join(', ')}</div>}
+      <div className="t-card-header">
+        {assigneeNames.length > 0 ? (
+          <div className="t-assignee">{assigneeNames.join(', ')}</div>
+        ) : (
+          <span />
+        )}
+        <span className="status-pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+          {dict.status[task.status]}
+        </span>
+      </div>
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
@@ -106,48 +127,49 @@ export function TaskCard({
         )}
       </div>
       <div className="t-timers">
-        <div className="t-timer-row">
-          <span>{dict.taskCard.timeCreated}</span>
-          <span className="mono">{fmtDateTime(task.created_at, dict.intlLocale)}</span>
-        </div>
-        {total !== null && (
-          <div className="t-timer-row">
-            <span>{dict.taskCard.timeTotal}</span>
-            <span className="mono">{fmtDuration(total, dict.duration)}</span>
+        {primaryMetric && (
+          <div className="t-timer-row t-timer-live t-timer-primary">
+            <span>{primaryMetric.label}</span>
+            <span className="mono">{fmtDuration(primaryMetric.value, dict.duration)}</span>
           </div>
         )}
-        {estimateMs !== null && total !== null && (
-          <div className="t-estimate">
+        <button
+          type="button"
+          className="t-timers-toggle"
+          onClick={() => setDetailsOpen((v) => !v)}
+          aria-expanded={detailsOpen}
+        >
+          <ChevronDown size={14} strokeWidth={1.75} className={detailsOpen ? 't-timers-toggle-icon-open' : ''} />
+          {dict.taskCard.details}
+        </button>
+        {detailsOpen && (
+          <div className="t-timers-details">
             <div className="t-timer-row">
-              <span>{dict.taskCard.estimate}</span>
-              <span className="mono">
-                {fmtDuration(total, dict.duration)} / {fmtDuration(estimateMs, dict.duration)}
-              </span>
+              <span>{dict.taskCard.timeCreated}</span>
+              <span className="mono">{fmtDateTime(task.created_at, dict.intlLocale)}</span>
             </div>
-            <div className="t-estimate-bar">
-              <div
-                className={`t-estimate-fill ${estimateOver ? 't-estimate-over' : ''}`}
-                style={{ width: `${Math.min(100, estimatePercent ?? 0)}%` }}
-              />
-            </div>
-          </div>
-        )}
-        {waiting !== null && (
-          <div className="t-timer-row">
-            <span>{dict.taskCard.timeWaiting}</span>
-            <span className="mono">{fmtDuration(waiting, dict.duration)}</span>
-          </div>
-        )}
-        {session !== null && (
-          <div className="t-timer-row t-timer-live">
-            <span>{dict.taskCard.timeCurrentSession}</span>
-            <span className="mono">{fmtDuration(session, dict.duration)}</span>
-          </div>
-        )}
-        {pauseElapsed !== null && (
-          <div className="t-timer-row t-timer-live">
-            <span>{dict.taskCard.timePaused}</span>
-            <span className="mono">{fmtDuration(pauseElapsed, dict.duration)}</span>
+            {total !== null && (
+              <div className="t-timer-row">
+                <span>{dict.taskCard.timeTotal}</span>
+                <span className="mono">{fmtDuration(total, dict.duration)}</span>
+              </div>
+            )}
+            {estimateMs !== null && total !== null && (
+              <div className="t-estimate">
+                <div className="t-timer-row">
+                  <span>{dict.taskCard.estimate}</span>
+                  <span className="mono">
+                    {fmtDuration(total, dict.duration)} / {fmtDuration(estimateMs, dict.duration)}
+                  </span>
+                </div>
+                <div className="t-estimate-bar">
+                  <div
+                    className={`t-estimate-fill ${estimateOver ? 't-estimate-over' : ''}`}
+                    style={{ width: `${Math.min(100, estimatePercent ?? 0)}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

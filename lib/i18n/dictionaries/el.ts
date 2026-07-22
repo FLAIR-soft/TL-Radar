@@ -56,6 +56,7 @@ const el = {
     timeCurrentSession: 'Σε εξέλιξη από',
     timePaused: 'Σε παύση από',
     estimate: 'Εκτίμηση',
+    details: 'Λεπτομέρειες',
     outsideWorkHours: 'Η αλλαγή κατάστασης δεν είναι διαθέσιμη από τις 16:00 έως τις 7:30.',
   },
   taskForm: {

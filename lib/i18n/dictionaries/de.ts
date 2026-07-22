@@ -56,6 +56,7 @@ const de = {
     timeCurrentSession: 'In Bearbeitung seit',
     timePaused: 'Pausiert seit',
     estimate: 'Schätzung',
+    details: 'Details',
     outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',
   },
   taskForm: {

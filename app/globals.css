@@ -505,18 +505,38 @@ p.section-sub {
   opacity: 0.55;
   pointer-events: none;
 }
+.t-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
 .task-card .t-assignee {
   font-size: var(--fs-xs);
   color: var(--ink-muted);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin-bottom: 3px;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--pill-color);
+  background: color-mix(in srgb, var(--pill-color) 16%, transparent);
 }
 .task-card .t-title {
-  font-weight: 700;
-  font-size: var(--fs-base);
-  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: var(--fs-md);
+  margin-bottom: 6px;
 }
 .task-card .t-desc {
   font-size: var(--fs-sm);
@@ -527,7 +547,7 @@ p.section-sub {
 .t-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
   font-size: var(--fs-xs);
   color: var(--ink-muted);
   margin-bottom: 10px;
@@ -536,13 +556,19 @@ p.section-sub {
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
 }
 .t-meta svg {
   flex-shrink: 0;
 }
 .t-meta .overdue {
-  color: var(--brand);
+  color: var(--brand-dark);
   font-weight: 700;
+  background: var(--tint-red-bg);
+  border-color: var(--tint-red-border);
 }
 .t-timers {
   border-top: 1px solid var(--border);
@@ -566,6 +592,44 @@ p.section-sub {
 .t-timer-live .mono {
   color: var(--ink);
   font-weight: 600;
+}
+.t-timer-primary {
+  font-size: var(--fs-sm);
+  margin-bottom: 2px;
+}
+.t-timer-primary .mono {
+  font-size: var(--fs-sm);
+}
+.t-timers-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  font-family: var(--sans);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.t-timers-toggle:hover {
+  color: var(--ink);
+}
+.t-timers-toggle svg {
+  transition: transform 0.15s ease;
+}
+.t-timers-toggle-icon-open {
+  transform: rotate(180deg);
+}
+.t-timers-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+  animation: fadeIn 0.15s ease both;
 }
 .t-estimate {
   padding: 2px 0 1px;
