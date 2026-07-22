@@ -521,6 +521,68 @@ p.section-sub {
   gap: 6px;
 }
 
+/* ---------- Task filters ---------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.filter-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  flex: 2 1 220px;
+  min-width: 180px;
+}
+.filter-search input {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-base);
+  width: 100%;
+  padding: 0;
+}
+.filter-search input:focus {
+  outline: none;
+}
+.filter-bar .assignee-select {
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+.filter-bar select {
+  flex: 1 1 140px;
+  min-width: 120px;
+  height: 42px;
+  padding: 0 10px;
+}
+.filter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 42px;
+  border: 1px solid var(--tint-red-border);
+  border-radius: var(--radius-sm);
+  background: var(--tint-red-bg-2);
+  color: var(--brand-dark);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filter-reset:hover {
+  background: var(--tint-red-active-bg);
+}
+
 /* ---------- Kanban ---------- */
 .kanban {
   display: grid;

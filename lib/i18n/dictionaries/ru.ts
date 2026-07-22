@@ -123,6 +123,19 @@ const ru = {
   iconPicker: {
     label: 'Иконка',
   },
+  filters: {
+    searchPlaceholder: 'Поиск по названию и описанию…',
+    assigneePlaceholder: 'Любой исполнитель',
+    allProjects: 'Все проекты',
+    noProject: '— без проекта —',
+    allPriorities: 'Любой приоритет',
+    anyDeadline: 'Любой дедлайн',
+    hasDeadline: 'С дедлайном',
+    overdueOnly: 'Только просроченные',
+    reset: 'Сбросить фильтры',
+    noResultsTitle: 'Ничего не найдено',
+    noResultsSubtitle: 'Попробуйте изменить или сбросить фильтры.',
+  },
   duration: {
     hourShort: 'ч',
     minuteShort: 'м',

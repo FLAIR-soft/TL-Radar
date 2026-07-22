@@ -125,6 +125,19 @@ const en = {
   iconPicker: {
     label: 'Icon',
   },
+  filters: {
+    searchPlaceholder: 'Search title and description…',
+    assigneePlaceholder: 'Any assignee',
+    allProjects: 'All projects',
+    noProject: '— no project —',
+    allPriorities: 'Any priority',
+    anyDeadline: 'Any deadline',
+    hasDeadline: 'Has deadline',
+    overdueOnly: 'Overdue only',
+    reset: 'Reset filters',
+    noResultsTitle: 'Nothing found',
+    noResultsSubtitle: 'Try adjusting or resetting the filters.',
+  },
   duration: {
     hourShort: 'h',
     minuteShort: 'm',

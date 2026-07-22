@@ -1,13 +1,21 @@
-import { Pause, Play, Archive as ArchiveIcon } from 'lucide-react';
+import { Suspense } from 'react';
+import { Pause, Play, Archive as ArchiveIcon, SearchX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
+import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
+import { TaskFilterBar } from '@/components/TaskFilterBar';
 import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
 
-export default async function ArchivePage() {
+export default async function ArchivePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParamsRecord>;
+}) {
+  const filters = parseTaskFilters(await searchParams);
   const supabase = await createClient();
 
   const {
@@ -29,16 +37,19 @@ export default async function ArchivePage() {
       .eq('status', 'done')
       .is('deleted_at', null)
       .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, name'),
-    supabase.from('projects').select('id, name'),
+    supabase.from('profiles').select('id, name').order('name'),
+    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
   ]);
 
   const done = tasks ?? [];
-  const profileNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
-  const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
+  const profileList = profiles ?? [];
+  const projectList = projects ?? [];
+  const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
+  const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
 
   let pauses: TaskPause[] = [];
   const assigneeNamesByTask = new Map<string, string[]>();
+  const assigneeIdsByTask = new Map<string, string[]>();
   if (done.length) {
     const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
       supabase
@@ -60,10 +71,14 @@ export default async function ArchivePage() {
     ]);
     pauses = pauseData ?? [];
     for (const a of assigneeData ?? []) {
-      const list = assigneeNamesByTask.get(a.task_id) ?? [];
+      const names = assigneeNamesByTask.get(a.task_id) ?? [];
       const name = profileNames.get(a.assignee_id);
-      if (name) list.push(name);
-      assigneeNamesByTask.set(a.task_id, list);
+      if (name) names.push(name);
+      assigneeNamesByTask.set(a.task_id, names);
+
+      const ids = assigneeIdsByTask.get(a.task_id) ?? [];
+      ids.push(a.assignee_id);
+      assigneeIdsByTask.set(a.task_id, ids);
     }
   }
 
@@ -84,7 +99,12 @@ export default async function ArchivePage() {
     );
   }
 
-  const rows = done.map((t) => {
+  const filtersActive = hasActiveFilters(filters);
+  const filteredDone = filtersActive
+    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters))
+    : done;
+
+  const rows = filteredDone.map((t) => {
     const taskPauses = pausesByTask.get(t.id) ?? [];
     return {
       t,
@@ -119,6 +139,19 @@ export default async function ArchivePage() {
     <div className="page-fade">
       <h2 className="section-title">{dict.archive.title}</h2>
       <p className="section-sub">{dict.archive.subtitle}</p>
+      <Suspense fallback={null}>
+        <TaskFilterBar profiles={profileList} projects={projectList} />
+      </Suspense>
+      {filtersActive && rows.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          title={dict.filters.noResultsTitle}
+          subtitle={dict.filters.noResultsSubtitle}
+          ctaHref="/archive"
+          ctaLabel={dict.filters.reset}
+        />
+      ) : (
+        <>
       <div className="archive-scroll">
         <table className="archive-table">
           <thead>
@@ -253,6 +286,8 @@ export default async function ArchivePage() {
           );
         })}
       </div>
+        </>
+      )}
     </div>
   );
 }

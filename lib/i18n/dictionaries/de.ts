@@ -125,6 +125,19 @@ const de = {
   iconPicker: {
     label: 'Symbol',
   },
+  filters: {
+    searchPlaceholder: 'Suche nach Titel und Beschreibung…',
+    assigneePlaceholder: 'Beliebiger Ansprechpartner',
+    allProjects: 'Alle Projekte',
+    noProject: '— kein Projekt —',
+    allPriorities: 'Beliebige Priorität',
+    anyDeadline: 'Beliebige Frist',
+    hasDeadline: 'Mit Frist',
+    overdueOnly: 'Nur überfällige',
+    reset: 'Filter zurücksetzen',
+    noResultsTitle: 'Nichts gefunden',
+    noResultsSubtitle: 'Filter anpassen oder zurücksetzen.',
+  },
   duration: {
     hourShort: 'Std',
     minuteShort: 'Min',

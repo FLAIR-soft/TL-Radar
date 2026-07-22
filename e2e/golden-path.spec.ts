@@ -226,4 +226,51 @@ test.describe('golden path', () => {
     expect(overdueIdx).toBeLessThan(futureIdx);
     expect(futureIdx).toBeLessThan(noDeadlineIdx);
   });
+
+  test('dashboard search/priority filters narrow results and are shareable via URL', async ({ page }) => {
+    const owner = uniqueName('Gp9');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const highTitle = 'E2E Filt High ' + rand;
+    const lowTitle = 'E2E Filt Low ' + rand;
+    const uniqueWord = 'zzqxrand' + rand;
+
+    async function createTask(title: string, priority?: string) {
+      await page.click('text=Neue Aufgabe');
+      await page.waitForURL('**/dashboard/new');
+      await page.fill('input[name=title]', title);
+      if (priority) await page.selectOption('select[name=priority]', priority);
+      await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+      await page.waitForURL('**/dashboard');
+    }
+
+    await createTask(highTitle, 'high');
+    await createTask(lowTitle, 'low');
+    await createTask('E2E Filt Searchable ' + uniqueWord);
+
+    // Text search narrows to the one matching card (URL is the source of
+    // truth, so wait on it rather than a fixed timeout).
+    await page.fill('.filter-search input', uniqueWord);
+    await page.waitForURL(new RegExp('q=' + uniqueWord));
+    await expect(page.locator('.task-card')).toHaveCount(1);
+
+    // Reset chip clears the URL and brings every task back (dashboard is
+    // team-shared, so assert our own tasks reappear rather than a total count).
+    await page.click('[data-testid=reset-filters]');
+    await page.waitForFunction(() => !location.search);
+    await expect(page.locator('.task-card', { hasText: highTitle })).toBeVisible();
+    await expect(page.locator('.task-card', { hasText: lowTitle })).toBeVisible();
+    await expect(page.locator('.task-card', { hasText: uniqueWord })).toBeVisible();
+
+    // Filters are shareable: a direct link with ?priority=high applies on load.
+    await page.goto('/dashboard?priority=high');
+    await expect(page.locator('.task-card', { hasText: highTitle })).toBeVisible();
+    await expect(page.locator('.task-card', { hasText: lowTitle })).toHaveCount(0);
+
+    // An impossible filter combination shows the no-results empty state.
+    await page.goto('/dashboard?priority=urgent&q=' + uniqueWord);
+    await expect(page.locator('.empty-state')).toBeVisible();
+    await expect(page.locator('.task-card')).toHaveCount(0);
+  });
 });
