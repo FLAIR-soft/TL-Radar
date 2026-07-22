@@ -101,7 +101,7 @@ export function TaskCard({
 
   return (
     <div
-      className={`task-card ${isPending ? 'task-card-pending' : ''}`}
+      className={`task-card ${isPending ? 'task-card-pending' : ''} ${overdue ? 'task-card-overdue' : ''}`}
       style={{ borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)', ...style }}
     >
       <div className="t-card-header">
@@ -110,9 +110,12 @@ export function TaskCard({
         ) : (
           <span />
         )}
-        <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
-          {dict.status[task.status]}
-        </span>
+        <div className="t-card-header-right">
+          {overdue && <span className="overdue-badge">{dict.taskCard.overdue}</span>}
+          <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+            {dict.status[task.status]}
+          </span>
+        </div>
       </div>
       <div className="t-title">
         {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}

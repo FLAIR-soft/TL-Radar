@@ -106,6 +106,7 @@ const de = {
     colPauses: 'Pausen',
     colNetDuration: 'Nettozeit',
     colEstimate: 'Ist / Schätzung',
+    lateBy: 'Verspätet um',
   },
   status: {
     waiting: 'Wartend',

@@ -1,7 +1,7 @@
 import { Inbox } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { STATUS_COLOR, lastPausedBy } from '@/lib/logic/tasks';
+import { STATUS_COLOR, lastPausedBy, compareByDeadlineUrgency } from '@/lib/logic/tasks';
 import { TaskCard } from './TaskCard';
 import { EmptyState } from '@/components/EmptyState';
 import type { TaskPause, TaskStatus } from '@/lib/supabase/types';
@@ -99,7 +99,7 @@ export default async function DashboardPage() {
       <p className="section-sub">{dict.dashboard.subtitle}</p>
       <div className="kanban">
         {COLUMNS.map((s, colIndex) => {
-          const items = active.filter((t) => t.status === s);
+          const items = active.filter((t) => t.status === s).sort(compareByDeadlineUrgency);
           return (
             <div className="kanban-col" key={s}>
               <div className="col-head">

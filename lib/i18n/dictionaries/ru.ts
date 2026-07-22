@@ -104,6 +104,7 @@ const ru = {
     colPauses: 'Паузы',
     colNetDuration: 'Чистое время',
     colEstimate: 'Факт / Оценка',
+    lateBy: 'Просрочено на',
   },
   status: {
     waiting: 'Ожидание',

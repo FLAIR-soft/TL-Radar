@@ -106,6 +106,7 @@ const en = {
     colPauses: 'Pauses',
     colNetDuration: 'Net time',
     colEstimate: 'Actual / Estimate',
+    lateBy: 'Late by',
   },
   status: {
     waiting: 'Waiting',

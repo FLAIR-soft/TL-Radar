@@ -590,12 +590,44 @@ p.section-sub {
   opacity: 0.55;
   pointer-events: none;
 }
+.task-card-overdue {
+  border-color: var(--tint-red-border);
+  box-shadow: 0 0 0 1px var(--tint-red-border), var(--shadow-resting);
+}
+.task-card-overdue:hover {
+  box-shadow: 0 0 0 1px var(--tint-red-border), var(--shadow-hover);
+}
 .t-card-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
+}
+.t-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--tint-red-bg-2);
+  color: var(--brand-dark);
+  border: 1px solid var(--tint-red-border);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.archive-card-late-badge {
+  align-self: flex-start;
+  white-space: normal;
+  margin-top: 2px;
 }
 .task-card .t-assignee {
   font-size: var(--fs-xs);

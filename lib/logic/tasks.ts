@@ -68,6 +68,36 @@ export function isOverdue(task: Task): boolean {
   return now.hour >= CUTOFF_HOUR;
 }
 
+// Deadline "istekaet" v 16:00 po Myunhenu v svoyu datu (tot zhe cutoff, chto i u
+// isOverdue vyshe) — ispol'zuyem workWindowForBerlinDay, chtoby ne dublirovat'
+// letneye/zimneye smeshcheniye vruchnuyu.
+function deadlineCutoffMs(deadline: string): number {
+  const [year, month, day] = deadline.split('-').map(Number);
+  return workWindowForBerlinDay(year, month, day).end;
+}
+
+// Naskol'ko pozzhe deadline'a zavershena zadacha (ms), ili null, yesli deadline'a
+// net, zadacha yeshcho ne zavershena, ili ukladyvayetsya v srok.
+export function completedLateBy(task: Task): number | null {
+  if (!task.deadline || !task.completed_at) return null;
+  const lateMs = new Date(task.completed_at).getTime() - deadlineCutoffMs(task.deadline);
+  return lateMs > 0 ? lateMs : null;
+}
+
+// Sortirovka dlya kolonok kanbana: prosrochennyye pervymi, zatem po blizosti
+// dedlayna (ISO yyyy-mm-dd sravnivayetsya leksikograficheski = khronologicheski),
+// zadachi bez dedlayna — v kontse. Vnutri gruppy poryadok stabilen (Array.sort
+// stable), t.e. sokhranyayet iskhodnuyu sortirovku po created_at.
+export function compareByDeadlineUrgency(a: Task, b: Task): number {
+  const aOverdue = isOverdue(a);
+  const bOverdue = isOverdue(b);
+  if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+  if (!a.deadline && !b.deadline) return 0;
+  if (!a.deadline) return 1;
+  if (!b.deadline) return -1;
+  return a.deadline.localeCompare(b.deadline);
+}
+
 // Rabochiye chasy: 07:30–16:00 po Myunhenu. Vne etogo okna (16:00 do 7:30
 // sleduyushchego dnya) taymery ne dolzhny tikat', a smena statusa zadachi zapreshchena.
 const WORK_START_SEC = 7 * 3600 + 30 * 60; // 07:30

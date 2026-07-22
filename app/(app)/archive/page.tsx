@@ -1,7 +1,7 @@
 import { Pause, Play, Archive as ArchiveIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
+import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
@@ -91,6 +91,7 @@ export default async function ArchivePage() {
       taskPauses,
       net: netDuration(t, taskPauses),
       assignees: assigneeNamesByTask.get(t.id) ?? [],
+      lateMs: completedLateBy(t),
     };
   });
 
@@ -135,7 +136,7 @@ export default async function ArchivePage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ t, taskPauses, net, assignees }, i) => {
+            {rows.map(({ t, taskPauses, net, assignees, lateMs }, i) => {
               const RowIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
               return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
@@ -159,7 +160,17 @@ export default async function ArchivePage() {
                 <td>{t.location || '—'}</td>
                 <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
                 <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
-                <td className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</td>
+                <td className="mono">
+                  {fmtDateTime(t.completed_at, dict.intlLocale)}
+                  {lateMs !== null && (
+                    <>
+                      <br />
+                      <span className="overdue-badge">
+                        {dict.archive.lateBy} {fmtDuration(lateMs, dict.duration)}
+                      </span>
+                    </>
+                  )}
+                </td>
                 <td>{pausesCell(taskPauses)}</td>
                 <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
                 <td className="mono">{estimateCell(t, net)}</td>
@@ -179,7 +190,7 @@ export default async function ArchivePage() {
       </div>
 
       <div className="archive-cards">
-        {rows.map(({ t, taskPauses, net, assignees }, i) => {
+        {rows.map(({ t, taskPauses, net, assignees, lateMs }, i) => {
           const CardIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
           return (
           <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
@@ -219,6 +230,11 @@ export default async function ArchivePage() {
               <div>
                 <span className="archive-card-label">{dict.archive.colCompleted}</span>
                 <span className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</span>
+                {lateMs !== null && (
+                  <span className="overdue-badge archive-card-late-badge">
+                    {dict.archive.lateBy} {fmtDuration(lateMs, dict.duration)}
+                  </span>
+                )}
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colNetDuration}</span>

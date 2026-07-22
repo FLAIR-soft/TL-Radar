@@ -180,4 +180,50 @@ test.describe('golden path', () => {
     await page.click('[data-testid=slideover-close]');
     await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
   });
+
+  test('overdue tasks are highlighted and sorted before others', async ({ page }) => {
+    const owner = uniqueName('Gp8');
+    await register(page, owner.firstName, owner.lastName);
+
+    function isoDaysFromNow(days: number): string {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const overdueTitle = 'E2E Overdue ' + rand;
+    const futureTitle = 'E2E Future ' + rand;
+    const noDeadlineTitle = 'E2E NoDeadline ' + rand;
+
+    async function createTask(title: string, deadline: string | null) {
+      await page.click('text=Neue Aufgabe');
+      await page.waitForURL('**/dashboard/new');
+      await page.fill('input[name=title]', title);
+      if (deadline) await page.fill('input[name=deadline]', deadline);
+      await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+      await page.waitForURL('**/dashboard');
+    }
+
+    // Created out of urgency order on purpose, so a passing sort assertion
+    // proves real reordering rather than accidental created_at order.
+    await createTask(noDeadlineTitle, null);
+    await createTask(futureTitle, isoDaysFromNow(1));
+    await createTask(overdueTitle, isoDaysFromNow(-1));
+
+    const overdueCard = page.locator('.task-card', { hasText: overdueTitle });
+    await expect(overdueCard).toHaveClass(/task-card-overdue/);
+    await expect(overdueCard.locator('.overdue-badge')).toBeVisible();
+
+    const futureCard = page.locator('.task-card', { hasText: futureTitle });
+    await expect(futureCard).not.toHaveClass(/task-card-overdue/);
+
+    const titles = await page.locator('.kanban-col:first-child .task-card .t-title').allTextContents();
+    const trimmed = titles.map((t) => t.trim());
+    const overdueIdx = trimmed.findIndex((t) => t.includes(overdueTitle));
+    const futureIdx = trimmed.findIndex((t) => t.includes(futureTitle));
+    const noDeadlineIdx = trimmed.findIndex((t) => t.includes(noDeadlineTitle));
+    expect(overdueIdx).toBeLessThan(futureIdx);
+    expect(futureIdx).toBeLessThan(noDeadlineIdx);
+  });
 });
