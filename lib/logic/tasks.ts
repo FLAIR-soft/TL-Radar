@@ -141,10 +141,10 @@ function workHoursDurationBetween(start: number, end: number): number {
 }
 
 // Intervaly vremeni v statuse in_progress za vsyu istoriyu zadachi, do momenta `end`
-// (zakrytye pauzy vyrezayutsya iz obshchego promezhutka started_at..end/completed_at;
-// otkrytaya pauza ne vyrezaetsya — eto sushchestvuyushcheye povedeniye,
-// accumulatedInProgressDuration nizhe prosto summiruet eti intervaly). Kazhdyy
-// poluchivshiysya interval dopolnitel'no obrezaetsya do rabochikh chasov
+// (zakrytye i otkrytye pauzy odinakovo vyrezayutsya iz obshchego promezhutka
+// started_at..end/completed_at — otkrytaya pauza vyrezaetsya vplot' do `end`,
+// chtoby "vsyo v rabote" ne prodolzhalo rasti, poka zadacha stoit na pauze).
+// Kazhdyy poluchivshiysya interval dopolnitel'no obrezaetsya do rabochikh chasov
 // (07:30–16:00 po Myunhenu), chtoby noch' ne schitalas' otrabotannoy, dazhe
 // yesli avtopauza yeschyo ne srabotala.
 // Ispol'zuetsya i dlya kartochki zadachi, i dlya analitiki (Etap 6) — pri peresechenii
@@ -158,9 +158,12 @@ export function inProgressIntervals(task: Task, pauses: TaskPause[], end: Date):
   let intervals: TimeInterval[] = [{ start: startMs, end: endMs }];
 
   for (const p of pauses) {
-    if (!p.paused_at || !p.resumed_at) continue;
+    if (!p.paused_at) continue;
     const pausedAt = new Date(p.paused_at).getTime();
-    const resumedAt = Math.min(new Date(p.resumed_at).getTime(), end.getTime());
+    // Otkrytaya pauza (yeschyo ne resumed) vsyo ravno dolzhna vyrezat'sya
+    // vplot' do `end` — inache "vsyo v rabote" prodolzhayet rasti, poka
+    // zadacha stoit na pauze (byl bag: schyotchik tikal vo vremya pauzy).
+    const resumedAt = p.resumed_at ? Math.min(new Date(p.resumed_at).getTime(), end.getTime()) : end.getTime();
     if (resumedAt <= pausedAt) continue;
 
     const next: TimeInterval[] = [];
@@ -215,6 +218,29 @@ export function currentPauseDuration(task: Task, pauses: TaskPause[], end: Date)
   const openPause = pauses.find((p) => !p.resumed_at);
   if (!openPause) return null;
   return Math.max(0, end.getTime() - new Date(openPause.paused_at).getTime());
+}
+
+// Summarnoye vremya na pauze za vsyu istoriyu zadachi (tol'ko ruchnyye pauzy,
+// auto=false — nochnaya avtopauza eto sistemnyy mekhanizm, a ne prostoy chelovekom,
+// summirovat' yeyo v "obshcheye vremya na pauze" bylo by vvodyashche v zabluzhdeniye).
+export function totalPausedDuration(pauses: TaskPause[], end: Date): number {
+  let total = 0;
+  for (const p of pauses) {
+    if (p.auto) continue;
+    const start = new Date(p.paused_at).getTime();
+    const stop = p.resumed_at ? new Date(p.resumed_at).getTime() : end.getTime();
+    if (stop > start) total += stop - start;
+  }
+  return total;
+}
+
+// Kto poslednim (po vremeni) vruchnuyu postavil zadachu na pauzu — id profilya
+// ili null, yesli ruchnykh pauz yeschyo ne bylo (tol'ko avtopauzy/nikakikh).
+export function lastPausedBy(pauses: TaskPause[]): string | null {
+  const manual = pauses
+    .filter((p) => !p.auto && p.created_by)
+    .sort((a, b) => new Date(b.paused_at).getTime() - new Date(a.paused_at).getTime());
+  return manual.length ? manual[0].created_by : null;
 }
 
 // Vremya s momenta sozdaniya, poka zadacha eshcho ne nachata.

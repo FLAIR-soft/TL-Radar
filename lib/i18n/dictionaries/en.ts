@@ -58,6 +58,8 @@ const en = {
     timeWaiting: 'Waiting since',
     timeCurrentSession: 'In progress since',
     timePaused: 'Paused since',
+    timeTotalPaused: 'Total paused',
+    pausedBy: 'Paused by',
     estimate: 'Estimate',
     details: 'Details',
     outsideWorkHours: 'Status changes are unavailable from 16:00 to 7:30.',

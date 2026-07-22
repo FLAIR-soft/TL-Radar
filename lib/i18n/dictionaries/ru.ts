@@ -56,6 +56,8 @@ const ru = {
     timeWaiting: 'В ожидании',
     timeCurrentSession: 'В процессе с',
     timePaused: 'На паузе',
+    timeTotalPaused: 'Всего на паузе',
+    pausedBy: 'Поставил(а) на паузу',
     estimate: 'Оценка',
     details: 'Подробнее',
     outsideWorkHours: 'Смена статуса недоступна с 16:00 до 7:30.',

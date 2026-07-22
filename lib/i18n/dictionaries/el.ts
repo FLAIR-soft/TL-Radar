@@ -58,6 +58,8 @@ const el = {
     timeWaiting: 'Σε αναμονή από',
     timeCurrentSession: 'Σε εξέλιξη από',
     timePaused: 'Σε παύση από',
+    timeTotalPaused: 'Σύνολο σε παύση',
+    pausedBy: 'Έθεσε σε παύση',
     estimate: 'Εκτίμηση',
     details: 'Λεπτομέρειες',
     outsideWorkHours: 'Η αλλαγή κατάστασης δεν είναι διαθέσιμη από τις 16:00 έως τις 7:30.',

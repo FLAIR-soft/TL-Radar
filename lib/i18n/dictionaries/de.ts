@@ -58,6 +58,8 @@ const de = {
     timeWaiting: 'Wartet seit',
     timeCurrentSession: 'In Bearbeitung seit',
     timePaused: 'Pausiert seit',
+    timeTotalPaused: 'Gesamt pausiert',
+    pausedBy: 'Pausiert von',
     estimate: 'Schätzung',
     details: 'Details',
     outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',

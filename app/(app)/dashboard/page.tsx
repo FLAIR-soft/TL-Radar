@@ -1,7 +1,7 @@
 import { Inbox } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { STATUS_COLOR } from '@/lib/logic/tasks';
+import { STATUS_COLOR, lastPausedBy } from '@/lib/logic/tasks';
 import { TaskCard } from './TaskCard';
 import { EmptyState } from '@/components/EmptyState';
 import type { TaskPause, TaskStatus } from '@/lib/supabase/types';
@@ -72,6 +72,11 @@ export default async function DashboardPage() {
     list.push(p);
     pausesByTask.set(p.task_id, list);
   }
+  const pausedByNameByTask = new Map<string, string | null>();
+  for (const [taskId, taskPauses] of pausesByTask) {
+    const id = lastPausedBy(taskPauses);
+    pausedByNameByTask.set(taskId, id ? profileNames.get(id) ?? null : null);
+  }
 
   if (!active.length) {
     return (
@@ -113,6 +118,7 @@ export default async function DashboardPage() {
                       pauses={pausesByTask.get(t.id) ?? []}
                       assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                       projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                      pausedByName={pausedByNameByTask.get(t.id) ?? null}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />
                   ))

@@ -14,6 +14,7 @@ import {
   accumulatedInProgressDuration,
   currentSessionDuration,
   currentPauseDuration,
+  totalPausedDuration,
   waitingDuration,
 } from '@/lib/logic/tasks';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
@@ -25,12 +26,14 @@ export function TaskCard({
   pauses,
   assigneeNames,
   projectName,
+  pausedByName,
   style,
 }: {
   task: Task;
   pauses: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
+  pausedByName: string | null;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -72,6 +75,7 @@ export function TaskCard({
   const session = currentSessionDuration(task, pauses, now);
   const pauseElapsed = currentPauseDuration(task, pauses, now);
   const waiting = waitingDuration(task, now);
+  const totalPaused = totalPausedDuration(pauses, now);
 
   const estimateMs = task.estimated_minutes ? task.estimated_minutes * 60000 : null;
   const estimatePercent = estimateMs && total !== null ? (total / estimateMs) * 100 : null;
@@ -152,6 +156,18 @@ export function TaskCard({
               <div className="t-timer-row">
                 <span>{dict.taskCard.timeTotal}</span>
                 <span className="mono">{fmtDuration(total, dict.duration)}</span>
+              </div>
+            )}
+            {totalPaused > 0 && (
+              <div className="t-timer-row">
+                <span>{dict.taskCard.timeTotalPaused}</span>
+                <span className="mono">{fmtDuration(totalPaused, dict.duration)}</span>
+              </div>
+            )}
+            {pausedByName && (
+              <div className="t-timer-row">
+                <span>{dict.taskCard.pausedBy}</span>
+                <span className="mono">{pausedByName}</span>
               </div>
             )}
             {estimateMs !== null && total !== null && (
