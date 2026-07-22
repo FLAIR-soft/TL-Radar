@@ -1106,6 +1106,10 @@ p.section-sub {
   font-weight: 700;
   font-size: var(--fs-base);
 }
+.admin-row-username {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+}
 .admin-row-actions {
   display: flex;
   align-items: center;

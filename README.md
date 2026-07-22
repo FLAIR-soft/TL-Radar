@@ -100,7 +100,7 @@ npm run dev
 
 ```
 app/
-  login/                — вход/регистрация (имя + фамилия + пароль)
+  login/                — регистрация (имя + фамилия + юзернейм + пароль), вход (юзернейм + пароль)
   (app)/                — всё, что требует авторизации
     dashboard/          — канбан
     dashboard/new/      — форма создания/редактирования задачи
@@ -112,7 +112,7 @@ lib/
   logic/tasks.ts         — бизнес-логика времени (см. ниже)
   logic/analytics.ts     — доступное рабочее время + время на задачах
   logic/access.ts         — STATS_MIN_ROLE
-  auth/synthetic-email.ts — вывод синтетического email из имени+фамилии
+  auth/synthetic-email.ts — вывод синтетического email из юзернейма
   i18n/                   — словари, контекст локали, cookie
   theme/                  — cookie тёмной темы
   supabase/               — клиенты (browser/server/middleware/admin), типы
@@ -124,11 +124,16 @@ e2e/                      — Playwright smoke-тесты (golden path)
 
 ## Аутентификация
 
-Вход по **имени и фамилии + паролю**, без email. Supabase Auth внутри
-всегда требует email-идентификатор, поэтому он выводится детерминированно
-из нормализованного имени+фамилии через SHA-256
+Регистрация: имя, фамилия, юзернейм, пароль. Вход: **только юзернейм и
+пароль** — без email, без имени/фамилии. Имя и фамилия остаются в
+`profiles.name` исключительно для отображения и выбора исполнителя на
+задачу, в авторизации не участвуют.
+
+Supabase Auth внутри всегда требует email-идентификатор, поэтому он
+выводится детерминированно из нормализованного юзернейма через SHA-256
 (`lib/auth/synthetic-email.ts`) — пользователь его никогда не видит и не
-вводит.
+вводит. `profiles.username` уникален (`profiles_username_format`:
+латиница/цифры/`.`/`_`, 3–32 символа).
 
 ## Supabase
 
@@ -147,6 +152,10 @@ e2e/                      — Playwright smoke-тесты (golden path)
 | `0009_projects.sql` | Таблица `projects` (мягкое удаление) + `tasks.project_id`. |
 | `0010_task_assignees.sql` | `tasks.assignee_id` → таблица-связка `task_assignees` (`added_at`/`added_by`, `removed_at`/`removed_by`) — несколько исполнителей на задачу, мягкое снятие. |
 | `0011_task_estimate.sql` | `tasks.estimated_minutes` (необязательно, `check (> 0)`) — оценка времени. |
+| `0012_add_english_locale.sql` | `profiles.locale` — добавлен `en` как четвёртый язык интерфейса. |
+| `0013_project_details.sql` | `projects.description`, `projects.location`, `projects.owner_id`. |
+| `0014_user_delete_fk_behavior.sql` | Внешние ключи на `profiles(id)` (`created_by`/`updated_by`/`owner_id`/`added_by`/`removed_by`) переведены на `on delete set null` — удаление пользователя не блокируется историей; `task_assignees.assignee_id` — `on delete cascade`. |
+| `0015_add_username.sql` | `profiles.username` (уникальный, `check` на формат) — новый идентификатор входа. |
 
 Детали отдельных миграций:
 
@@ -170,6 +179,10 @@ e2e/                      — Playwright smoke-тесты (golden path)
   переиспользует существующий `accumulatedInProgressDuration()`, новой
   бизнес-логики учёта времени не вводит. Полоса прогресса меняет цвет на
   «перерасход» (`--brand`), если факт превышает оценку.
+- **`0015`**: у уже существующих на момент миграции аккаунтов юзернейм
+  бэкфиллится из нормализованного имени + короткий суффикс от `id`
+  (например, `romanholovachov5f9a2f`) — это одноразовый шаг для старых
+  строк, новые пользователи выбирают юзернейм сами при регистрации.
 
 ### Локальное тестирование миграций
 

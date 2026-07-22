@@ -24,7 +24,7 @@ export default async function AdminPage() {
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, name, role')
+    .select('id, name, username, role')
     .order('name', { ascending: true });
 
   return (
@@ -36,6 +36,7 @@ export default async function AdminPage() {
           <div key={p.id} className="admin-row">
             <div className="admin-row-info">
               <span className="admin-row-name">{p.name}</span>
+              <span className="admin-row-username mono">@{p.username}</span>
               <span
                 className="pill"
                 style={{ ['--pill-color' as string]: p.role === 'admin' ? 'var(--brand-dark)' : 'var(--tint-indigo-ink)' }}

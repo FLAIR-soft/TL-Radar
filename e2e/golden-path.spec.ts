@@ -17,7 +17,7 @@ test.describe('golden path', () => {
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
 
-    await signIn(page, owner.firstName, owner.lastName);
+    await signIn(page, owner.username);
 
     const projectName = 'E2E Project ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Projekte');

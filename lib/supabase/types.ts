@@ -5,6 +5,7 @@ export type Locale = 'ru' | 'de' | 'el' | 'en';
 export type Profile = {
   id: string;
   name: string;
+  username: string;
   role: UserRole;
   created_at: string;
   locale: Locale;
@@ -62,7 +63,7 @@ export interface Database {
     Tables: {
       profiles: {
         Row: Profile;
-        Insert: Partial<Profile> & Pick<Profile, 'id' | 'name'>;
+        Insert: Partial<Profile> & Pick<Profile, 'id' | 'name' | 'username'>;
         Update: Partial<Profile>;
         Relationships: [];
       };

@@ -50,15 +50,9 @@ export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
         {mode === 'signin' ? (
           <form action={signInAction}>
             {signInState.error && <div className="error-note">{signInState.error}</div>}
-            <div className="row2">
-              <div className="field">
-                <label>{dict.auth.nameLabel}</label>
-                <input type="text" name="firstName" required placeholder={dict.auth.namePlaceholder} />
-              </div>
-              <div className="field">
-                <label>{dict.auth.lastNameLabel}</label>
-                <input type="text" name="lastName" required placeholder={dict.auth.lastNamePlaceholder} />
-              </div>
+            <div className="field">
+              <label>{dict.auth.usernameLabel}</label>
+              <input type="text" name="username" required placeholder={dict.auth.usernamePlaceholder} autoCapitalize="off" autoCorrect="off" />
             </div>
             <div className="field">
               <label>{dict.auth.passwordLabel}</label>
@@ -81,6 +75,19 @@ export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
                 <label>{dict.auth.lastNameLabel}</label>
                 <input type="text" name="lastName" required placeholder={dict.auth.lastNamePlaceholder} />
               </div>
+            </div>
+            <div className="field">
+              <label>{dict.auth.usernameLabel}</label>
+              <input
+                type="text"
+                name="username"
+                required
+                minLength={3}
+                maxLength={32}
+                placeholder={dict.auth.usernamePlaceholder}
+                autoCapitalize="off"
+                autoCorrect="off"
+              />
             </div>
             <div className="field">
               <label>{dict.auth.passwordLabel}</label>
