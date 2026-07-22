@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { isWithinWorkHours } from '@/lib/logic/tasks';
+import { logActivity } from '@/lib/logic/activity-log';
 import type { TaskStatus } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -87,6 +88,11 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
     }))
   );
 
+  await logActivity(supabase, 'task', task.id, 'created', userId, { title: fields.title });
+  for (const assigneeId of assigneeIds) {
+    await logActivity(supabase, 'task', task.id, 'assignee_added', userId, { assigneeId });
+  }
+
   revalidatePath('/dashboard');
   redirect('/dashboard');
 }
@@ -116,6 +122,8 @@ export async function editTaskFields(
     return { error: error.message };
   }
 
+  await logActivity(supabase, 'task', taskId, 'updated', userId, { title: fields.title });
+
   const { data: current } = await supabase
     .from('task_assignees')
     .select('id, assignee_id')
@@ -137,6 +145,9 @@ export async function editTaskFields(
         'id',
         toRemove.map((a) => a.id)
       );
+    for (const a of toRemove) {
+      await logActivity(supabase, 'task', taskId, 'assignee_removed', userId, { assigneeId: a.assignee_id });
+    }
   }
   if (toAdd.length) {
     await supabase.from('task_assignees').insert(
@@ -147,6 +158,9 @@ export async function editTaskFields(
         added_by: userId,
       }))
     );
+    for (const assigneeId of toAdd) {
+      await logActivity(supabase, 'task', taskId, 'assignee_added', userId, { assigneeId });
+    }
   }
 
   revalidatePath('/dashboard');
@@ -159,6 +173,7 @@ export async function deleteTask(taskId: string) {
     .from('tasks')
     .update({ deleted_at: new Date().toISOString(), updated_by: userId })
     .eq('id', taskId);
+  await logActivity(supabase, 'task', taskId, 'deleted', userId);
   revalidatePath('/dashboard');
   revalidatePath('/archive');
 }
@@ -230,6 +245,10 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
   }
 
   await supabase.from('tasks').update(update).eq('id', taskId);
+  await logActivity(supabase, 'task', taskId, 'status_changed', userId, {
+    from: task.status,
+    to: newStatus,
+  });
 
   revalidatePath('/dashboard');
   if (newStatus === 'done') revalidatePath('/archive');

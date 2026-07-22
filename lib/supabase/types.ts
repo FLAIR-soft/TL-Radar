@@ -58,6 +58,25 @@ export type TaskAssignee = {
   removed_by: string | null;
 };
 
+export type ActivityEntityType = 'task' | 'project';
+export type ActivityEventType =
+  | 'created'
+  | 'updated'
+  | 'status_changed'
+  | 'deleted'
+  | 'assignee_added'
+  | 'assignee_removed';
+
+export type ActivityLog = {
+  id: string;
+  entity_type: ActivityEntityType;
+  entity_id: string;
+  event_type: ActivityEventType;
+  actor_id: string | null;
+  detail: Record<string, unknown> | null;
+  created_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -95,6 +114,12 @@ export interface Database {
         Row: { key: string; value: string | null };
         Insert: { key: string; value?: string | null };
         Update: { key?: string; value?: string | null };
+        Relationships: [];
+      };
+      activity_log: {
+        Row: ActivityLog;
+        Insert: Partial<ActivityLog> & Pick<ActivityLog, 'entity_type' | 'entity_id' | 'event_type'>;
+        Update: Partial<ActivityLog>;
         Relationships: [];
       };
     };
