@@ -27,24 +27,61 @@ export interface ProjectFormState {
   error: string | null;
 }
 
+function readProjectFields(formData: FormData) {
+  const name = String(formData.get('name') || '').trim();
+  const description = String(formData.get('description') || '').trim();
+  const location = String(formData.get('location') || '').trim();
+  const ownerId = String(formData.get('ownerId') || '').trim();
+  return {
+    name,
+    description: description || null,
+    location: location || null,
+    owner_id: ownerId || null,
+  };
+}
+
 export async function createProject(
   _prevState: ProjectFormState,
   formData: FormData
 ): Promise<ProjectFormState> {
   const { supabase, userId, dict } = await requireAuth();
-  const name = String(formData.get('name') || '').trim();
+  const fields = readProjectFields(formData);
 
-  if (!name) {
+  if (!fields.name) {
     return { error: dict.projects.errors.missingName };
   }
 
-  const { error } = await supabase.from('projects').insert({ name, created_by: userId });
+  const { error } = await supabase.from('projects').insert({ ...fields, created_by: userId });
 
   if (error) {
     return { error: error.message };
   }
 
   revalidatePath('/projects');
+  revalidatePath('/dashboard/new');
+  return { error: null };
+}
+
+export async function editProject(
+  projectId: string,
+  _prevState: ProjectFormState,
+  formData: FormData
+): Promise<ProjectFormState> {
+  const { supabase, dict } = await requireAuth();
+  const fields = readProjectFields(formData);
+
+  if (!fields.name) {
+    return { error: dict.projects.errors.missingName };
+  }
+
+  const { error } = await supabase.from('projects').update(fields).eq('id', projectId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/projects');
+  revalidatePath('/dashboard/new');
   return { error: null };
 }
 

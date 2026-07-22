@@ -30,6 +30,9 @@ export type Task = {
 export type Project = {
   id: string;
   name: string;
+  description: string | null;
+  location: string | null;
+  owner_id: string | null;
   created_at: string;
   created_by: string | null;
   deleted_at: string | null;
