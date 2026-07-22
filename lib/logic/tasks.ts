@@ -1,4 +1,7 @@
 import type { TaskStatus, Task, TaskPause } from '@/lib/supabase/types';
+import { berlinCalendarDate, workWindowForBerlinDay, type TimeInterval } from './berlin-time';
+
+export type { TimeInterval };
 
 export const STATUS_COLOR: Record<TaskStatus, string> = {
   waiting: 'var(--waiting)',
@@ -35,18 +38,6 @@ export function fmtDuration(ms: number, units: { hourShort: string; minuteShort:
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   return (h > 0 ? h + units.hourShort + ' ' : '') + m + units.minuteShort;
-}
-
-// Chistoye vremya vypolneniya: (completed_at - started_at) minus summa pauz.
-export function netDuration(task: Task, pauses: TaskPause[]): number | null {
-  if (!task.started_at || !task.completed_at) return null;
-  let total = new Date(task.completed_at).getTime() - new Date(task.started_at).getTime();
-  for (const p of pauses) {
-    if (p.paused_at && p.resumed_at) {
-      total -= new Date(p.resumed_at).getTime() - new Date(p.paused_at).getTime();
-    }
-  }
-  return total;
 }
 
 // Dedlayn — eto data bez vremeni: zadacha schitaetsya prosrochennoy tol'ko posle
@@ -123,15 +114,39 @@ export function effectiveNow(): Date {
   return new Date(now.getTime() - msSinceLastCutoff);
 }
 
-export interface TimeInterval {
-  start: number;
-  end: number;
+// Obrezayet [start, end) do peresecheniya s rabochimi oknami 07:30–16:00 po
+// Myunhenu na kazhdyy zadetyy den' — vremya vne etikh chasov ne dolzhno
+// schitat'sya otrabotannym, dazhe yesli avtopauza yeschyo ne uspela sozdat'
+// zapis' o pauze (naprimer, zadacha ostavlena in_progress na noch').
+function clipToWorkHours(start: number, end: number): TimeInterval[] {
+  if (end <= start) return [];
+  const result: TimeInterval[] = [];
+  let cursor = berlinCalendarDate(new Date(start));
+  for (let i = 0; i < 3660; i++) {
+    const win = workWindowForBerlinDay(cursor.year, cursor.month, cursor.day);
+    if (win.start >= end) break;
+    const segStart = Math.max(start, win.start);
+    const segEnd = Math.min(end, win.end);
+    if (segEnd > segStart) result.push({ start: segStart, end: segEnd });
+    // Sleduyushchiy kalendarnyy den' po Berlinu — cherez polden' UTC togo zhe
+    // dnya, chtoby ne popast' na granitsu letnego vremeni okolo polunochi.
+    const noonUtc = Date.UTC(cursor.year, cursor.month - 1, cursor.day, 12, 0, 0);
+    cursor = berlinCalendarDate(new Date(noonUtc + 24 * 3600 * 1000));
+  }
+  return result;
+}
+
+function workHoursDurationBetween(start: number, end: number): number {
+  return clipToWorkHours(start, end).reduce((sum, iv) => sum + (iv.end - iv.start), 0);
 }
 
 // Intervaly vremeni v statuse in_progress za vsyu istoriyu zadachi, do momenta `end`
 // (zakrytye pauzy vyrezayutsya iz obshchego promezhutka started_at..end/completed_at;
 // otkrytaya pauza ne vyrezaetsya — eto sushchestvuyushcheye povedeniye,
-// accumulatedInProgressDuration nizhe prosto summiruet eti intervaly).
+// accumulatedInProgressDuration nizhe prosto summiruet eti intervaly). Kazhdyy
+// poluchivshiysya interval dopolnitel'no obrezaetsya do rabochikh chasov
+// (07:30–16:00 po Myunhenu), chtoby noch' ne schitalas' otrabotannoy, dazhe
+// yesli avtopauza yeschyo ne srabotala.
 // Ispol'zuetsya i dlya kartochki zadachi, i dlya analitiki (Etap 6) — pri peresechenii
 // s oknom [added_at, removed_at] konkretnogo ispolnitelya.
 export function inProgressIntervals(task: Task, pauses: TaskPause[], end: Date): TimeInterval[] {
@@ -160,7 +175,11 @@ export function inProgressIntervals(task: Task, pauses: TaskPause[], end: Date):
     intervals = next;
   }
 
-  return intervals.filter((iv) => iv.end > iv.start);
+  const workClipped: TimeInterval[] = [];
+  for (const iv of intervals) {
+    if (iv.end > iv.start) workClipped.push(...clipToWorkHours(iv.start, iv.end));
+  }
+  return workClipped;
 }
 
 // Summarnoye vremya v statuse in_progress za vsyu istoriyu zadachi, do momenta `end`.
@@ -170,7 +189,15 @@ export function accumulatedInProgressDuration(task: Task, pauses: TaskPause[], e
   return Math.max(0, total);
 }
 
-// Vremya s poslednego perekhoda v in_progress (posle resume ili s samogo nachala).
+// Chistoye vremya vypolneniya zadachi celikom (dlya arkhiva): to zhe, chto
+// accumulatedInProgressDuration, no do momenta zaversheniya zadachi.
+export function netDuration(task: Task, pauses: TaskPause[]): number | null {
+  if (!task.started_at || !task.completed_at) return null;
+  return accumulatedInProgressDuration(task, pauses, new Date(task.completed_at));
+}
+
+// Vremya s poslednego perekhoda v in_progress (posle resume ili s samogo nachala),
+// obrezannoye do rabochikh chasov — tak zhe, kak i accumulatedInProgressDuration.
 export function currentSessionDuration(task: Task, pauses: TaskPause[], end: Date): number | null {
   if (task.status !== 'in_progress' || !task.started_at) return null;
   const resumes = pauses
@@ -178,7 +205,8 @@ export function currentSessionDuration(task: Task, pauses: TaskPause[], end: Dat
     .map((p) => new Date(p.resumed_at!).getTime())
     .sort((a, b) => b - a);
   const sessionStart = resumes.length ? resumes[0] : new Date(task.started_at).getTime();
-  return Math.max(0, end.getTime() - sessionStart);
+  if (end.getTime() <= sessionStart) return 0;
+  return workHoursDurationBetween(sessionStart, end.getTime());
 }
 
 // Vremya v tekushchey (otkrytoy) pauze.

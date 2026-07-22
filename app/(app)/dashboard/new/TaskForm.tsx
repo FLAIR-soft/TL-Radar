@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { AssigneeSelect } from './AssigneeSelect';
 import type { TaskFormState } from '../actions';
 
 const initialState: TaskFormState = { error: null };
@@ -49,19 +50,10 @@ export function TaskForm({
           </div>
           <div className="field">
             <label>{dict.taskForm.assignees}</label>
-            <div className="assignee-checklist">
-              {assignees.map((a) => (
-                <label key={a.id} className="assignee-check-item">
-                  <input
-                    type="checkbox"
-                    name="assigneeIds"
-                    value={a.id}
-                    defaultChecked={editing ? editing.assigneeIds.includes(a.id) : a.id === currentUserId}
-                  />
-                  {a.name}
-                </label>
-              ))}
-            </div>
+            <AssigneeSelect
+              assignees={assignees}
+              defaultSelected={editing ? editing.assigneeIds : [currentUserId]}
+            />
           </div>
           <div className="row2">
             <div className="field">

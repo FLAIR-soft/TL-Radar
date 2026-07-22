@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
-import { AnalyticsChart } from './AnalyticsChart';
+import { EmptyState } from '@/components/EmptyState';
+import { AnalyticsStats } from './AnalyticsStats';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -78,9 +80,9 @@ export default async function AnalyticsPage({
         ))}
       </div>
       {(profiles ?? []).length === 0 ? (
-        <div className="empty-note">{dict.analytics.empty}</div>
+        <EmptyState icon={Users} title={dict.analytics.empty} />
       ) : (
-        <AnalyticsChart stats={stats} availableMs={availableMs} />
+        <AnalyticsStats stats={stats} availableMs={availableMs} />
       )}
     </div>
   );

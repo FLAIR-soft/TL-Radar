@@ -139,7 +139,7 @@ export function TaskCard({
           onClick={() => setDetailsOpen((v) => !v)}
           aria-expanded={detailsOpen}
         >
-          <ChevronDown size={14} strokeWidth={1.75} className={detailsOpen ? 't-timers-toggle-icon-open' : ''} />
+          <ChevronDown size={14} strokeWidth={1.75} className={detailsOpen ? 'chevron-open' : ''} />
           {dict.taskCard.details}
         </button>
         {detailsOpen && (

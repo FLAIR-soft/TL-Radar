@@ -30,7 +30,14 @@ test.describe('golden path', () => {
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
     await page.fill('input[name=title]', taskTitle);
-    await page.check(`.assignee-check-item:has-text("${helper.fullName}") input[type=checkbox]`);
+    await page.click('.assignee-select-trigger');
+    await page.click(`.assignee-option:has-text("${helper.fullName}")`);
+    await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toBeVisible();
+    // Close via an unrelated field rather than re-clicking the trigger: with
+    // two chips now rendered, the trigger's geometric center can land on a
+    // chip's own remove button and silently undo the selection.
+    await page.click('input[name=title]');
+    await expect(page.locator('.assignee-select-panel')).toHaveCount(0);
     await page.selectOption('select[name=projectId]', { label: projectName });
     await page.fill('input[name=estimatedMinutes]', '45');
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
@@ -45,13 +52,12 @@ test.describe('golden path', () => {
     await card.getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
     await expect(page.locator('input[name=estimatedMinutes]')).toHaveValue('45');
-    await expect(
-      page.locator(`.assignee-check-item:has-text("${helper.fullName}") input[type=checkbox]`)
-    ).toBeChecked();
+    await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toBeVisible();
     await expect(page.locator('select[name=projectId]')).toHaveValue(await page.locator('select[name=projectId] option', { hasText: projectName }).getAttribute('value'));
 
     // Removing the helper leaves at least the owner — must not error.
-    await page.uncheck(`.assignee-check-item:has-text("${helper.fullName}") input[type=checkbox]`);
+    await page.click(`.assignee-chip:has-text("${helper.fullName}") button`);
+    await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toHaveCount(0);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
     await page.waitForURL('**/dashboard');
     const updatedCard = page.locator('.task-card', { hasText: taskTitle });
@@ -72,7 +78,7 @@ test.describe('golden path', () => {
 
     await page.locator('.task-card', { hasText: taskTitle }).getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
-    await page.uncheck(`.assignee-check-item:has-text("${owner.fullName}") input[type=checkbox]`);
+    await page.click(`.assignee-chip:has-text("${owner.fullName}") button`);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
 
     await expect(page.locator('.error-note')).toBeVisible();
@@ -135,7 +141,7 @@ test.describe('golden path', () => {
     await page.waitForURL('**/projects');
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
-    await expect(page.locator('.analytics-chart')).toBeVisible();
+    await expect(page.locator('.stat-rows')).toBeVisible();
 
     expect(errors).toEqual([]);
   });
