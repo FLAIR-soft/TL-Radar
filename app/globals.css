@@ -573,6 +573,14 @@ p.section-sub {
   color: var(--pill-color);
   background: color-mix(in srgb, var(--pill-color) 16%, transparent);
 }
+/* Светлая тема: у ряда статусных цветов (done/paused/progress/waiting)
+   недостаточно контраста для текста на их же 16%-tint фоне (< 4.5:1,
+   найдено контраст-аудитом Этапа 7). Затемняем именно текст пилюли,
+   не трогая исходные --status-токены, используемые для точек/бордеров
+   в остальном UI. В тёмной теме подсветка уже проходит AA без правок. */
+:root[data-theme="light"] .pill {
+  color: color-mix(in srgb, var(--pill-color) 70%, black);
+}
 .task-card .t-title {
   font-weight: 600;
   font-size: var(--fs-md);
@@ -848,6 +856,11 @@ p.section-sub {
   gap: 4px;
   flex-wrap: wrap;
 }
+/* Светлая тема: --paused (#d97706) на --surface даёт 3.19:1, ниже AA.
+   Тёмная тема уже проходит (10.5:1) — правим только светлую. */
+:root[data-theme="light"] .pause-line {
+  color: color-mix(in srgb, var(--paused) 80%, black);
+}
 .pause-line svg {
   flex-shrink: 0;
 }
@@ -1066,6 +1079,11 @@ p.section-sub {
   color: var(--done);
   font-size: var(--fs-xs);
   flex-basis: 100%;
+}
+/* Светлая тема: --done (#16a34a) на --surface даёт 3.30:1, ниже AA.
+   Тёмная тема уже проходит (10.1:1) — правим только светлую. */
+:root[data-theme="light"] .admin-reset-success {
+  color: color-mix(in srgb, var(--done) 80%, black);
 }
 
 /* ---------- Projects ---------- */
