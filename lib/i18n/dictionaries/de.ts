@@ -31,7 +31,7 @@ const de = {
     },
   },
   topbar: {
-    dashboard: 'Dashboard',
+    dashboard: 'Task-Manager',
     newTask: 'Neue Aufgabe',
     archive: 'Archiv',
     projects: 'Projekte',
@@ -40,7 +40,7 @@ const de = {
     logout: 'Abmelden',
   },
   dashboard: {
-    title: 'Dashboard',
+    title: 'Task-Manager',
     subtitle: 'Aktive Aufgaben nach Status, in Echtzeit.',
     empty: 'Leer.',
   },
@@ -67,7 +67,7 @@ const de = {
   taskForm: {
     newTitle: 'Neue Aufgabe',
     editTitle: 'Aufgabe bearbeiten',
-    subtitle: 'Felder ausfüllen — die Aufgabe erscheint im Dashboard mit dem Status „Wartend“.',
+    subtitle: 'Felder ausfüllen — die Aufgabe erscheint im Task-Manager mit dem Status „Wartend“.',
     assignees: 'Zuständige Personen',
     assigneesPlaceholder: 'Zuständige Personen auswählen',
     assigneesSearchPlaceholder: 'Nach Namen suchen…',
@@ -175,7 +175,7 @@ const de = {
     subheadline:
       'TL-Radar ist ein Echtzeit-Task-Tracker: Status, Zeit und Ort jeder Aufgabe — ohne Rückfragen und Meetings.',
     ctaDemo: 'Demo ansehen',
-    screenshotCaption: 'Dashboard in Echtzeit',
+    screenshotCaption: 'Task-Manager in Echtzeit',
     featuresTitle: 'Alles Wichtige, nichts Überflüssiges',
     feature1Title: 'Kanban-Board',
     feature1Desc: 'Aufgaben nach Status — wartend, in Bearbeitung, pausiert — in Echtzeit.',
@@ -183,8 +183,8 @@ const de = {
     feature2Desc: 'Automatischer Timer, Pausen und Soll-Ist-Vergleich — ganz ohne manuelle Tabellen.',
     feature3Title: 'Analytik',
     feature3Desc: 'Wie viel Zeit jede Person im Vergleich zur verfügbaren Arbeitszeit geleistet hat.',
-    feature4Title: 'Vier Sprachen',
-    feature4Desc: 'Oberfläche auf Deutsch, Russisch, Griechisch und Englisch — per Klick umschaltbar.',
+    feature4Title: 'Drei Sprachen',
+    feature4Desc: 'Oberfläche auf Deutsch, Englisch und Russisch — per Klick umschaltbar.',
     footerRights: 'Alle Rechte vorbehalten.',
   },
   intlLocale: 'de-DE',

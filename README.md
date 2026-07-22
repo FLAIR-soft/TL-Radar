@@ -39,7 +39,7 @@ TypeScript) + Supabase (Postgres/Auth/RLS/Edge Functions/pg_cron) + Vercel.
   автоматически переводятся в «пауза» (Edge Function + pg_cron).
 - **Рабочие часы**: смена статуса задачи и накопление времени возможны
   только с 07:30 до 16:00 по Мюнхену.
-- **i18n**: три языка интерфейса — ru / de (по умолчанию) / el.
+- **i18n**: три языка интерфейса — de (по умолчанию) / en / ru.
 - **Тёмная тема**: переключатель в топбаре, персистентность через cookie.
 - **Админ**: сброс пароля любому пользователю (см. «Роли» ниже).
 
@@ -102,7 +102,7 @@ npm run dev
 app/
   login/                — регистрация (имя + фамилия + юзернейм + пароль), вход (юзернейм + пароль)
   (app)/                — всё, что требует авторизации
-    dashboard/          — канбан
+    dashboard/          — канбан (в интерфейсе называется «Таск-менеджер»/«Task Manager»)
     dashboard/new/      — форма создания/редактирования задачи
     archive/            — таблица завершённых задач
     projects/           — список проектов
@@ -156,6 +156,7 @@ Supabase Auth внутри всегда требует email-идентифик�
 | `0013_project_details.sql` | `projects.description`, `projects.location`, `projects.owner_id`. |
 | `0014_user_delete_fk_behavior.sql` | Внешние ключи на `profiles(id)` (`created_by`/`updated_by`/`owner_id`/`added_by`/`removed_by`) переведены на `on delete set null` — удаление пользователя не блокируется историей; `task_assignees.assignee_id` — `on delete cascade`. |
 | `0015_add_username.sql` | `profiles.username` (уникальный, `check` на формат) — новый идентификатор входа. |
+| `0016_remove_greek_locale.sql` | Греческий (`el`) убран из поддерживаемых языков — интерфейс теперь de (по умолчанию) / en / ru. |
 
 Детали отдельных миграций:
 
