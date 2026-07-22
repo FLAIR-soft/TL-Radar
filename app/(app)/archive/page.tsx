@@ -1,8 +1,9 @@
-import { Pause, Play } from 'lucide-react';
+import { Pause, Play, Archive as ArchiveIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
 import type { TaskPause } from '@/lib/supabase/types';
+import { EmptyState } from '@/components/EmptyState';
 
 export default async function ArchivePage() {
   const supabase = await createClient();
@@ -75,8 +76,8 @@ export default async function ArchivePage() {
     return (
       <div className="page-fade">
         <h2 className="section-title">{dict.archive.title}</h2>
-        <p className="section-sub">{dict.archive.emptyTitle}</p>
-        <div className="empty-note">{dict.archive.empty}</div>
+        <p className="section-sub">{dict.archive.subtitle}</p>
+        <EmptyState icon={ArchiveIcon} title={dict.archive.empty} subtitle={dict.archive.emptyTitle} />
       </div>
     );
   }
@@ -107,6 +108,10 @@ export default async function ArchivePage() {
               return (
                 <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                   <td>
+                    <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
+                      {dict.status.done}
+                    </span>
+                    <br />
                     <strong>{t.title}</strong>
                     {(assigneeNamesByTask.get(t.id) ?? []).length > 0 && (
                       <>

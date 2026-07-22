@@ -1,7 +1,9 @@
+import { Inbox } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { STATUS_COLOR } from '@/lib/logic/tasks';
 import { TaskCard } from './TaskCard';
+import { EmptyState } from '@/components/EmptyState';
 import type { TaskPause, TaskStatus } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
@@ -69,6 +71,21 @@ export default async function DashboardPage() {
     const list = pausesByTask.get(p.task_id) ?? [];
     list.push(p);
     pausesByTask.set(p.task_id, list);
+  }
+
+  if (!active.length) {
+    return (
+      <div className="page-fade">
+        <h2 className="section-title">{dict.dashboard.title}</h2>
+        <p className="section-sub">{dict.dashboard.subtitle}</p>
+        <EmptyState
+          icon={Inbox}
+          title={dict.dashboard.empty}
+          ctaHref="/dashboard/new"
+          ctaLabel={dict.topbar.newTask}
+        />
+      </div>
+    );
   }
 
   return (

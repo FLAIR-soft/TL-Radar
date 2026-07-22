@@ -264,6 +264,7 @@ select:focus {
   font-weight: 600;
   cursor: pointer;
   font-family: var(--sans);
+  text-decoration: none;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
     transform 0.1s ease, opacity 0.15s ease;
   display: inline-flex;
@@ -332,6 +333,29 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 26px;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.topbar-brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--brand);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.topbar-brand-name {
+  font-weight: 800;
+  font-size: var(--fs-lg);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
 }
 .tabs {
   display: flex;
@@ -519,7 +543,9 @@ p.section-sub {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.status-pill {
+/* Единая система pill-бейджей: статус задачи (kanban, archive-table),
+   роль пользователя (admin) — все через один и тот же --pill-color. */
+.pill {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
@@ -713,6 +739,9 @@ p.section-sub {
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
+.archive-table td .pill {
+  margin-bottom: 4px;
+}
 .archive-row {
   animation: fadeSlideIn 0.3s ease both;
   transition: background-color 0.12s ease;
@@ -778,6 +807,48 @@ p.section-sub {
   font-size: var(--fs-sm);
   padding: 10px 2px;
   line-height: 1.5;
+}
+
+/* ---------- Empty states ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 56px 24px;
+  gap: 4px;
+  animation: fadeIn 0.25s ease both;
+}
+.empty-state-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  margin-bottom: 10px;
+}
+.empty-state-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+.empty-state-sub {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  max-width: 360px;
+  line-height: 1.5;
+  margin: 0;
+}
+.empty-state-cta {
+  margin-top: 14px;
+  width: auto;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 /* ---------- Analytics ---------- */
@@ -887,22 +958,6 @@ p.section-sub {
 .admin-row-name {
   font-weight: 700;
   font-size: var(--fs-base);
-}
-.role-badge {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 3px 8px;
-  border-radius: 20px;
-}
-.role-badge-editor {
-  background: var(--tint-indigo-bg);
-  color: var(--tint-indigo-ink);
-}
-.role-badge-admin {
-  background: var(--tint-red-bg);
-  color: var(--brand-dark);
 }
 .admin-reset-form {
   display: flex;

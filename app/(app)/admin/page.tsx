@@ -35,7 +35,10 @@ export default async function AdminPage() {
           <div key={p.id} className="admin-row">
             <div className="admin-row-info">
               <span className="admin-row-name">{p.name}</span>
-              <span className={`role-badge role-badge-${p.role}`}>
+              <span
+                className="pill"
+                style={{ ['--pill-color' as string]: p.role === 'admin' ? 'var(--brand-dark)' : 'var(--tint-indigo-ink)' }}
+              >
                 {p.role === 'admin' ? dict.admin.roleAdmin : dict.admin.roleEditor}
               </span>
             </div>

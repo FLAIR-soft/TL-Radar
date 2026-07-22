@@ -1,7 +1,9 @@
+import { FolderKanban } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { NewProjectForm } from './NewProjectForm';
 import { ProjectRow } from './ProjectRow';
+import { EmptyState } from '@/components/EmptyState';
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -37,7 +39,7 @@ export default async function ProjectsPage() {
           ))}
         </div>
       ) : (
-        <div className="empty-note">{dict.projects.empty}</div>
+        <EmptyState icon={FolderKanban} title={dict.projects.empty} />
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { Radar } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
@@ -35,9 +36,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="app-root">
         <div className="topbar">
           <div className="topbar-left">
-            <div className="brand-mark">
-              <span className="brand-dot"></span>
-              <span>TL-Radar</span>
+            <div className="topbar-brand">
+              <span className="topbar-brand-icon">
+                <Radar size={20} strokeWidth={2.25} />
+              </span>
+              <span className="topbar-brand-name">TL-Radar</span>
             </div>
             <TopTabs role={role} />
           </div>

@@ -99,7 +99,7 @@ export function TaskCard({
         ) : (
           <span />
         )}
-        <span className="status-pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+        <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
           {dict.status[task.status]}
         </span>
       </div>
