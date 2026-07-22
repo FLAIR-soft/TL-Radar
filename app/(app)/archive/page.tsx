@@ -1,3 +1,4 @@
+import { Pause, Play } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
@@ -123,7 +124,10 @@ export default async function ArchivePage() {
                     {taskPauses.length ? (
                       taskPauses.map((p) => (
                         <div className="pause-line" key={p.id}>
-                          ⏸ {fmtDateTime(p.paused_at, dict.intlLocale)} → ▶{' '}
+                          <Pause size={12} strokeWidth={1.75} />
+                          {fmtDateTime(p.paused_at, dict.intlLocale)}
+                          <span>→</span>
+                          <Play size={12} strokeWidth={1.75} />
                           {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
                         </div>
                       ))

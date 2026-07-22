@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTransition } from 'react';
+import { Folder, MapPin, CalendarClock, Pencil, Trash2 } from 'lucide-react';
 import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -84,11 +85,22 @@ export function TaskCard({
       <div className="t-title">{task.title}</div>
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
-        {projectName && <span className="project-tag">📁 {projectName}</span>}
-        {task.location && <span>📍 {task.location}</span>}
+        {projectName && (
+          <span className="project-tag">
+            <Folder size={14} strokeWidth={1.75} />
+            {projectName}
+          </span>
+        )}
+        {task.location && (
+          <span>
+            <MapPin size={14} strokeWidth={1.75} />
+            {task.location}
+          </span>
+        )}
         {task.deadline && (
           <span className={overdue ? 'overdue' : ''}>
-            ⏰ {fmtDate(task.deadline, dict.intlLocale)}
+            <CalendarClock size={14} strokeWidth={1.75} />
+            {fmtDate(task.deadline, dict.intlLocale)}
             {overdue ? ` · ${dict.taskCard.overdue}` : ''}
           </span>
         )}
@@ -149,11 +161,22 @@ export function TaskCard({
               {a.label}
             </button>
           ))}
-        <Link href={`/dashboard/new?edit=${task.id}`} className="icon-btn" title={dict.taskCard.editTitle}>
-          ✎
+        <Link
+          href={`/dashboard/new?edit=${task.id}`}
+          className="icon-btn"
+          title={dict.taskCard.editTitle}
+          data-testid="edit-task"
+        >
+          <Pencil size={18} strokeWidth={1.75} />
         </Link>
-        <button className="icon-btn" title={dict.taskCard.deleteTitle} disabled={isPending} onClick={handleDelete}>
-          ✕
+        <button
+          className="icon-btn"
+          title={dict.taskCard.deleteTitle}
+          disabled={isPending}
+          onClick={handleDelete}
+          data-testid="delete-task"
+        >
+          <Trash2 size={18} strokeWidth={1.75} />
         </button>
       </div>
     </div>

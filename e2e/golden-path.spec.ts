@@ -42,7 +42,7 @@ test.describe('golden path', () => {
     await expect(card).toContainText(projectName);
 
     // Editing preserves what was just set.
-    await card.locator('.icon-btn', { hasText: '✎' }).click();
+    await card.getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
     await expect(page.locator('input[name=estimatedMinutes]')).toHaveValue('45');
     await expect(
@@ -70,7 +70,7 @@ test.describe('golden path', () => {
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
 
-    await page.locator('.task-card', { hasText: taskTitle }).locator('.icon-btn', { hasText: '✎' }).click();
+    await page.locator('.task-card', { hasText: taskTitle }).getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
     await page.uncheck(`.assignee-check-item:has-text("${owner.fullName}") input[type=checkbox]`);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
@@ -93,7 +93,7 @@ test.describe('golden path', () => {
     await page.waitForURL('**/dashboard');
     await expect(page.locator('.task-card', { hasText: taskTitle })).toBeVisible();
 
-    await page.locator('.task-card', { hasText: taskTitle }).locator('.icon-btn', { hasText: '✕' }).click();
+    await page.locator('.task-card', { hasText: taskTitle }).getByTestId('delete-task').click();
     await expect(page.locator('.task-card', { hasText: taskTitle })).toHaveCount(0);
 
     await page.click('text=Archiv');

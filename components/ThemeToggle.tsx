@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import type { Theme } from '@/lib/theme/cookie';
 import { setTheme } from '@/lib/theme/actions';
 
@@ -17,7 +18,7 @@ export function ThemeToggle({ theme }: { theme: Theme }) {
       title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
       onClick={() => startTransition(() => setTheme(next))}
     >
-      {theme === 'dark' ? '☀️' : '🌙'}
+      {theme === 'dark' ? <Sun size={17} strokeWidth={1.75} /> : <Moon size={17} strokeWidth={1.75} />}
     </button>
   );
 }

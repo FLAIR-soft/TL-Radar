@@ -399,17 +399,18 @@ select:focus {
   border: none;
   background: var(--bg);
   border-radius: 8px;
-  width: 30px;
-  height: 30px;
-  font-size: var(--fs-base);
+  width: 36px;
+  height: 36px;
+  color: var(--ink-muted);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, transform 0.1s ease, color 0.15s ease;
 }
 .theme-toggle:hover {
   background: var(--hover-bg);
+  color: var(--ink);
 }
 .theme-toggle:active {
   transform: scale(0.92);
@@ -536,6 +537,9 @@ p.section-sub {
   align-items: center;
   gap: 4px;
 }
+.t-meta svg {
+  flex-shrink: 0;
+}
 .t-meta .overdue {
   color: var(--brand);
   font-weight: 700;
@@ -600,20 +604,21 @@ p.section-sub {
 .icon-btn {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 7px;
-  width: 28px;
-  height: 28px;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   color: var(--ink-muted);
-  font-size: var(--fs-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
 }
 .icon-btn:hover {
   border-color: var(--ink-muted);
   color: var(--ink);
+  background: var(--hover-bg);
 }
 .icon-btn:active {
   transform: scale(0.92);
@@ -666,6 +671,13 @@ p.section-sub {
   font-family: var(--mono);
   font-size: var(--fs-xs);
   color: var(--paused);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.pause-line svg {
+  flex-shrink: 0;
 }
 
 /* ---------- Form ---------- */
