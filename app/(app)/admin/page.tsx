@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ResetPasswordForm } from './ResetPasswordForm';
+import { DeleteUserButton } from './DeleteUserButton';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -42,7 +43,10 @@ export default async function AdminPage() {
                 {p.role === 'admin' ? dict.admin.roleAdmin : dict.admin.roleEditor}
               </span>
             </div>
-            <ResetPasswordForm userId={p.id} />
+            <div className="admin-row-actions">
+              <ResetPasswordForm userId={p.id} />
+              {p.id !== user.id && <DeleteUserButton userId={p.id} />}
+            </div>
           </div>
         ))}
       </div>

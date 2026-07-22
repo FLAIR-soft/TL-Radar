@@ -13,6 +13,7 @@ export default function AdminLoading() {
             <div style={{ display: 'flex', gap: 8 }}>
               <div className="skeleton" style={{ width: 160, height: 36 }} />
               <div className="skeleton" style={{ width: 140, height: 36 }} />
+              <div className="skeleton" style={{ width: 30, height: 30 }} />
             </div>
           </div>
         ))}

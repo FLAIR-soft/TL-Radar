@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
@@ -22,7 +23,7 @@ async function requireAdmin() {
 
   if (profile?.role !== 'admin') redirect('/dashboard');
 
-  return { dict };
+  return { dict, currentUserId: user.id };
 }
 
 export async function resetUserPassword(
@@ -44,5 +45,23 @@ export async function resetUserPassword(
     return { error: error.message };
   }
 
+  return {};
+}
+
+export async function deleteUser(userId: string): Promise<{ error?: string }> {
+  const { dict, currentUserId } = await requireAdmin();
+
+  if (userId === currentUserId) {
+    return { error: dict.admin.errors.cannotDeleteSelf };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/admin');
   return {};
 }

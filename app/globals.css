@@ -1106,11 +1106,21 @@ p.section-sub {
   font-weight: 700;
   font-size: var(--fs-base);
 }
+.admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .admin-reset-form {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+.admin-row-delete {
+  display: flex;
+  align-items: center;
 }
 .admin-reset-form input {
   width: auto;

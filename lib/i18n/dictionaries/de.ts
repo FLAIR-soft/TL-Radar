@@ -114,13 +114,18 @@ const de = {
   },
   admin: {
     title: 'Admin',
-    subtitle: 'Passwort für jeden Benutzer zurücksetzen.',
+    subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',
     roleEditor: 'Editor',
     roleAdmin: 'Admin',
     newPasswordPlaceholder: 'Neues Passwort',
     resetButton: 'Passwort zurücksetzen',
     resetConfirm: 'Passwort für diesen Benutzer zurücksetzen?',
     resetSuccess: 'Passwort aktualisiert.',
+    deleteTitle: 'Benutzer löschen',
+    deleteConfirm: 'Diesen Benutzer unwiderruflich löschen? Er wird von allen Aufgaben entfernt.',
+    errors: {
+      cannotDeleteSelf: 'Das eigene Konto kann nicht gelöscht werden.',
+    },
   },
   projects: {
     title: 'Projekte',

@@ -114,13 +114,18 @@ const en = {
   },
   admin: {
     title: 'Admin',
-    subtitle: 'Reset the password for any user.',
+    subtitle: 'Reset a password or delete a user.',
     roleEditor: 'editor',
     roleAdmin: 'admin',
     newPasswordPlaceholder: 'New password',
     resetButton: 'Reset password',
     resetConfirm: 'Reset the password for this user?',
     resetSuccess: 'Password updated.',
+    deleteTitle: 'Delete user',
+    deleteConfirm: 'Delete this user permanently? They will be removed from all tasks.',
+    errors: {
+      cannotDeleteSelf: 'You cannot delete your own account.',
+    },
   },
   projects: {
     title: 'Projects',
