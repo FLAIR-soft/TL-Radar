@@ -27,6 +27,19 @@
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+  /* Border-radius (Этап 6 редизайна) — единая шкала вместо разброса
+     6/8/9/10/12/14px. Круги (50%) и pill-форма (--radius-full) — свои
+     категории, не часть этой шкалы. */
+  --radius-sm: 8px; /* контролы: кнопки, инпуты, табы, icon-btn */
+  --radius-md: 12px; /* карточки: task-card, admin-row, archive-table */
+  --radius-lg: 16px; /* крупные поверхности: auth-card, лендинг */
+  --radius-full: 999px; /* pill-бейджи, полностью скруглённые формы */
+
+  /* Многослойные тени для ощущения глубины на hover */
+  --shadow-resting: 0 1px 2px var(--shadow-soft);
+  --shadow-hover: 0 2px 4px var(--shadow-soft), 0 12px 24px -8px var(--shadow-card),
+    0 24px 48px -18px var(--shadow-card);
+
   /* Type scale (Этап 1 редизайна) — единая шкала вместо разброса
      11-14.5px по всему приложению. Каждый font-size в файле ссылается
      на один из этих токенов. */
@@ -136,7 +149,7 @@ body {
   max-width: 420px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 32px;
   animation: fadeSlideIn 0.35s ease both;
 }
@@ -187,14 +200,14 @@ body {
   gap: 4px;
   margin-bottom: 18px;
   background: var(--bg);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 4px;
 }
 .auth-tab {
   flex: 1;
   text-align: center;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-muted);
@@ -212,7 +225,7 @@ body {
   background: var(--tint-red-bg-2);
   color: var(--brand-dark);
   border: 1px solid var(--tint-red-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: var(--fs-sm);
   margin-bottom: 14px;
@@ -237,7 +250,7 @@ select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-family: var(--sans);
   font-size: var(--fs-base);
   background: var(--surface);
@@ -258,7 +271,7 @@ select:focus {
 }
 .btn {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 16px;
   font-size: var(--fs-base);
   font-weight: 600;
@@ -342,7 +355,7 @@ select:focus {
 .topbar-brand-icon {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--brand);
   color: #fff;
   display: inline-flex;
@@ -363,7 +376,7 @@ select:focus {
 }
 .tab {
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--ink-muted);
@@ -393,7 +406,7 @@ select:focus {
   display: flex;
   gap: 2px;
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 3px;
 }
 .lang-btn {
@@ -404,7 +417,7 @@ select:focus {
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: 5px 9px;
-  border-radius: 6px;
+  border-radius: calc(var(--radius-sm) - 2px);
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -422,7 +435,7 @@ select:focus {
 .theme-toggle {
   border: none;
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   width: 36px;
   height: 36px;
   color: var(--ink-muted);
@@ -515,14 +528,15 @@ p.section-sub {
 .task-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 13px 14px;
   border-left: 4px solid var(--waiting);
+  box-shadow: var(--shadow-resting);
   animation: fadeSlideIn 0.3s ease both;
   transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
 }
 .task-card:hover {
-  box-shadow: 0 4px 14px var(--shadow-card);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
 }
 .task-card-pending {
@@ -550,7 +564,7 @@ p.section-sub {
   align-items: center;
   flex-shrink: 0;
   padding: 3px 10px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: var(--fs-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -583,7 +597,7 @@ p.section-sub {
   align-items: center;
   gap: 4px;
   padding: 3px 9px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   background: var(--surface-alt);
   border: 1px solid var(--border);
 }
@@ -694,7 +708,7 @@ p.section-sub {
 .icon-btn {
   background: none;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   width: 36px;
   height: 36px;
   cursor: pointer;
@@ -720,7 +734,7 @@ p.section-sub {
   border-collapse: collapse;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   font-size: var(--fs-sm);
 }
@@ -755,6 +769,71 @@ p.section-sub {
 .archive-scroll {
   overflow-x: auto;
 }
+.archive-cards {
+  display: none;
+}
+
+/* Ниже 720px архив показывается карточками вместо горизонтального
+   скролла девятиколоночной таблицы (Этап 6 редизайна). */
+@media (max-width: 720px) {
+  .archive-scroll {
+    display: none;
+  }
+  .archive-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .archive-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    box-shadow: var(--shadow-resting);
+    animation: fadeSlideIn 0.3s ease both;
+  }
+  .archive-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .archive-card-title {
+    font-weight: 700;
+    font-size: var(--fs-sm);
+  }
+  .archive-card-assignees {
+    margin-bottom: 8px;
+  }
+  .archive-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .archive-card-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .archive-card-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-muted);
+  }
+  .archive-card-pauses {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
 .mono {
   font-family: var(--mono);
   font-size: var(--fs-xs);
@@ -777,9 +856,10 @@ p.section-sub {
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 24px;
   max-width: 560px;
+  box-shadow: var(--shadow-resting);
 }
 .row2 {
   display: grid;
@@ -860,7 +940,7 @@ p.section-sub {
 .analytics-chart {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 16px 16px 8px;
   margin-bottom: 18px;
 }
@@ -881,12 +961,12 @@ p.section-sub {
   background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
-  border-radius: 6px;
+  border-radius: calc(var(--radius-sm) - 2px);
 }
 .skeleton-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 13px 14px;
   border-left: 4px solid var(--border);
   animation: fadeIn 0.2s ease both;
@@ -941,14 +1021,20 @@ p.section-sub {
 .admin-row {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 13px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+  box-shadow: var(--shadow-resting);
   animation: fadeSlideIn 0.3s ease both;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.admin-row:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
 }
 .admin-row-info {
   display: flex;
@@ -1011,13 +1097,19 @@ p.section-sub {
 .project-row {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 11px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  box-shadow: var(--shadow-resting);
   animation: fadeSlideIn 0.3s ease both;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.project-row:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
 }
 .project-row-name {
   font-weight: 600;
@@ -1033,7 +1125,7 @@ p.section-sub {
   flex-wrap: wrap;
   gap: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   max-height: 160px;
   overflow-y: auto;
@@ -1088,7 +1180,7 @@ p.section-sub {
   font-size: var(--fs-sm);
   font-weight: 600;
   padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
 }
 .landing-headline {
   font-size: clamp(2rem, 4.5vw, 3.25rem);
@@ -1131,7 +1223,7 @@ p.section-sub {
 }
 .browser-frame {
   width: 100%;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1157,7 +1249,7 @@ p.section-sub {
   font-family: var(--mono);
   color: var(--ink-muted);
   background: var(--bg);
-  border-radius: 6px;
+  border-radius: calc(var(--radius-sm) - 2px);
   padding: 4px 12px;
 }
 .browser-frame-body {
@@ -1186,7 +1278,7 @@ p.section-sub {
 .mock-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 12px;
 }
 .mock-card-top {
@@ -1222,13 +1314,19 @@ p.section-sub {
 .feature-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 22px 20px;
+  box-shadow: var(--shadow-resting);
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.feature-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 .feature-card-icon {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--tint-red-active-bg);
   color: var(--brand-dark);
   display: inline-flex;

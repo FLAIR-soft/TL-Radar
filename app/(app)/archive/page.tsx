@@ -82,6 +82,36 @@ export default async function ArchivePage() {
     );
   }
 
+  const rows = done.map((t) => {
+    const taskPauses = pausesByTask.get(t.id) ?? [];
+    return {
+      t,
+      taskPauses,
+      net: netDuration(t, taskPauses),
+      assignees: assigneeNamesByTask.get(t.id) ?? [],
+    };
+  });
+
+  const pausesCell = (taskPauses: TaskPause[]) =>
+    taskPauses.length ? (
+      taskPauses.map((p) => (
+        <div className="pause-line" key={p.id}>
+          <Pause size={12} strokeWidth={1.75} />
+          {fmtDateTime(p.paused_at, dict.intlLocale)}
+          <span>→</span>
+          <Play size={12} strokeWidth={1.75} />
+          {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
+        </div>
+      ))
+    ) : (
+      <span className="mono">—</span>
+    );
+
+  const estimateCell = (t: (typeof rows)[number]['t'], net: number | null) =>
+    t.estimated_minutes
+      ? `${net !== null ? fmtDuration(net, dict.duration) : '—'} / ${fmtDuration(t.estimated_minutes * 60000, dict.duration)}`
+      : '—';
+
   return (
     <div className="page-fade">
       <h2 className="section-title">{dict.archive.title}</h2>
@@ -102,58 +132,81 @@ export default async function ArchivePage() {
             </tr>
           </thead>
           <tbody>
-            {done.map((t, i) => {
-              const taskPauses = pausesByTask.get(t.id) ?? [];
-              const net = netDuration(t, taskPauses);
-              return (
-                <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
-                  <td>
-                    <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
-                      {dict.status.done}
-                    </span>
-                    <br />
-                    <strong>{t.title}</strong>
-                    {(assigneeNamesByTask.get(t.id) ?? []).length > 0 && (
-                      <>
-                        <br />
-                        <span className="mono">{(assigneeNamesByTask.get(t.id) ?? []).join(', ')}</span>
-                      </>
-                    )}
-                  </td>
-                  <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
-                  <td>{t.location || '—'}</td>
-                  <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
-                  <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
-                  <td className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</td>
-                  <td>
-                    {taskPauses.length ? (
-                      taskPauses.map((p) => (
-                        <div className="pause-line" key={p.id}>
-                          <Pause size={12} strokeWidth={1.75} />
-                          {fmtDateTime(p.paused_at, dict.intlLocale)}
-                          <span>→</span>
-                          <Play size={12} strokeWidth={1.75} />
-                          {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
-                        </div>
-                      ))
-                    ) : (
-                      <span className="mono">—</span>
-                    )}
-                  </td>
-                  <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
-                  <td className="mono">
-                    {t.estimated_minutes
-                      ? `${net !== null ? fmtDuration(net, dict.duration) : '—'} / ${fmtDuration(
-                          t.estimated_minutes * 60000,
-                          dict.duration
-                        )}`
-                      : '—'}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map(({ t, taskPauses, net, assignees }, i) => (
+              <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
+                <td>
+                  <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
+                    {dict.status.done}
+                  </span>
+                  <br />
+                  <strong>{t.title}</strong>
+                  {assignees.length > 0 && (
+                    <>
+                      <br />
+                      <span className="mono">{assignees.join(', ')}</span>
+                    </>
+                  )}
+                </td>
+                <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
+                <td>{t.location || '—'}</td>
+                <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</td>
+                <td>{pausesCell(taskPauses)}</td>
+                <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
+                <td className="mono">{estimateCell(t, net)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="archive-cards">
+        {rows.map(({ t, taskPauses, net, assignees }, i) => (
+          <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
+            <div className="archive-card-head">
+              <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
+                {dict.status.done}
+              </span>
+              <span className="archive-card-title">{t.title}</span>
+            </div>
+            {assignees.length > 0 && <div className="mono archive-card-assignees">{assignees.join(', ')}</div>}
+            <div className="archive-card-grid">
+              <div>
+                <span className="archive-card-label">{dict.archive.colProject}</span>
+                <span>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colLocation}</span>
+                <span>{t.location || '—'}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colCreated}</span>
+                <span className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colStarted}</span>
+                <span className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colCompleted}</span>
+                <span className="mono">{fmtDateTime(t.completed_at, dict.intlLocale)}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colNetDuration}</span>
+                <span className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</span>
+              </div>
+              <div>
+                <span className="archive-card-label">{dict.archive.colEstimate}</span>
+                <span className="mono">{estimateCell(t, net)}</span>
+              </div>
+            </div>
+            <div className="archive-card-pauses">
+              <span className="archive-card-label">{dict.archive.colPauses}</span>
+              {pausesCell(taskPauses)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
