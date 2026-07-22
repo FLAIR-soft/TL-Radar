@@ -20,6 +20,7 @@ import {
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useNowTick } from '@/lib/hooks/useNowTick';
 import { setStatus, deleteTask } from './actions';
+import { TaskDetailPanel } from './TaskDetailPanel';
 
 export function TaskCard({
   task,
@@ -27,6 +28,7 @@ export function TaskCard({
   assigneeNames,
   projectName,
   pausedByName,
+  profileNames,
   style,
 }: {
   task: Task;
@@ -34,6 +36,7 @@ export function TaskCard({
   assigneeNames: string[];
   projectName: string | null;
   pausedByName: string | null;
+  profileNames: Map<string, string>;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -216,6 +219,7 @@ export function TaskCard({
         >
           <Trash2 size={18} strokeWidth={1.75} />
         </button>
+        <TaskDetailPanel task={task} assigneeNames={assigneeNames} projectName={projectName} profileNames={profileNames} />
       </div>
     </div>
   );

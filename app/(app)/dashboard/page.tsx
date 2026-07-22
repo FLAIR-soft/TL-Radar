@@ -119,6 +119,7 @@ export default async function DashboardPage() {
                       assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                       projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                       pausedByName={pausedByNameByTask.get(t.id) ?? null}
+                      profileNames={profileNames}
                       style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                     />
                   ))

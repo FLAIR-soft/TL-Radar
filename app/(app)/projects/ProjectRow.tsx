@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useMemo } from 'react';
 import { Trash2, Pencil, MapPin, User } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import type { Project } from '@/lib/supabase/types';
 import { deleteProject, editProject } from './actions';
 import { ProjectForm } from './ProjectForm';
+import { ProjectDetailPanel } from './ProjectDetailPanel';
 
 export function ProjectRow({
   project,
@@ -21,6 +22,7 @@ export function ProjectRow({
   const dict = useDictionary();
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
+  const profileNames = useMemo(() => new Map(profiles.map((p) => [p.id, p.name])), [profiles]);
 
   function handleDelete() {
     if (!confirm(dict.projects.deleteConfirm)) return;
@@ -71,6 +73,7 @@ export function ProjectRow({
             >
               <Trash2 size={16} strokeWidth={1.75} />
             </button>
+            <ProjectDetailPanel project={project} ownerName={ownerName} profileNames={profileNames} />
           </div>
         </div>
         {project.description && <p className="project-row-desc">{project.description}</p>}

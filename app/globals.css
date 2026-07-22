@@ -813,6 +813,7 @@ p.section-sub {
   .archive-card-title {
     font-weight: 700;
     font-size: var(--fs-sm);
+    flex: 1;
   }
   .archive-card-assignees {
     margin-bottom: 8px;
@@ -1568,4 +1569,111 @@ p.section-sub {
   .feature-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------- Slide-over (task/project detail + activity log) ---------- */
+.slideover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.18s ease;
+}
+.slideover-panel {
+  width: 50%;
+  min-width: 420px;
+  max-width: 720px;
+  height: 100%;
+  background: var(--surface);
+  box-shadow: var(--shadow-hover);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.22s ease;
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.slideover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.slideover-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  margin: 0;
+}
+.slideover-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+@media (max-width: 720px) {
+  .slideover-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.detail-section {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.detail-desc {
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+.detail-meta {
+  margin-top: 10px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  margin-top: 12px;
+}
+.detail-log-title {
+  font-size: var(--fs-md);
+  margin: 0 0 12px;
+}
+.activity-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.activity-log-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.activity-log-icon {
+  color: var(--ink-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.activity-log-body {
+  min-width: 0;
+}
+.activity-log-desc {
+  font-size: var(--fs-sm);
+}
+.activity-log-meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  margin-top: 2px;
 }

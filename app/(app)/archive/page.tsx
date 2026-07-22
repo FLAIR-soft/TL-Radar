@@ -4,6 +4,7 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration } from '@/lib/logic/tasks';
 import type { TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
+import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
 
 export default async function ArchivePage() {
   const supabase = await createClient();
@@ -129,6 +130,7 @@ export default async function ArchivePage() {
               <th>{dict.archive.colPauses}</th>
               <th>{dict.archive.colNetDuration}</th>
               <th>{dict.archive.colEstimate}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -155,6 +157,14 @@ export default async function ArchivePage() {
                 <td>{pausesCell(taskPauses)}</td>
                 <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
                 <td className="mono">{estimateCell(t, net)}</td>
+                <td>
+                  <TaskDetailPanel
+                    task={t}
+                    assigneeNames={assignees}
+                    projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                    profileNames={profileNames}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -169,6 +179,12 @@ export default async function ArchivePage() {
                 {dict.status.done}
               </span>
               <span className="archive-card-title">{t.title}</span>
+              <TaskDetailPanel
+                task={t}
+                assigneeNames={assignees}
+                projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                profileNames={profileNames}
+              />
             </div>
             {assignees.length > 0 && <div className="mono archive-card-assignees">{assignees.join(', ')}</div>}
             <div className="archive-card-grid">

@@ -145,4 +145,37 @@ test.describe('golden path', () => {
 
     expect(errors).toEqual([]);
   });
+
+  test('task and project detail slide-overs show history', async ({ page }) => {
+    const owner = uniqueName('Gp7');
+    await register(page, owner.firstName, owner.lastName);
+
+    const projectName = 'E2E Log Project ' + Math.random().toString(36).slice(2, 8);
+    await page.click('text=Projekte');
+    await page.waitForURL('**/projects');
+    await page.fill('input[name=name]', projectName);
+    await page.click('button:has-text("Projekt hinzufügen")');
+    await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
+
+    await page.click('[data-testid=view-project-log]');
+    await expect(page.locator('.slideover-title', { hasText: projectName })).toBeVisible();
+    await expect(page.locator('.activity-log-row')).toHaveCount(1);
+    await page.click('[data-testid=slideover-close]');
+    await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
+
+    const taskTitle = 'E2E Log Task ' + Math.random().toString(36).slice(2, 8);
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', taskTitle);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    const card = page.locator('.task-card', { hasText: taskTitle });
+    await card.locator('[data-testid=view-task-log]').click();
+    await expect(page.locator('.slideover-title', { hasText: taskTitle })).toBeVisible();
+    // Created + assignee_added (self, at creation).
+    await expect(page.locator('.activity-log-row')).toHaveCount(2);
+    await page.click('[data-testid=slideover-close]');
+    await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
+  });
 });
