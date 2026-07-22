@@ -2,14 +2,12 @@ import { Suspense } from 'react';
 import { Inbox, SearchX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { STATUS_COLOR, lastPausedBy, compareByDeadlineUrgency } from '@/lib/logic/tasks';
+import { lastPausedBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
-import { TaskCard } from './TaskCard';
+import { KanbanBoard } from './KanbanBoard';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
-import type { TaskPause, TaskStatus } from '@/lib/supabase/types';
-
-const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
+import type { TaskPause } from '@/lib/supabase/types';
 
 export default async function DashboardPage({
   searchParams,
@@ -130,40 +128,14 @@ export default async function DashboardPage({
           ctaLabel={dict.filters.reset}
         />
       ) : (
-        <div className="kanban">
-          {COLUMNS.map((s, colIndex) => {
-            const items = filteredActive.filter((t) => t.status === s).sort(compareByDeadlineUrgency);
-            return (
-              <div className="kanban-col" key={s}>
-                <div className="col-head">
-                  <span
-                    className={`signal ${s === 'in_progress' ? 'pulsing' : ''}`}
-                    style={{ background: STATUS_COLOR[s] }}
-                  ></span>
-                  {dict.status[s]} <span className="col-count">{items.length}</span>
-                </div>
-                <div className="card-stack">
-                  {items.length ? (
-                    items.map((t, i) => (
-                      <TaskCard
-                        key={t.id}
-                        task={t}
-                        pauses={pausesByTask.get(t.id) ?? []}
-                        assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
-                        projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
-                        pausedByName={pausedByNameByTask.get(t.id) ?? null}
-                        profileNames={profileNames}
-                        style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
-                      />
-                    ))
-                  ) : (
-                    <div className="empty-note">{dict.dashboard.empty}</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <KanbanBoard
+          tasks={filteredActive}
+          pausesByTask={pausesByTask}
+          assigneeNamesByTask={assigneeNamesByTask}
+          projectNames={projectNames}
+          pausedByNameByTask={pausedByNameByTask}
+          profileNames={profileNames}
+        />
       )}
     </div>
   );

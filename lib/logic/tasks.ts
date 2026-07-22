@@ -10,6 +10,21 @@ export const STATUS_COLOR: Record<TaskStatus, string> = {
   done: 'var(--done)',
 };
 
+// Kakiye perekhody mezhdu VIDIMYMI kolonkami kanbana dopustimy dlya drag-and-drop.
+// Namerenno uzhe, chem knopki na karto4ke (TaskCard.nextActions): tam yest'
+// pryamoy perekhod v 'done', no v kanbane net kolonki "sdelano", kuda mozhno
+// bylo by pere tashchit' — zavershyonnyye zadachi uezzhayut srazu v arkhiv.
+export const VALID_KANBAN_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  waiting: ['in_progress'],
+  in_progress: ['paused'],
+  paused: ['in_progress'],
+  done: [],
+};
+
+export function isValidKanbanTransition(from: TaskStatus, to: TaskStatus): boolean {
+  return VALID_KANBAN_TRANSITIONS[from].includes(to);
+}
+
 export function fmtDateTime(iso: string | null, intlLocale: string): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString(intlLocale, {

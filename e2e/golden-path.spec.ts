@@ -273,4 +273,115 @@ test.describe('golden path', () => {
     await expect(page.locator('.empty-state')).toBeVisible();
     await expect(page.locator('.task-card')).toHaveCount(0);
   });
+
+  test('dragging a card between kanban columns changes its status via drag & drop', async ({ page }) => {
+    const owner = uniqueName('Gp10');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E DnD Task ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    // Filter down to just this task via the dashboard search box (Stage 2):
+    // other tests sharing this DB leave many tasks behind, and a tall column
+    // can extend well past the viewport (all three columns share one grid
+    // row, so scrolling to a deep card scrolls every heading off-screen
+    // too). Narrowing to a single, freshly-created, randomly-named task
+    // keeps every column short and both card and target on-screen with no
+    // scrolling needed, regardless of how much history the suite has piled
+    // up by this point.
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+
+    const waitingCol = page.locator('.kanban-col').nth(0);
+    const inProgressCol = page.locator('.kanban-col').nth(1);
+    const card = waitingCol.locator('.draggable-task', { hasText: title });
+    await card.waitFor();
+
+    let dialogMessage: string | null = null;
+    page.on('dialog', async (dialog) => {
+      dialogMessage = dialog.message();
+      await dialog.accept();
+    });
+
+    const cardBox = await card.boundingBox();
+    const targetBox = await inProgressCol.boundingBox();
+    if (!cardBox || !targetBox) throw new Error('could not measure drag source/target');
+
+    // dnd-kit reacts to raw pointer events, not native HTML5 drag events, so
+    // the drag is driven by hand: move past the activation distance, then
+    // onto the target column, before releasing. A final small wiggle plus a
+    // short settle wait give dnd-kit's own collision-detection pass — which
+    // runs off the pointer events, not synchronously with them — a chance to
+    // catch up before asserting on it; without this the hover class check is
+    // flaky under load (the drop itself is unaffected either way).
+    await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(cardBox.x + cardBox.width / 2 + 20, cardBox.y + cardBox.height / 2 + 20, { steps: 5 });
+    await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 20 });
+    await page.mouse.move(targetBox.x + targetBox.width / 2 + 1, targetBox.y + targetBox.height / 2 + 1, { steps: 2 });
+    await page.waitForTimeout(150);
+    await expect(inProgressCol).toHaveClass(/kanban-col-over/, { timeout: 8000 });
+    await page.mouse.up();
+
+    // Deterministic regardless of when the suite runs: dropping waiting ->
+    // in_progress either succeeds (card lands in the column, timer running)
+    // or is rejected outside work hours (card snaps back, error shown) —
+    // exactly one of the two, mirroring the button-based gating test above.
+    const landedInProgress = inProgressCol.locator('.task-card', { hasText: title });
+    const backInWaiting = waitingCol.locator('.task-card', { hasText: title });
+    await expect(landedInProgress.or(backInWaiting)).toBeVisible();
+
+    const succeeded = await landedInProgress.count();
+    const rolledBack = await backInWaiting.count();
+    expect(succeeded + rolledBack).toBe(1);
+    if (rolledBack) {
+      expect(dialogMessage).toBeTruthy();
+    } else {
+      await expect(landedInProgress.locator('.t-timer-primary')).toBeVisible();
+    }
+  });
+
+  test('dragging onto a column that is not a valid next status is a no-op', async ({ page }) => {
+    const owner = uniqueName('Gp11');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E DnD Invalid ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    // See the comment in the previous test: filtering to just this task via
+    // the search box keeps every column short and on-screen with no
+    // scrolling, regardless of how much history the suite has piled up.
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+
+    const waitingCol = page.locator('.kanban-col').nth(0);
+    const pausedCol = page.locator('.kanban-col').nth(2); // waiting -> paused is not a real transition
+    const card = waitingCol.locator('.draggable-task', { hasText: title });
+    await card.waitFor();
+
+    const cardBox = await card.boundingBox();
+    const targetBox = await pausedCol.boundingBox();
+    if (!cardBox || !targetBox) throw new Error('could not measure drag source/target');
+
+    await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(cardBox.x + cardBox.width / 2 + 20, cardBox.y + cardBox.height / 2 + 20, { steps: 5 });
+    await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 20 });
+    await page.mouse.move(targetBox.x + targetBox.width / 2 + 1, targetBox.y + targetBox.height / 2 + 1, { steps: 2 });
+    await page.waitForTimeout(150);
+    await expect(pausedCol).toHaveClass(/kanban-col-no-drop/);
+    await expect(pausedCol).not.toHaveClass(/kanban-col-over/);
+    await page.mouse.up();
+
+    await expect(waitingCol.locator('.task-card', { hasText: title })).toBeVisible();
+    await expect(pausedCol.locator('.task-card', { hasText: title })).toHaveCount(0);
+  });
 });
