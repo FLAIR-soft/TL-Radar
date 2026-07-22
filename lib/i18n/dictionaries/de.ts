@@ -146,6 +146,24 @@ const de = {
       90: '90 Tage',
     },
   },
+  landing: {
+    eyebrow: 'Für Teamleads und kleine Teams',
+    headline: 'Immer im Blick, wer was macht und wo.',
+    subheadline:
+      'TL-Radar ist ein Echtzeit-Task-Tracker: Status, Zeit und Ort jeder Aufgabe — ohne Rückfragen und Meetings.',
+    ctaDemo: 'Demo ansehen',
+    screenshotCaption: 'Dashboard in Echtzeit',
+    featuresTitle: 'Alles Wichtige, nichts Überflüssiges',
+    feature1Title: 'Kanban-Board',
+    feature1Desc: 'Aufgaben nach Status — wartend, in Bearbeitung, pausiert — in Echtzeit.',
+    feature2Title: 'Zeiterfassung',
+    feature2Desc: 'Automatischer Timer, Pausen und Soll-Ist-Vergleich — ganz ohne manuelle Tabellen.',
+    feature3Title: 'Analytik',
+    feature3Desc: 'Wie viel Zeit jede Person im Vergleich zur verfügbaren Arbeitszeit geleistet hat.',
+    feature4Title: 'Drei Sprachen',
+    feature4Desc: 'Oberfläche auf Deutsch, Russisch und Griechisch — per Klick umschaltbar.',
+    footerRights: 'Alle Rechte vorbehalten.',
+  },
   intlLocale: 'de-DE',
 } satisfies Dictionary;
 
