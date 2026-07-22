@@ -484,6 +484,27 @@ p.section-sub {
   margin: 0 0 18px;
   line-height: 1.5;
 }
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.page-header > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.page-header .section-sub {
+  margin-bottom: 0;
+}
+.page-header .btn {
+  flex-shrink: 0;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 /* ---------- Kanban ---------- */
 .kanban {
@@ -1709,6 +1730,12 @@ p.section-sub {
   padding: 20px;
   overflow-y: auto;
   flex: 1;
+}
+.slideover-body .form-card {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  max-width: none;
 }
 @media (max-width: 720px) {
   .slideover-panel {

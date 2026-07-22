@@ -2,8 +2,7 @@ import { FolderKanban } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ProjectRow } from './ProjectRow';
-import { ProjectForm } from './ProjectForm';
-import { createProject } from './actions';
+import { CreateProjectPanel } from './CreateProjectPanel';
 import { EmptyState } from '@/components/EmptyState';
 
 export default async function ProjectsPage() {
@@ -31,9 +30,13 @@ export default async function ProjectsPage() {
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.projects.title}</h2>
-      <p className="section-sub">{dict.projects.subtitle}</p>
-      <ProjectForm action={createProject} editing={null} profiles={profileList} />
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.projects.title}</h2>
+          <p className="section-sub">{dict.projects.subtitle}</p>
+        </div>
+        <CreateProjectPanel profiles={profileList} />
+      </div>
       {list.length ? (
         <div className="project-list">
           {list.map((p, i) => (

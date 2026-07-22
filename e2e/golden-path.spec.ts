@@ -22,8 +22,9 @@ test.describe('golden path', () => {
     const projectName = 'E2E Project ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.click('[data-testid=open-create-project]');
     await page.fill('input[name=name]', projectName);
-    await page.click('button:has-text("Projekt hinzufügen")');
+    await page.click('.project-form button:has-text("Projekt hinzufügen")');
     await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
 
     const taskTitle = 'E2E Task ' + Math.random().toString(36).slice(2, 8);
@@ -153,8 +154,9 @@ test.describe('golden path', () => {
     const projectName = 'E2E Log Project ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.click('[data-testid=open-create-project]');
     await page.fill('input[name=name]', projectName);
-    await page.click('button:has-text("Projekt hinzufügen")');
+    await page.click('.project-form button:has-text("Projekt hinzufügen")');
     await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
 
     await page.click('[data-testid=view-project-log]');

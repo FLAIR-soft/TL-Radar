@@ -35,11 +35,8 @@ export function ProjectForm({
 
   useEffect(() => {
     if (wasPending.current && !pending && !state.error) {
-      if (editing) {
-        onSaved?.();
-      } else {
-        formRef.current?.reset();
-      }
+      if (!editing) formRef.current?.reset();
+      onSaved?.();
     }
     wasPending.current = pending;
   }, [pending, state.error, editing, onSaved]);
