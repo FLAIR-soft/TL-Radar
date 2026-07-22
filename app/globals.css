@@ -341,6 +341,21 @@ select:focus {
   border-color: rgba(85, 96, 110, 0.3);
   border-top-color: var(--ink-muted);
 }
+.fullpage-loader {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.fullpage-loader-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--brand);
+  animation: spin 0.7s linear infinite;
+}
 
 /* ---------- App shell ---------- */
 .topbar {
@@ -943,6 +958,20 @@ p.section-sub {
   font-size: var(--fs-sm);
   padding: 10px 2px;
   line-height: 1.5;
+}
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.loading-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--ink-muted);
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
 }
 
 /* ---------- Empty states ---------- */

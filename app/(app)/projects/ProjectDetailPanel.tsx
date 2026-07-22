@@ -73,7 +73,10 @@ export function ProjectDetailPanel({
         <div className="detail-log">
           <h4 className="detail-log-title">{dict.activityLog.title}</h4>
           {logs === null ? (
-            <div className="empty-note">{dict.activityLog.loading}</div>
+            <div className="empty-note loading-row">
+              <span className="loading-spinner" />
+              {dict.activityLog.loading}
+            </div>
           ) : (
             <ActivityLogList logs={logs} profileNames={profileNames} />
           )}

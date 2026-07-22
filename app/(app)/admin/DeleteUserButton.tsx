@@ -30,7 +30,7 @@ export function DeleteUserButton({ userId }: { userId: string }) {
         onClick={handleDelete}
         data-testid="delete-user"
       >
-        <Trash2 size={16} strokeWidth={1.75} />
+        {isPending ? <span className="loading-spinner" /> : <Trash2 size={16} strokeWidth={1.75} />}
       </button>
       {error && <div className="admin-reset-error">{error}</div>}
     </div>
