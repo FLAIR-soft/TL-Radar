@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Pause, Play, Archive as ArchiveIcon, SearchX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
@@ -18,15 +19,8 @@ export default async function ArchivePage({
   const filters = parseTaskFilters(await searchParams);
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('locale')
-    .eq('id', user!.id)
-    .single();
+  const user = await getCachedUser();
+  const profile = await getCachedProfile(user!.id);
 
   const dict = getDictionary(profile?.locale ?? 'de');
 

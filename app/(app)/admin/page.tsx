@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { DeleteUserButton } from './DeleteUserButton';
@@ -7,17 +8,11 @@ import { WipLimitsForm } from './WipLimitsForm';
 
 export default async function AdminPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, locale')
-    .eq('id', user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
 
   if (profile?.role !== 'admin') redirect('/dashboard');
 

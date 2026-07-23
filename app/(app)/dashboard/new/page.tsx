@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser } from '@/lib/supabase/request-cache';
 import { createTask, editTaskFields } from '../actions';
 import { TaskForm } from './TaskForm';
 
@@ -11,9 +12,7 @@ export default async function NewTaskPage({
   const { edit, template: templateId } = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   const [{ data: profiles }, { data: activeProjects }, { data: templateList }, { data: labelList }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),

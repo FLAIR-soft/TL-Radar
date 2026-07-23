@@ -1,5 +1,6 @@
 import { FolderKanban } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ProjectRow } from './ProjectRow';
 import { CreateProjectPanel } from './CreateProjectPanel';
@@ -7,15 +8,8 @@ import { EmptyState } from '@/components/EmptyState';
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('locale')
-    .eq('id', user!.id)
-    .single();
+  const user = await getCachedUser();
+  const profile = await getCachedProfile(user!.id);
 
   const dict = getDictionary(profile?.locale ?? 'de');
 

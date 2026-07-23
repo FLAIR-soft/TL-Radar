@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Radar } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
 import { getThemeCookie } from '@/lib/theme/cookie';
@@ -13,20 +13,13 @@ import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name, role, locale')
-    .eq('id', user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
 
   const name = profile?.name ?? user.email ?? 'Пользователь';
   const role = profile?.role ?? 'editor';

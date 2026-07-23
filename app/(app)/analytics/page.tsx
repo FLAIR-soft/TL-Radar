@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Users, Download } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
@@ -29,16 +30,10 @@ export default async function AnalyticsPage({
   const days = parsePeriod(daysParam);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, locale')
-    .eq('id', user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
   if (!profile || !canViewStats(profile.role)) redirect('/dashboard');
 
   const dict = getDictionary(profile.locale ?? 'de');

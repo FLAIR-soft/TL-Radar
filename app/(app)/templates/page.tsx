@@ -1,5 +1,6 @@
 import { LayoutTemplate } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { EmptyState } from '@/components/EmptyState';
 import { TemplateRow } from './TemplateRow';
@@ -8,11 +9,8 @@ import { CreateRecurringRulePanel } from './CreateRecurringRulePanel';
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user!.id).single();
+  const user = await getCachedUser();
+  const profile = await getCachedProfile(user!.id);
   const dict = getDictionary(profile?.locale ?? 'de');
 
   const [{ data: templates }, { data: projects }, { data: rules }] = await Promise.all([

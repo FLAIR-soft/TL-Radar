@@ -23,6 +23,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // TODO(Этап 1): switch to supabase.auth.getClaims() for local JWT
+  // verification (no network call) once asymmetric JWT signing keys are
+  // enabled on the project (Settings > API > JWT Keys). As of this stage
+  // the project still uses the legacy shared HS256 secret, so getClaims()
+  // would still round-trip to Auth — getUser() stays until that migration
+  // is done.
   const {
     data: { user },
   } = await supabase.auth.getUser();
