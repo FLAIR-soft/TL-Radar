@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
 import { notifyMany } from '@/lib/logic/notifications';
+import { extractMentionedUsernames } from '@/lib/logic/mentions';
 import type { TaskComment } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -72,19 +73,33 @@ export async function addComment(taskId: string, formData: FormData): Promise<{ 
 
   await logActivity(supabase, 'task', taskId, 'comment_added', userId, { commentId: comment.id });
 
-  const { data: assignees } = await supabase
-    .from('task_assignees')
-    .select('assignee_id')
-    .eq('task_id', taskId)
-    .is('removed_at', null);
+  const [{ data: assignees }, { data: watchers }] = await Promise.all([
+    supabase.from('task_assignees').select('assignee_id').eq('task_id', taskId).is('removed_at', null),
+    supabase.from('task_watchers').select('user_id').eq('task_id', taskId),
+  ]);
   await notifyMany(
     supabase,
-    (assignees ?? []).map((a) => a.assignee_id),
+    [...(assignees ?? []).map((a) => a.assignee_id), ...(watchers ?? []).map((w) => w.user_id)],
     userId,
     'comment',
     taskId,
     { preview: body.slice(0, 140) }
   );
+
+  const mentionedUsernames = extractMentionedUsernames(body);
+  if (mentionedUsernames.length) {
+    const { data: mentioned } = await supabase.from('profiles').select('id').in('username', mentionedUsernames);
+    if (mentioned?.length) {
+      await notifyMany(
+        supabase,
+        mentioned.map((p) => p.id),
+        userId,
+        'mention',
+        taskId,
+        { preview: body.slice(0, 140) }
+      );
+    }
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');

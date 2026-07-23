@@ -180,7 +180,12 @@ const de = {
     assigned: 'Sie wurden einer Aufgabe zugewiesen',
     unassigned: 'Sie wurden von einer Aufgabe entfernt',
     comment: 'Neuer Kommentar',
+    mention: 'Sie wurden in einem Kommentar erwähnt',
     deadlineSoon: 'Frist läuft bald ab',
+  },
+  watchers: {
+    watch: 'Aufgabe beobachten',
+    unwatch: 'Aufgabe nicht mehr beobachten',
   },
   checklist: {
     title: 'Checkliste',

@@ -178,7 +178,12 @@ const ru = {
     assigned: 'Вас назначили на задачу',
     unassigned: 'Вас сняли с задачи',
     comment: 'Новый комментарий',
+    mention: 'Вас упомянули в комментарии',
     deadlineSoon: 'Скоро дедлайн',
+  },
+  watchers: {
+    watch: 'Следить за задачей',
+    unwatch: 'Не следить за задачей',
   },
   checklist: {
     title: 'Чек-лист',

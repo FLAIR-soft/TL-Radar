@@ -180,7 +180,12 @@ const en = {
     assigned: 'You were assigned to a task',
     unassigned: 'You were removed from a task',
     comment: 'New comment',
+    mention: 'You were mentioned in a comment',
     deadlineSoon: 'Deadline coming up',
+  },
+  watchers: {
+    watch: 'Watch this task',
+    unwatch: 'Stop watching this task',
   },
   checklist: {
     title: 'Checklist',

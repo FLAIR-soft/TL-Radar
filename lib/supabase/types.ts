@@ -142,7 +142,13 @@ export type SavedView = {
   deleted_at: string | null;
 };
 
-export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment';
+export type TaskWatcher = {
+  task_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment' | 'mention';
 
 export type Notification = {
   id: string;
@@ -238,6 +244,12 @@ export interface Database {
         Row: SavedView;
         Insert: Partial<SavedView> & Pick<SavedView, 'user_id' | 'name' | 'filters'>;
         Update: Partial<SavedView>;
+        Relationships: [];
+      };
+      task_watchers: {
+        Row: TaskWatcher;
+        Insert: Partial<TaskWatcher> & Pick<TaskWatcher, 'task_id' | 'user_id'>;
+        Update: Partial<TaskWatcher>;
         Relationships: [];
       };
     };

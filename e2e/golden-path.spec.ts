@@ -820,4 +820,51 @@ test.describe('golden path', () => {
     expect(analyticsCsvResp.status()).toBe(200);
     expect(await analyticsCsvResp.text()).toContain(owner.fullName);
   });
+
+  test('@mention autocomplete notifies the mentioned user, and a watcher is notified without being assigned', async ({
+    page,
+  }) => {
+    const owner = uniqueName('Gp22');
+    const helper = uniqueName('Gp23');
+
+    await register(page, owner.firstName, owner.lastName);
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+    await register(page, helper.firstName, helper.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Mention Task ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    // Helper is not assigned to the task, only watching it.
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    await page.locator('.task-card', { hasText: title }).locator('[data-testid=view-task-log]').click();
+    await page.click('[data-testid=toggle-watch]');
+    await page.click('[data-testid=slideover-close]');
+
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+    await signIn(page, owner.username);
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    await page.locator('.task-card', { hasText: title }).locator('[data-testid=view-task-log]').click();
+    await page.locator('[data-testid=comment-input]').pressSequentially(`Hey @${helper.username.slice(0, 5)}`);
+    await expect(page.locator('[data-testid=mention-suggestion]').first()).toBeVisible();
+    await page.click('[data-testid=mention-suggestion]');
+    await expect(page.locator('[data-testid=comment-input]')).toHaveValue(`Hey @${helper.username} `);
+    await page.click('[data-testid=comment-submit]');
+    await expect(page.locator('.comment-row .mention', { hasText: helper.fullName })).toBeVisible();
+    await page.click('[data-testid=slideover-close]');
+
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+    await signIn(page, helper.username);
+
+    // Watcher-only 'comment' notification + the 'mention' notification = 2.
+    await expect(page.locator('[data-testid=notification-count]')).toHaveText('2');
+  });
 });

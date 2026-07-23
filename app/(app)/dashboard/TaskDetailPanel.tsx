@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { History, Folder, MapPin, CalendarClock, BookmarkPlus } from 'lucide-react';
+import { History, Folder, MapPin, CalendarClock, BookmarkPlus, Eye, EyeOff } from 'lucide-react';
 import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
 import { CommentList } from '@/components/CommentList';
@@ -33,11 +33,20 @@ export function TaskDetailPanel({
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
   const [comments, setComments] = useState<TaskCommentsResult | null>(null);
   const [checklist, setChecklist] = useState<TaskChecklistItem[] | null>(null);
+  const [watching, setWatching] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!open || logs !== null) return;
     getActivityLog('task', task.id).then(setLogs);
   }, [open, logs, task.id]);
+
+  useEffect(() => {
+    if (!open || watching !== null) return;
+    fetch(`/api/watch?taskId=${task.id}`)
+      .then((r) => r.json())
+      .then((data) => setWatching(!!data.watching))
+      .catch(() => setWatching(false));
+  }, [open, watching, task.id]);
 
   useEffect(() => {
     if (!open || comments !== null) return;
@@ -69,6 +78,17 @@ export function TaskDetailPanel({
     });
   }
 
+  function handleToggleWatch() {
+    fetch('/api/watch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId: task.id }),
+    })
+      .then((r) => r.json())
+      .then((data) => setWatching(!!data.watching))
+      .catch(() => {});
+  }
+
   return (
     <>
       <button
@@ -91,6 +111,16 @@ export function TaskDetailPanel({
                 {dict.priority[task.priority]}
               </span>
             )}
+            <button
+              type="button"
+              className={`icon-btn detail-save-template-btn ${watching ? 'watch-active' : ''}`}
+              title={watching ? dict.watchers.unwatch : dict.watchers.watch}
+              disabled={watching === null}
+              onClick={handleToggleWatch}
+              data-testid="toggle-watch"
+            >
+              {watching ? <Eye size={16} strokeWidth={1.75} /> : <EyeOff size={16} strokeWidth={1.75} />}
+            </button>
             <button
               type="button"
               className="icon-btn detail-save-template-btn"

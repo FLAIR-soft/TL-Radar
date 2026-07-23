@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock } from 'lucide-react';
+import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
@@ -12,6 +12,7 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   assigned: UserPlus,
   unassigned: UserMinus,
   comment: MessageSquare,
+  mention: AtSign,
   deadline_soon: CalendarClock,
 };
 
@@ -24,6 +25,8 @@ function describe(n: NotificationView, dict: Dictionary): string {
       return `${dict.notifications.unassigned}: ${title}`;
     case 'comment':
       return `${dict.notifications.comment}: ${title}`;
+    case 'mention':
+      return `${dict.notifications.mention}: ${title}`;
     case 'deadline_soon':
       return `${dict.notifications.deadlineSoon}: ${title}`;
     default:
