@@ -210,6 +210,27 @@ const en = {
       taskNotFound: 'Task not found.',
     },
   },
+  table: {
+    colTitle: 'Task',
+    colStatus: 'Status',
+    colProject: 'Project',
+    colPriority: 'Priority',
+    colDeadline: 'Deadline',
+    colEstimate: 'Estimate',
+    colAssignees: 'Assignees',
+    viewKanban: 'Kanban',
+    viewTable: 'Table',
+  },
+  savedViews: {
+    placeholder: '— saved views —',
+    namePlaceholder: 'View name',
+    saveButton: 'Save current view',
+    deleteTitle: 'Delete view',
+    deleteConfirm: 'Delete this view permanently?',
+    errors: {
+      missingName: 'Enter a view name.',
+    },
+  },
   recurring: {
     title: 'Recurring rules',
     empty: 'No rules yet.',

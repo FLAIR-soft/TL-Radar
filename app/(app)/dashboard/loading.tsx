@@ -3,7 +3,7 @@ export default function DashboardLoading() {
     <div className="page-fade">
       <div className="skeleton skeleton-title-bar" />
       <div className="skeleton skeleton-sub-bar" />
-      <div className="kanban">
+      <div className="kanban-skeleton">
         {[0, 1, 2].map((col) => (
           <div className="kanban-col" key={col}>
             <div className="col-head">

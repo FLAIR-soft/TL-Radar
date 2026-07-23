@@ -210,6 +210,27 @@ const de = {
       taskNotFound: 'Aufgabe nicht gefunden.',
     },
   },
+  table: {
+    colTitle: 'Aufgabe',
+    colStatus: 'Status',
+    colProject: 'Projekt',
+    colPriority: 'Priorität',
+    colDeadline: 'Frist',
+    colEstimate: 'Schätzung',
+    colAssignees: 'Zuständige',
+    viewKanban: 'Kanban',
+    viewTable: 'Tabelle',
+  },
+  savedViews: {
+    placeholder: '— gespeicherte Ansichten —',
+    namePlaceholder: 'Name der Ansicht',
+    saveButton: 'Aktuelle Ansicht speichern',
+    deleteTitle: 'Ansicht löschen',
+    deleteConfirm: 'Diese Ansicht unwiderruflich löschen?',
+    errors: {
+      missingName: 'Geben Sie einen Namen für die Ansicht ein.',
+    },
+  },
   recurring: {
     title: 'Wiederkehrende Regeln',
     empty: 'Noch keine Regeln.',

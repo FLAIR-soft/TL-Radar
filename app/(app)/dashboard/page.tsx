@@ -5,6 +5,7 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { lastPausedBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
 import { KanbanBoard } from './KanbanBoard';
+import { TaskTable } from './TaskTable';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
 import type { TaskPause } from '@/lib/supabase/types';
@@ -14,7 +15,9 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<SearchParamsRecord>;
 }) {
-  const filters = parseTaskFilters(await searchParams);
+  const resolvedSearchParams = await searchParams;
+  const filters = parseTaskFilters(resolvedSearchParams);
+  const view = resolvedSearchParams.view === 'table' ? 'table' : 'kanban';
 
   const supabase = await createClient();
 
@@ -30,7 +33,7 @@ export default async function DashboardPage({
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }] = await Promise.all([
+  const [{ data: tasks }, { data: profiles }, { data: projects }, { data: savedViews }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*')
@@ -39,11 +42,13 @@ export default async function DashboardPage({
       .order('created_at', { ascending: true }),
     supabase.from('profiles').select('id, name').order('name'),
     supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('saved_views').select('id, name, filters').is('deleted_at', null).order('created_at', { ascending: true }),
   ]);
 
   const active = tasks ?? [];
   const profileList = profiles ?? [];
   const projectList = projects ?? [];
+  const savedViewList = savedViews ?? [];
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
 
@@ -144,7 +149,7 @@ export default async function DashboardPage({
       <h2 className="section-title">{dict.dashboard.title}</h2>
       <p className="section-sub">{dict.dashboard.subtitle}</p>
       <Suspense fallback={null}>
-        <TaskFilterBar profiles={profileList} projects={projectList} />
+        <TaskFilterBar profiles={profileList} projects={projectList} savedViews={savedViewList} view={view} />
       </Suspense>
       {filtersActive && filteredActive.length === 0 ? (
         <EmptyState
@@ -153,6 +158,15 @@ export default async function DashboardPage({
           subtitle={dict.filters.noResultsSubtitle}
           ctaHref="/dashboard"
           ctaLabel={dict.filters.reset}
+        />
+      ) : view === 'table' ? (
+        <TaskTable
+          tasks={filteredActive}
+          assigneeNamesByTask={assigneeNamesByTask}
+          projectNames={projectNames}
+          profileNames={profileNames}
+          commentCountsByTask={commentCountsByTask}
+          checklistProgressByTask={checklistProgressByTask}
         />
       ) : (
         <KanbanBoard

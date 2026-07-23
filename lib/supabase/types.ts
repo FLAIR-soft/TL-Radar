@@ -133,6 +133,15 @@ export type RecurringRule = {
   deleted_at: string | null;
 };
 
+export type SavedView = {
+  id: string;
+  user_id: string;
+  name: string;
+  filters: { qs: string };
+  created_at: string;
+  deleted_at: string | null;
+};
+
 export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment';
 
 export type Notification = {
@@ -223,6 +232,12 @@ export interface Database {
         Row: RecurringRule;
         Insert: Partial<RecurringRule> & Pick<RecurringRule, 'template_id' | 'frequency' | 'next_run_at'>;
         Update: Partial<RecurringRule>;
+        Relationships: [];
+      };
+      saved_views: {
+        Row: SavedView;
+        Insert: Partial<SavedView> & Pick<SavedView, 'user_id' | 'name' | 'filters'>;
+        Update: Partial<SavedView>;
         Relationships: [];
       };
     };

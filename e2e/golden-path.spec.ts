@@ -676,4 +676,60 @@ test.describe('golden path', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-testid=command-palette]')).toHaveCount(0);
   });
+
+  test('table view sorts tasks, and a saved view restores filters + view mode', async ({ page }) => {
+    const owner = uniqueName('Gp19');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const titleHigh = 'E2E Table High ' + rand;
+    const titleLow = 'E2E Table Low ' + rand;
+    for (const [title, priority] of [
+      [titleHigh, 'high'],
+      [titleLow, 'low'],
+    ]) {
+      await page.click('text=Neue Aufgabe');
+      await page.waitForURL('**/dashboard/new');
+      await page.fill('input[name=title]', title);
+      await page.selectOption('select[name=priority]', priority);
+      await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+      await page.waitForURL('**/dashboard');
+    }
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    await expect(page.locator('.kanban')).toBeVisible({ timeout: 15000 });
+
+    await page.click('[data-testid=view-table]');
+    await expect(page.locator('[data-testid=task-table]')).toBeVisible();
+    await expect(page).toHaveURL(/view=table/);
+    await expect(page.locator('[data-testid=task-table-row]')).toHaveCount(2);
+
+    await page.click('[data-testid=sort-priority]');
+    await expect(page.locator('[data-testid=task-table-row]').first()).toContainText(titleLow);
+    await page.click('[data-testid=sort-priority]');
+    await expect(page.locator('[data-testid=task-table-row]').first()).toContainText(titleHigh);
+
+    // Save the current filter + table view, reset, then restore it by name.
+    page.once('dialog', (dialog) => dialog.accept('E2E View ' + rand));
+    await page.click('[data-testid=save-view]');
+    await page.waitForTimeout(400);
+
+    await page.goto('/dashboard');
+    await expect(page.locator('.kanban')).toBeVisible({ timeout: 15000 });
+    await page.selectOption('[data-testid=saved-views-select]', { label: 'E2E View ' + rand });
+    await expect(page.locator('[data-testid=task-table]')).toBeVisible();
+    await expect(page.locator('[data-testid=task-table-row]')).toHaveCount(2);
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.click('[data-testid=delete-view]');
+    await page.waitForTimeout(400);
+    await page.reload();
+    const remainingOptions = await page.locator('[data-testid=saved-views-select] option').allTextContents();
+    expect(remainingOptions.some((o) => o.includes(rand))).toBe(false);
+
+    // Delete works straight from a table row too.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('[data-testid=task-table-row]', { hasText: titleHigh }).locator('[data-testid=delete-task]').click();
+    await expect(page.locator('[data-testid=task-table-row]', { hasText: titleHigh })).toHaveCount(0);
+  });
 });

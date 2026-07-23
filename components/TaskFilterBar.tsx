@@ -2,16 +2,21 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { Search, X, LayoutGrid, Table2, Bookmark, Plus, Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
+import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
 
 export function TaskFilterBar({
   profiles,
   projects,
+  savedViews = [],
+  view = 'kanban',
 }: {
   profiles: { id: string; name: string }[];
   projects: { id: string; name: string }[];
+  savedViews?: { id: string; name: string; filters: { qs: string } }[];
+  view?: 'kanban' | 'table';
 }) {
   const dict = useDictionary();
   const router = useRouter();
@@ -20,6 +25,7 @@ export function TaskFilterBar({
   const [, startTransition] = useTransition();
 
   const [q, setQ] = useState(searchParams.get('q') ?? '');
+  const [selectedViewId, setSelectedViewId] = useState('');
   const firstRender = useRef(true);
 
   // startTransition marks these router.replace calls as interruptible: if the
@@ -73,6 +79,34 @@ export function TaskFilterBar({
     navigate(new URLSearchParams());
   }
 
+  function setView(next: 'kanban' | 'table') {
+    updateParam('view', next === 'table' ? 'table' : null);
+  }
+
+  function applyView(qs: string) {
+    startTransition(() => {
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    });
+  }
+
+  function handleSaveView() {
+    const name = prompt(dict.savedViews.namePlaceholder);
+    if (name === null) return;
+    startTransition(() => {
+      saveView(name, searchParams.toString()).then((result) => {
+        if (result?.error) alert(result.error);
+      });
+    });
+  }
+
+  function handleDeleteSelectedView() {
+    if (!selectedViewId || !confirm(dict.savedViews.deleteConfirm)) return;
+    startTransition(() => {
+      deleteSavedView(selectedViewId);
+    });
+    setSelectedViewId('');
+  }
+
   return (
     <div className="filter-bar">
       <div className="filter-search">
@@ -117,6 +151,59 @@ export function TaskFilterBar({
           {dict.filters.reset}
         </button>
       )}
+      <div className="view-toggle">
+        <button
+          type="button"
+          className={`icon-btn ${view === 'kanban' ? 'view-toggle-active' : ''}`}
+          title={dict.table.viewKanban}
+          onClick={() => setView('kanban')}
+          data-testid="view-kanban"
+        >
+          <LayoutGrid size={16} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className={`icon-btn ${view === 'table' ? 'view-toggle-active' : ''}`}
+          title={dict.table.viewTable}
+          onClick={() => setView('table')}
+          data-testid="view-table"
+        >
+          <Table2 size={16} strokeWidth={1.75} />
+        </button>
+      </div>
+      <div className="saved-views">
+        <Bookmark size={14} strokeWidth={1.75} />
+        <select
+          value={selectedViewId}
+          onChange={(e) => {
+            setSelectedViewId(e.target.value);
+            const savedView = savedViews.find((v) => v.id === e.target.value);
+            if (savedView) applyView(savedView.filters.qs);
+          }}
+          data-testid="saved-views-select"
+        >
+          <option value="">{dict.savedViews.placeholder}</option>
+          {savedViews.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
+            </option>
+          ))}
+        </select>
+        {selectedViewId && (
+          <button
+            type="button"
+            className="icon-btn"
+            title={dict.savedViews.deleteTitle}
+            onClick={handleDeleteSelectedView}
+            data-testid="delete-view"
+          >
+            <Trash2 size={16} strokeWidth={1.75} />
+          </button>
+        )}
+        <button type="button" className="icon-btn" title={dict.savedViews.saveButton} onClick={handleSaveView} data-testid="save-view">
+          <Plus size={16} strokeWidth={1.75} />
+        </button>
+      </div>
     </div>
   );
 }

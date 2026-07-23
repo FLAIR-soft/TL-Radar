@@ -208,6 +208,27 @@ const ru = {
       taskNotFound: 'Задача не найдена.',
     },
   },
+  table: {
+    colTitle: 'Задача',
+    colStatus: 'Статус',
+    colProject: 'Проект',
+    colPriority: 'Приоритет',
+    colDeadline: 'Дедлайн',
+    colEstimate: 'Оценка',
+    colAssignees: 'Исполнители',
+    viewKanban: 'Канбан',
+    viewTable: 'Таблица',
+  },
+  savedViews: {
+    placeholder: '— представления —',
+    namePlaceholder: 'Название представления',
+    saveButton: 'Сохранить текущий вид',
+    deleteTitle: 'Удалить представление',
+    deleteConfirm: 'Удалить это представление без возможности восстановления?',
+    errors: {
+      missingName: 'Введите название представления.',
+    },
+  },
   recurring: {
     title: 'Повторяющиеся правила',
     empty: 'Правил пока нет.',
