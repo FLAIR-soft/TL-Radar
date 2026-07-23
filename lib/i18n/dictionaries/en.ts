@@ -241,6 +241,12 @@ const en = {
       missingDayOfMonth: 'Enter a day of month (1–31).',
     },
   },
+  commandPalette: {
+    placeholder: 'Type a command or task title…',
+    addTaskPrefix: 'Add task: ',
+    noResults: 'Nothing found.',
+    hint: '↑↓ navigate · ↵ select · Esc close',
+  },
   admin: {
     title: 'Admin',
     subtitle: 'Reset a password or delete a user.',

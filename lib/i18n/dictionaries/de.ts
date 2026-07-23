@@ -241,6 +241,12 @@ const de = {
       missingDayOfMonth: 'Geben Sie einen Tag des Monats an (1–31).',
     },
   },
+  commandPalette: {
+    placeholder: 'Befehl oder Aufgabentitel eingeben…',
+    addTaskPrefix: 'Aufgabe hinzufügen: ',
+    noResults: 'Nichts gefunden.',
+    hint: '↑↓ navigieren · ↵ auswählen · Esc schließen',
+  },
   admin: {
     title: 'Admin',
     subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',

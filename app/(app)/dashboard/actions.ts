@@ -127,6 +127,33 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
   redirect('/dashboard');
 }
 
+// Bystroye sozdaniye zadachi iz command palette (Etap 9) — tol'ko nazvaniye,
+// avtor srazu naznachayetsya ispolnitelem. V otlichiye ot createTask,
+// vyzyvayetsya napryamuyu iz klientskogo komponenta (ne cherez <form
+// action>), poetomu bez redirect() — palette sama reshayet, kuda perekhodit'.
+export async function quickCreateTask(title: string): Promise<{ error?: string; taskId?: string }> {
+  const { supabase, userId, dict } = await requireAuth();
+  const trimmed = title.trim();
+  if (!trimmed) return { error: dict.taskForm.errors.missingFields };
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .insert({ title: trimmed, status: 'waiting', created_by: userId, updated_by: userId })
+    .select('id')
+    .single();
+
+  if (error || !task) return { error: error?.message ?? dict.taskForm.errors.missingFields };
+
+  const now = new Date().toISOString();
+  await supabase
+    .from('task_assignees')
+    .insert({ task_id: task.id, assignee_id: userId, added_at: now, added_by: userId });
+  await logActivity(supabase, 'task', task.id, 'created', userId, { title: trimmed });
+
+  revalidatePath('/dashboard');
+  return { taskId: task.id };
+}
+
 export async function editTaskFields(
   taskId: string,
   _prevState: TaskFormState,

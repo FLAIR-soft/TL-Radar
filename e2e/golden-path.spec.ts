@@ -643,4 +643,37 @@ test.describe('golden path', () => {
     await ruleRow.locator('[data-testid=delete-rule]').click();
     await expect(page.locator('.rule-row', { hasText: title })).toHaveCount(0);
   });
+
+  test('command palette navigates on a page match and quick-adds a task otherwise', async ({ page }) => {
+    const owner = uniqueName('Gp18');
+    await register(page, owner.firstName, owner.lastName);
+
+    // A query matching a page name must navigate on Enter, not quick-add —
+    // nav matches are listed before the quick-add fallback for exactly this reason.
+    await page.click('[data-testid=command-palette-trigger]');
+    await page.fill('[data-testid=command-palette-input]', 'Archiv');
+    await expect(page.locator('[data-testid=command-palette-option]').first()).toHaveText('Archiv');
+    await page.keyboard.press('Enter');
+    await page.waitForURL('**/archive');
+
+    // A query matching nothing is quick-added as a task assigned to the current user.
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Quick Add ' + rand;
+    await page.click('[data-testid=command-palette-trigger]');
+    await page.fill('[data-testid=command-palette-input]', title);
+    await expect(page.locator('[data-testid=command-palette-option]')).toHaveCount(1);
+    await page.keyboard.press('Enter');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(owner.fullName);
+
+    // Escape closes the palette without side effects.
+    await page.click('[data-testid=command-palette-trigger]');
+    await expect(page.locator('[data-testid=command-palette]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-testid=command-palette]')).toHaveCount(0);
+  });
 });

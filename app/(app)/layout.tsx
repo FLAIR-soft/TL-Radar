@@ -8,6 +8,7 @@ import { TopTabs } from './TopTabs';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
+import { CommandPalette } from '@/components/CommandPalette';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <TopTabs role={role} />
           </div>
           <div className="who">
+            <CommandPalette role={role} />
             <NotificationBell />
             <ThemeToggle theme={theme} />
             <LanguageSwitcher />
