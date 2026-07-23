@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare } from 'lucide-react';
+import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare, ListChecks } from 'lucide-react';
 import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -32,6 +32,7 @@ export function TaskCard({
   pausedByName,
   profileNames,
   commentCount = 0,
+  checklistProgress,
   style,
 }: {
   task: Task;
@@ -41,6 +42,7 @@ export function TaskCard({
   pausedByName: string | null;
   profileNames: Map<string, string>;
   commentCount?: number;
+  checklistProgress?: { done: number; total: number };
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -231,6 +233,12 @@ export function TaskCard({
         >
           <Trash2 size={18} strokeWidth={1.75} />
         </button>
+        {checklistProgress && checklistProgress.total > 0 && (
+          <span className="comment-count-badge" title={dict.checklist.title}>
+            <ListChecks size={14} strokeWidth={1.75} />
+            {checklistProgress.done}/{checklistProgress.total}
+          </span>
+        )}
         {commentCount > 0 && (
           <span className="comment-count-badge" title={dict.comments.title}>
             <MessageSquare size={14} strokeWidth={1.75} />

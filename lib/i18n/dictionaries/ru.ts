@@ -152,6 +152,7 @@ const ru = {
     assigneeAdded: 'Исполнитель добавлен',
     assigneeRemoved: 'Исполнитель снят',
     commentAdded: 'Добавлен комментарий',
+    checklistItemAdded: 'Добавлен пункт чек-листа',
     unknownUser: 'неизвестный пользователь',
   },
   comments: {
@@ -177,6 +178,20 @@ const ru = {
     unassigned: 'Вас сняли с задачи',
     comment: 'Новый комментарий',
     deadlineSoon: 'Скоро дедлайн',
+  },
+  checklist: {
+    title: 'Чек-лист',
+    empty: 'Пунктов пока нет.',
+    loading: 'Загрузка…',
+    placeholder: 'Новый пункт…',
+    addButton: 'Добавить',
+    deleteTitle: 'Удалить пункт',
+    deleteConfirm: 'Удалить этот пункт?',
+    moveUp: 'Переместить вверх',
+    moveDown: 'Переместить вниз',
+    errors: {
+      empty: 'Введите текст пункта.',
+    },
   },
   admin: {
     title: 'Админ',

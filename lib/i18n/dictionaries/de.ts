@@ -154,6 +154,7 @@ const de = {
     assigneeAdded: 'Zuständige Person hinzugefügt',
     assigneeRemoved: 'Zuständige Person entfernt',
     commentAdded: 'Kommentar hinzugefügt',
+    checklistItemAdded: 'Checklistenpunkt hinzugefügt',
     unknownUser: 'unbekannter Benutzer',
   },
   comments: {
@@ -179,6 +180,20 @@ const de = {
     unassigned: 'Sie wurden von einer Aufgabe entfernt',
     comment: 'Neuer Kommentar',
     deadlineSoon: 'Frist läuft bald ab',
+  },
+  checklist: {
+    title: 'Checkliste',
+    empty: 'Noch keine Punkte.',
+    loading: 'Wird geladen…',
+    placeholder: 'Neuer Punkt…',
+    addButton: 'Hinzufügen',
+    deleteTitle: 'Punkt löschen',
+    deleteConfirm: 'Diesen Punkt löschen?',
+    moveUp: 'Nach oben verschieben',
+    moveDown: 'Nach unten verschieben',
+    errors: {
+      empty: 'Bitte einen Text eingeben.',
+    },
   },
   admin: {
     title: 'Admin',

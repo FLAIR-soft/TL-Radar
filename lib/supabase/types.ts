@@ -71,7 +71,8 @@ export type ActivityEventType =
   | 'deleted'
   | 'assignee_added'
   | 'assignee_removed'
-  | 'comment_added';
+  | 'comment_added'
+  | 'checklist_item_added';
 
 export type ActivityLog = {
   id: string;
@@ -88,6 +89,16 @@ export type TaskComment = {
   task_id: string;
   author_id: string | null;
   body: string;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type TaskChecklistItem = {
+  id: string;
+  task_id: string;
+  title: string;
+  done: boolean;
+  position: number;
   created_at: string;
   deleted_at: string | null;
 };
@@ -164,6 +175,12 @@ export interface Database {
         Row: Notification;
         Insert: Partial<Notification> & Pick<Notification, 'recipient_id' | 'type' | 'task_id'>;
         Update: Partial<Notification>;
+        Relationships: [];
+      };
+      task_checklist_items: {
+        Row: TaskChecklistItem;
+        Insert: Partial<TaskChecklistItem> & Pick<TaskChecklistItem, 'task_id' | 'title'>;
+        Update: Partial<TaskChecklistItem>;
         Relationships: [];
       };
     };

@@ -5,13 +5,15 @@ import { History, Folder, MapPin, CalendarClock } from 'lucide-react';
 import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
 import { CommentList } from '@/components/CommentList';
+import { ChecklistList } from '@/components/ChecklistList';
 import { getActivityLog } from '@/lib/logic/activity-log-query';
 import { getTaskComments, type TaskCommentsResult } from './comments-actions';
+import { getChecklistItems } from './checklist-actions';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { Task, ActivityLog } from '@/lib/supabase/types';
+import type { Task, ActivityLog, TaskChecklistItem } from '@/lib/supabase/types';
 
 export function TaskDetailPanel({
   task,
@@ -28,6 +30,7 @@ export function TaskDetailPanel({
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
   const [comments, setComments] = useState<TaskCommentsResult | null>(null);
+  const [checklist, setChecklist] = useState<TaskChecklistItem[] | null>(null);
 
   useEffect(() => {
     if (!open || logs !== null) return;
@@ -39,8 +42,18 @@ export function TaskDetailPanel({
     getTaskComments(task.id).then(setComments);
   }, [open, comments, task.id]);
 
+  useEffect(() => {
+    if (!open || checklist !== null) return;
+    getChecklistItems(task.id).then(setChecklist);
+  }, [open, checklist, task.id]);
+
   function refreshComments() {
     getTaskComments(task.id).then(setComments);
+    getActivityLog('task', task.id).then(setLogs);
+  }
+
+  function refreshChecklist() {
+    getChecklistItems(task.id).then(setChecklist);
     getActivityLog('task', task.id).then(setLogs);
   }
 
@@ -96,6 +109,17 @@ export function TaskDetailPanel({
               <span>{dict.taskCard.estimate}</span>
               <span className="mono">{fmtDuration(task.estimated_minutes * 60000, dict.duration)}</span>
             </div>
+          )}
+        </div>
+        <div className="detail-log">
+          <h4 className="detail-log-title">{dict.checklist.title}</h4>
+          {checklist === null ? (
+            <div className="empty-note loading-row">
+              <span className="loading-spinner" />
+              {dict.checklist.loading}
+            </div>
+          ) : (
+            <ChecklistList taskId={task.id} items={checklist} onChange={refreshChecklist} />
           )}
         </div>
         <div className="detail-log">

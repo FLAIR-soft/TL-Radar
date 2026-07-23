@@ -154,6 +154,7 @@ const en = {
     assigneeAdded: 'Assignee added',
     assigneeRemoved: 'Assignee removed',
     commentAdded: 'Comment added',
+    checklistItemAdded: 'Checklist item added',
     unknownUser: 'unknown user',
   },
   comments: {
@@ -179,6 +180,20 @@ const en = {
     unassigned: 'You were removed from a task',
     comment: 'New comment',
     deadlineSoon: 'Deadline coming up',
+  },
+  checklist: {
+    title: 'Checklist',
+    empty: 'No items yet.',
+    loading: 'Loading…',
+    placeholder: 'New item…',
+    addButton: 'Add',
+    deleteTitle: 'Delete item',
+    deleteConfirm: 'Delete this item?',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    errors: {
+      empty: 'Enter an item.',
+    },
   },
   admin: {
     title: 'Admin',

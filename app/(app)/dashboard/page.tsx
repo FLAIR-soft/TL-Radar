@@ -51,8 +51,9 @@ export default async function DashboardPage({
   const assigneeNamesByTask = new Map<string, string[]>();
   const assigneeIdsByTask = new Map<string, string[]>();
   const commentCountsByTask = new Map<string, number>();
+  const checklistProgressByTask = new Map<string, { done: number; total: number }>();
   if (active.length) {
-    const [{ data: pauseData }, { data: assigneeData }, { data: commentData }] = await Promise.all([
+    const [{ data: pauseData }, { data: assigneeData }, { data: commentData }, { data: checklistData }] = await Promise.all([
       supabase
         .from('task_pauses')
         .select('*')
@@ -76,6 +77,14 @@ export default async function DashboardPage({
           active.map((t) => t.id)
         )
         .is('deleted_at', null),
+      supabase
+        .from('task_checklist_items')
+        .select('task_id, done')
+        .in(
+          'task_id',
+          active.map((t) => t.id)
+        )
+        .is('deleted_at', null),
     ]);
     pauses = pauseData ?? [];
     for (const a of assigneeData ?? []) {
@@ -90,6 +99,12 @@ export default async function DashboardPage({
     }
     for (const c of commentData ?? []) {
       commentCountsByTask.set(c.task_id, (commentCountsByTask.get(c.task_id) ?? 0) + 1);
+    }
+    for (const item of checklistData ?? []) {
+      const progress = checklistProgressByTask.get(item.task_id) ?? { done: 0, total: 0 };
+      progress.total += 1;
+      if (item.done) progress.done += 1;
+      checklistProgressByTask.set(item.task_id, progress);
     }
   }
   const pausesByTask = new Map<string, TaskPause[]>();
@@ -148,6 +163,7 @@ export default async function DashboardPage({
           pausedByNameByTask={pausedByNameByTask}
           profileNames={profileNames}
           commentCountsByTask={commentCountsByTask}
+          checklistProgressByTask={checklistProgressByTask}
         />
       )}
     </div>

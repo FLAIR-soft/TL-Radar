@@ -480,4 +480,52 @@ test.describe('golden path', () => {
     await expect(page.locator('[data-testid=notification-count]')).toHaveCount(0);
     await expect(page.locator('.notif-row.notif-unread')).toHaveCount(0);
   });
+
+  test('checklist progress updates on the card and toggling done does not change task status', async ({ page }) => {
+    const owner = uniqueName('Gp15');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Checklist Task ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    await expect(card.locator('.comment-count-badge')).toHaveCount(0);
+
+    await card.locator('[data-testid=view-task-log]').click();
+    await expect(page.locator('.checklist-list .empty-note')).toBeVisible();
+
+    await page.fill('[data-testid=checklist-input]', 'Step one');
+    await page.click('[data-testid=checklist-submit]');
+    await expect(page.locator('.checklist-row', { hasText: 'Step one' })).toBeVisible();
+    await page.fill('[data-testid=checklist-input]', 'Step two');
+    await page.click('[data-testid=checklist-submit]');
+    await expect(page.locator('.checklist-row', { hasText: 'Step two' })).toBeVisible();
+
+    // Reordering: move "Step two" above "Step one".
+    await page.locator('.checklist-row', { hasText: 'Step two' }).locator('[data-testid=checklist-move-up]').click();
+    await expect(page.locator('.checklist-checkbox-label span').first()).toHaveText('Step two');
+
+    // Toggling done must not touch task status or start any timer.
+    await page.locator('.checklist-row', { hasText: 'Step one' }).locator('input[type=checkbox]').click();
+    await expect(page.locator('.checklist-row', { hasText: 'Step one' }).locator('.checklist-item-done')).toBeVisible();
+
+    await page.click('[data-testid=slideover-close]');
+    await expect(card.locator('.comment-count-badge')).toHaveText('1/2');
+    await expect(card.locator('.pill').first()).toHaveText('Wartend');
+
+    // Deleting an item updates the progress counter.
+    await card.locator('[data-testid=view-task-log]').click();
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('.checklist-row', { hasText: 'Step two' }).locator('[data-testid=checklist-delete]').click();
+    await expect(page.locator('.checklist-row', { hasText: 'Step two' })).toHaveCount(0);
+    await expect(page.locator('.activity-log-row', { hasText: 'Checklist' }).first()).toBeVisible();
+    await page.click('[data-testid=slideover-close]');
+    await expect(card.locator('.comment-count-badge')).toHaveText('1/1');
+  });
 });
