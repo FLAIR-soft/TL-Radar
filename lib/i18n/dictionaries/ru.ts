@@ -223,6 +223,26 @@ const ru = {
     colAssignees: 'Исполнители',
     viewKanban: 'Канбан',
     viewTable: 'Таблица',
+    viewCalendar: 'Календарь',
+  },
+  labels: {
+    title: 'Метки',
+    placeholder: '— метки —',
+    filterPlaceholder: 'Все метки',
+    namePlaceholder: 'Название метки',
+    empty: 'Меток пока нет.',
+    errors: {
+      missingName: 'Введите название и выберите цвет.',
+    },
+  },
+  wipLimits: {
+    title: 'WIP-лимиты',
+    subtitle: 'Максимум задач одновременно в каждой колонке канбана. Пусто — без ограничения.',
+    noLimit: 'без лимита',
+    save: 'Сохранить',
+    errors: {
+      limitReached: 'Достигнут лимит задач в этой колонке.',
+    },
   },
   export: {
     csv: 'CSV',

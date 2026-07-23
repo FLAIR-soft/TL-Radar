@@ -225,6 +225,26 @@ const en = {
     colAssignees: 'Assignees',
     viewKanban: 'Kanban',
     viewTable: 'Table',
+    viewCalendar: 'Calendar',
+  },
+  labels: {
+    title: 'Labels',
+    placeholder: '— labels —',
+    filterPlaceholder: 'All labels',
+    namePlaceholder: 'Label name',
+    empty: 'No labels yet.',
+    errors: {
+      missingName: 'Enter a name and pick a color.',
+    },
+  },
+  wipLimits: {
+    title: 'WIP limits',
+    subtitle: 'Maximum tasks at once in each kanban column. Empty means no limit.',
+    noLimit: 'no limit',
+    save: 'Save',
+    errors: {
+      limitReached: 'This column has reached its task limit.',
+    },
   },
   export: {
     csv: 'CSV',

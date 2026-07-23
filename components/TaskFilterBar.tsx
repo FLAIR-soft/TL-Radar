@@ -2,22 +2,26 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, LayoutGrid, Table2, Bookmark, Plus, Trash2, Download } from 'lucide-react';
+import { Search, X, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2, Download } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
+import { LabelFilterSelect } from './LabelFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
+import type { Label } from '@/lib/supabase/types';
 
 export function TaskFilterBar({
   profiles,
   projects,
+  labels = [],
   savedViews = [],
   view = 'kanban',
   showExport = false,
 }: {
   profiles: { id: string; name: string }[];
   projects: { id: string; name: string }[];
+  labels?: Label[];
   savedViews?: { id: string; name: string; filters: { qs: string } }[];
-  view?: 'kanban' | 'table';
+  view?: 'kanban' | 'table' | 'calendar';
   showExport?: boolean;
 }) {
   const dict = useDictionary();
@@ -56,6 +60,7 @@ export function TaskFilterBar({
   // Search text is local state (debounced); every other control writes
   // straight to the URL, which is the single source of truth for filters.
   const assigneeIds = searchParams.getAll('assignee');
+  const labelIds = searchParams.getAll('label');
   const projectId = searchParams.get('project') ?? '';
   const priority = searchParams.get('priority') ?? '';
   const deadline = searchParams.get('deadline') ?? '';
@@ -74,15 +79,22 @@ export function TaskFilterBar({
     navigate(params);
   }
 
-  const hasActiveFilters = q || assigneeIds.length > 0 || projectId || priority || deadline;
+  function updateLabels(ids: string[]) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('label');
+    for (const id of ids) params.append('label', id);
+    navigate(params);
+  }
+
+  const hasActiveFilters = q || assigneeIds.length > 0 || labelIds.length > 0 || projectId || priority || deadline;
 
   function reset() {
     setQ('');
     navigate(new URLSearchParams());
   }
 
-  function setView(next: 'kanban' | 'table') {
-    updateParam('view', next === 'table' ? 'table' : null);
+  function setView(next: 'kanban' | 'table' | 'calendar') {
+    updateParam('view', next === 'kanban' ? null : next);
   }
 
   function applyView(qs: string) {
@@ -126,6 +138,14 @@ export function TaskFilterBar({
         onChange={updateAssignees}
         placeholder={dict.filters.assigneePlaceholder}
       />
+      {labels.length > 0 && (
+        <LabelFilterSelect
+          labels={labels}
+          value={labelIds}
+          onChange={updateLabels}
+          placeholder={dict.labels.filterPlaceholder}
+        />
+      )}
       <select value={projectId} onChange={(e) => updateParam('project', e.target.value || null)}>
         <option value="">{dict.filters.allProjects}</option>
         <option value="none">{dict.filters.noProject}</option>
@@ -171,6 +191,15 @@ export function TaskFilterBar({
           data-testid="view-table"
         >
           <Table2 size={16} strokeWidth={1.75} />
+        </button>
+        <button
+          type="button"
+          className={`icon-btn ${view === 'calendar' ? 'view-toggle-active' : ''}`}
+          title={dict.table.viewCalendar}
+          onClick={() => setView('calendar')}
+          data-testid="view-calendar"
+        >
+          <CalendarDays size={16} strokeWidth={1.75} />
         </button>
       </div>
       <div className="saved-views">

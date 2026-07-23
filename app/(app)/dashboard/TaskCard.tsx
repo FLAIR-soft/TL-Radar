@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare, ListChecks } from 'lucide-react';
-import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
   fmtDate,
@@ -33,6 +33,7 @@ export function TaskCard({
   profileNames,
   commentCount = 0,
   checklistProgress,
+  labels = [],
   style,
 }: {
   task: Task;
@@ -43,6 +44,7 @@ export function TaskCard({
   profileNames: Map<string, string>;
   commentCount?: number;
   checklistProgress?: { done: number; total: number };
+  labels?: Label[];
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -125,6 +127,15 @@ export function TaskCard({
         {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
         {task.title}
       </div>
+      {labels.length > 0 && (
+        <div className="t-labels">
+          {labels.map((l) => (
+            <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+              {l.name}
+            </span>
+          ))}
+        </div>
+      )}
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
         {projectName && (

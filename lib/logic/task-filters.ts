@@ -6,6 +6,7 @@ export type DeadlineFilter = 'any' | 'has' | 'overdue';
 export interface TaskFilters {
   q: string;
   assigneeIds: string[];
+  labelIds: string[];
   projectId: string | null;
   priority: Priority | null;
   deadline: DeadlineFilter;
@@ -38,6 +39,9 @@ export function parseTaskFilters(searchParams: SearchParamsRecord): TaskFilters 
   const assigneeRaw = searchParams.assignee;
   const assigneeIds = Array.isArray(assigneeRaw) ? assigneeRaw : assigneeRaw ? [assigneeRaw] : [];
 
+  const labelRaw = searchParams.label;
+  const labelIds = Array.isArray(labelRaw) ? labelRaw : labelRaw ? [labelRaw] : [];
+
   const projectId = firstValue(searchParams.project) || null;
 
   const priorityRaw = firstValue(searchParams.priority);
@@ -46,13 +50,14 @@ export function parseTaskFilters(searchParams: SearchParamsRecord): TaskFilters 
   const deadlineRaw = firstValue(searchParams.deadline);
   const deadline = (DEADLINE_FILTERS as string[]).includes(deadlineRaw ?? '') ? (deadlineRaw as DeadlineFilter) : 'any';
 
-  return { q, assigneeIds, projectId, priority, deadline };
+  return { q, assigneeIds, labelIds, projectId, priority, deadline };
 }
 
 export function hasActiveFilters(filters: TaskFilters): boolean {
   return (
     filters.q.length > 0 ||
     filters.assigneeIds.length > 0 ||
+    filters.labelIds.length > 0 ||
     !!filters.projectId ||
     !!filters.priority ||
     filters.deadline !== 'any'
@@ -61,13 +66,22 @@ export function hasActiveFilters(filters: TaskFilters): boolean {
 
 // Filtratsiya vsegda na servere (Server Component chitayet searchParams i
 // vyzyvayet eto pri render'e) — nikakogo kliyentskogo useEffect/fetch.
-export function matchesTaskFilters(task: Task, taskAssigneeIds: string[], filters: TaskFilters): boolean {
+export function matchesTaskFilters(
+  task: Task,
+  taskAssigneeIds: string[],
+  filters: TaskFilters,
+  taskLabelIds: string[] = []
+): boolean {
   if (filters.q) {
     const haystack = `${task.title} ${task.description ?? ''}`.toLowerCase();
     if (!haystack.includes(filters.q.toLowerCase())) return false;
   }
 
   if (filters.assigneeIds.length > 0 && !filters.assigneeIds.some((id) => taskAssigneeIds.includes(id))) {
+    return false;
+  }
+
+  if (filters.labelIds.length > 0 && !filters.labelIds.some((id) => taskLabelIds.includes(id))) {
     return false;
   }
 

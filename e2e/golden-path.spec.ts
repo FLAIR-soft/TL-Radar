@@ -867,4 +867,47 @@ test.describe('golden path', () => {
     // Watcher-only 'comment' notification + the 'mention' notification = 2.
     await expect(page.locator('[data-testid=notification-count]')).toHaveText('2');
   });
+
+  test('a task can be tagged with an inline-created label, filtered by it, and shown on its deadline in calendar view', async ({
+    page,
+  }) => {
+    const owner = uniqueName('Gp24');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Label Task ' + rand;
+    const labelName = 'E2E Tag ' + rand;
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.fill('input[name=deadline]', todayIso);
+
+    // Label field reuses AssigneeSelect's dropdown markup — it's the second
+    // `.assignee-select-trigger` on the form (assignees, then labels).
+    await page.locator('.assignee-select-trigger').nth(1).click();
+    await page.fill('.label-create-row input', labelName);
+    await page.click('.label-swatch');
+    await page.click('[data-testid=create-label]');
+    await expect(page.locator('.label-chip', { hasText: labelName })).toBeVisible();
+
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    await expect(page.locator('.task-card .label-pill', { hasText: labelName })).toBeVisible();
+
+    // Filtering by the label narrows the board down to just this task.
+    await page.goto('/dashboard');
+    await page.click('[data-testid=label-filter-trigger]');
+    await page.locator('[data-testid=label-filter-option]', { hasText: labelName }).click();
+    await expect(page).toHaveURL(/label=/);
+    await expect(page.locator('.task-card', { hasText: title })).toBeVisible();
+
+    // Calendar view places the task's chip on today's cell (its deadline).
+    await page.goto('/dashboard');
+    await page.click('[data-testid=view-calendar]');
+    await expect(page.locator('.calendar-cell-today [data-testid=calendar-task]', { hasText: title })).toBeVisible();
+  });
 });

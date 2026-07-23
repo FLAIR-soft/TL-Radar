@@ -148,6 +148,29 @@ export type TaskWatcher = {
   created_at: string;
 };
 
+export type Label = {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  created_by: string | null;
+  deleted_at: string | null;
+};
+
+export type TaskLabel = {
+  task_id: string;
+  label_id: string;
+  added_at: string;
+  added_by: string | null;
+};
+
+export type WipStatus = 'waiting' | 'in_progress' | 'paused';
+
+export type WipLimit = {
+  status: WipStatus;
+  limit_count: number | null;
+};
+
 export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment' | 'mention';
 
 export type Notification = {
@@ -250,6 +273,24 @@ export interface Database {
         Row: TaskWatcher;
         Insert: Partial<TaskWatcher> & Pick<TaskWatcher, 'task_id' | 'user_id'>;
         Update: Partial<TaskWatcher>;
+        Relationships: [];
+      };
+      labels: {
+        Row: Label;
+        Insert: Partial<Label> & Pick<Label, 'name' | 'color'>;
+        Update: Partial<Label>;
+        Relationships: [];
+      };
+      task_labels: {
+        Row: TaskLabel;
+        Insert: Partial<TaskLabel> & Pick<TaskLabel, 'task_id' | 'label_id'>;
+        Update: Partial<TaskLabel>;
+        Relationships: [];
+      };
+      wip_limits: {
+        Row: WipLimit;
+        Insert: Partial<WipLimit> & Pick<WipLimit, 'status'>;
+        Update: Partial<WipLimit>;
         Relationships: [];
       };
     };

@@ -9,7 +9,7 @@ import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, TaskStatus, Priority } from '@/lib/supabase/types';
+import type { Task, TaskStatus, Priority, Label } from '@/lib/supabase/types';
 
 type SortKey = 'title' | 'status' | 'project' | 'priority' | 'deadline' | 'estimate';
 
@@ -22,6 +22,7 @@ export function TaskTable({
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
+  labelsByTask,
 }: {
   tasks: Task[];
   assigneeNamesByTask: Map<string, string[]>;
@@ -29,6 +30,7 @@ export function TaskTable({
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
+  labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
   const [sortKey, setSortKey] = useState<SortKey>('deadline');
@@ -112,6 +114,7 @@ export function TaskTable({
               profileNames={profileNames}
               commentCount={commentCountsByTask.get(task.id) ?? 0}
               checklistProgress={checklistProgressByTask.get(task.id)}
+              labels={labelsByTask?.get(task.id) ?? []}
               style={{ animationDelay: `${i * 20}ms` }}
             />
           ))}
@@ -128,6 +131,7 @@ function TaskTableRow({
   profileNames,
   commentCount,
   checklistProgress,
+  labels = [],
   style,
 }: {
   task: Task;
@@ -136,6 +140,7 @@ function TaskTableRow({
   profileNames: Map<string, string>;
   commentCount: number;
   checklistProgress?: { done: number; total: number };
+  labels?: Label[];
   style?: React.CSSProperties;
 }) {
   const dict = useDictionary();
@@ -180,6 +185,15 @@ function TaskTableRow({
           {TaskIcon && <TaskIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
           {task.title}
         </div>
+        {labels.length > 0 && (
+          <div className="t-labels">
+            {labels.map((l) => (
+              <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+                {l.name}
+              </span>
+            ))}
+          </div>
+        )}
       </td>
       <td>
         <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>

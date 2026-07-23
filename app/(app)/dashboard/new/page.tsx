@@ -15,14 +15,16 @@ export default async function NewTaskPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profiles }, { data: activeProjects }, { data: templateList }] = await Promise.all([
+  const [{ data: profiles }, { data: activeProjects }, { data: templateList }, { data: labelList }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),
     supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
     supabase.from('task_templates').select('id, title').is('deleted_at', null).order('title'),
+    supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);
   const assignees = profiles ?? [];
   const projects = activeProjects ?? [];
   const templates = templateList ?? [];
+  const labels = labelList ?? [];
 
   if (!edit) {
     let editingFromTemplate = null;
@@ -40,6 +42,7 @@ export default async function NewTaskPage({
           location: template.location ?? '',
           deadline: '',
           assigneeIds: [user!.id],
+          labelIds: [],
           projectId: template.project_id ?? '',
           estimatedMinutes: template.estimated_minutes ? String(template.estimated_minutes) : '',
           icon: template.icon ?? '',
@@ -57,6 +60,7 @@ export default async function NewTaskPage({
         templateId={templateId ?? null}
         assignees={assignees}
         projects={projects}
+        labels={labels}
         currentUserId={user!.id}
       />
     );
@@ -70,11 +74,10 @@ export default async function NewTaskPage({
     .single();
   if (!task) notFound();
 
-  const { data: currentAssignees } = await supabase
-    .from('task_assignees')
-    .select('assignee_id')
-    .eq('task_id', task.id)
-    .is('removed_at', null);
+  const [{ data: currentAssignees }, { data: currentLabels }] = await Promise.all([
+    supabase.from('task_assignees').select('assignee_id').eq('task_id', task.id).is('removed_at', null),
+    supabase.from('task_labels').select('label_id').eq('task_id', task.id),
+  ]);
 
   return (
     <TaskForm
@@ -85,6 +88,7 @@ export default async function NewTaskPage({
         location: task.location ?? '',
         deadline: task.deadline ?? '',
         assigneeIds: (currentAssignees ?? []).map((a) => a.assignee_id),
+        labelIds: (currentLabels ?? []).map((l) => l.label_id),
         projectId: task.project_id ?? '',
         estimatedMinutes: task.estimated_minutes ? String(task.estimated_minutes) : '',
         icon: task.icon ?? '',
@@ -92,6 +96,7 @@ export default async function NewTaskPage({
       }}
       assignees={assignees}
       projects={projects}
+      labels={labels}
       currentUserId={user!.id}
     />
   );

@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeSelect } from './AssigneeSelect';
+import { LabelSelect } from './LabelSelect';
 import { IconPicker } from '@/components/IconPicker';
 import { PrioritySelect } from '@/components/PrioritySelect';
 import type { TaskFormState } from '../actions';
+import type { Label } from '@/lib/supabase/types';
 
 const initialState: TaskFormState = { error: null };
 
@@ -16,6 +18,7 @@ export function TaskForm({
   editing,
   assignees,
   projects,
+  labels,
   currentUserId,
   templates = [],
   templateId = null,
@@ -27,6 +30,7 @@ export function TaskForm({
     location: string;
     deadline: string;
     assigneeIds: string[];
+    labelIds: string[];
     projectId: string;
     estimatedMinutes: string;
     icon: string;
@@ -34,6 +38,7 @@ export function TaskForm({
   } | null;
   assignees: { id: string; name: string }[];
   projects: { id: string; name: string }[];
+  labels: Label[];
   currentUserId: string;
   templates?: { id: string; title: string }[];
   templateId?: string | null;
@@ -88,6 +93,10 @@ export function TaskForm({
               assignees={assignees}
               defaultSelected={editing ? editing.assigneeIds : [currentUserId]}
             />
+          </div>
+          <div className="field">
+            <label>{dict.labels.title}</label>
+            <LabelSelect labels={labels} defaultSelected={editing?.labelIds ?? []} />
           </div>
           <div className="row2">
             <div className="field">

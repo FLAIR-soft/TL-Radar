@@ -15,12 +15,13 @@ import { STATUS_COLOR, compareByDeadlineUrgency, isValidKanbanTransition } from 
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
-import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
 
 export function KanbanBoard({
   tasks,
+  limitByStatus,
   pausesByTask,
   assigneeNamesByTask,
   projectNames,
@@ -28,8 +29,10 @@ export function KanbanBoard({
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
+  labelsByTask,
 }: {
   tasks: Task[];
+  limitByStatus?: Map<string, number | null>;
   pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
@@ -37,6 +40,7 @@ export function KanbanBoard({
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
+  labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
   const [, startTransition] = useTransition();
@@ -90,6 +94,8 @@ export function KanbanBoard({
         {COLUMNS.map((s, colIndex) => {
           const items = tasks.filter((t) => statusOf(t) === s).sort(compareByDeadlineUrgency);
           const isValidTarget = activeTask ? isValidKanbanTransition(statusOf(activeTask), s) : false;
+          const limit = limitByStatus?.get(s) ?? null;
+          const atLimit = limit !== null && items.length >= limit;
           return (
             <KanbanColumn key={s} status={s} isValidTarget={isValidTarget} isDragging={!!activeTask}>
               <div className="col-head">
@@ -97,7 +103,11 @@ export function KanbanBoard({
                   className={`signal ${s === 'in_progress' ? 'pulsing' : ''}`}
                   style={{ background: STATUS_COLOR[s] }}
                 ></span>
-                {dict.status[s]} <span className="col-count">{items.length}</span>
+                {dict.status[s]}{' '}
+                <span className={`col-count ${atLimit ? 'col-count-limit' : ''}`}>
+                  {items.length}
+                  {limit !== null ? `/${limit}` : ''}
+                </span>
               </div>
               <div className="card-stack">
                 {items.length ? (
@@ -112,6 +122,7 @@ export function KanbanBoard({
                         profileNames={profileNames}
                         commentCount={commentCountsByTask.get(t.id) ?? 0}
                         checklistProgress={checklistProgressByTask.get(t.id)}
+                        labels={labelsByTask?.get(t.id) ?? []}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                       />
                     </DraggableTaskCard>

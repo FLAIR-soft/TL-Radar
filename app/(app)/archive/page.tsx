@@ -30,7 +30,7 @@ export default async function ArchivePage({
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }] = await Promise.all([
+  const [{ data: tasks }, { data: profiles }, { data: projects }, { data: labels }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*')
@@ -39,19 +39,23 @@ export default async function ArchivePage({
       .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, name').order('name'),
     supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);
 
   const done = tasks ?? [];
   const profileList = profiles ?? [];
   const projectList = projects ?? [];
+  const labelList = labels ?? [];
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
+  const labelById = new Map(labelList.map((l) => [l.id, l]));
 
   let pauses: TaskPause[] = [];
   const assigneeNamesByTask = new Map<string, string[]>();
   const assigneeIdsByTask = new Map<string, string[]>();
+  const labelIdsByTask = new Map<string, string[]>();
   if (done.length) {
-    const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
+    const [{ data: pauseData }, { data: assigneeData }, { data: labelData }] = await Promise.all([
       supabase
         .from('task_pauses')
         .select('*')
@@ -68,6 +72,13 @@ export default async function ArchivePage({
           done.map((t) => t.id)
         )
         .is('removed_at', null),
+      supabase
+        .from('task_labels')
+        .select('task_id, label_id')
+        .in(
+          'task_id',
+          done.map((t) => t.id)
+        ),
     ]);
     pauses = pauseData ?? [];
     for (const a of assigneeData ?? []) {
@@ -79,6 +90,11 @@ export default async function ArchivePage({
       const ids = assigneeIdsByTask.get(a.task_id) ?? [];
       ids.push(a.assignee_id);
       assigneeIdsByTask.set(a.task_id, ids);
+    }
+    for (const l of labelData ?? []) {
+      const ids = labelIdsByTask.get(l.task_id) ?? [];
+      ids.push(l.label_id);
+      labelIdsByTask.set(l.task_id, ids);
     }
   }
 
@@ -101,7 +117,7 @@ export default async function ArchivePage({
 
   const filtersActive = hasActiveFilters(filters);
   const filteredDone = filtersActive
-    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters))
+    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
   const rows = filteredDone.map((t) => {
@@ -111,6 +127,7 @@ export default async function ArchivePage({
       taskPauses,
       net: netDuration(t, taskPauses),
       assignees: assigneeNamesByTask.get(t.id) ?? [],
+      labels: (labelIdsByTask.get(t.id) ?? []).map((id) => labelById.get(id)).filter((l): l is NonNullable<typeof l> => !!l),
       lateMs: completedLateBy(t),
     };
   });
@@ -140,7 +157,7 @@ export default async function ArchivePage({
       <h2 className="section-title">{dict.archive.title}</h2>
       <p className="section-sub">{dict.archive.subtitle}</p>
       <Suspense fallback={null}>
-        <TaskFilterBar profiles={profileList} projects={projectList} showExport />
+        <TaskFilterBar profiles={profileList} projects={projectList} labels={labelList} showExport />
       </Suspense>
       {filtersActive && rows.length === 0 ? (
         <EmptyState
@@ -169,7 +186,7 @@ export default async function ArchivePage({
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ t, taskPauses, net, assignees, lateMs }, i) => {
+            {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
               const RowIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
               return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
@@ -182,6 +199,15 @@ export default async function ArchivePage({
                     {RowIcon && <RowIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
                     {t.title}
                   </strong>
+                  {labels.length > 0 && (
+                    <div className="t-labels">
+                      {labels.map((l) => (
+                        <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+                          {l.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {assignees.length > 0 && (
                     <>
                       <br />
@@ -223,7 +249,7 @@ export default async function ArchivePage({
       </div>
 
       <div className="archive-cards">
-        {rows.map(({ t, taskPauses, net, assignees, lateMs }, i) => {
+        {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
           const CardIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
           return (
           <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
@@ -242,6 +268,15 @@ export default async function ArchivePage({
                 profileNames={profileNames}
               />
             </div>
+            {labels.length > 0 && (
+              <div className="t-labels">
+                {labels.map((l) => (
+                  <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+                    {l.name}
+                  </span>
+                ))}
+              </div>
+            )}
             {assignees.length > 0 && <div className="mono archive-card-assignees">{assignees.join(', ')}</div>}
             <div className="archive-card-grid">
               <div>

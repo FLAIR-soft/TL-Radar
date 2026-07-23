@@ -225,6 +225,26 @@ const de = {
     colAssignees: 'Zuständige',
     viewKanban: 'Kanban',
     viewTable: 'Tabelle',
+    viewCalendar: 'Kalender',
+  },
+  labels: {
+    title: 'Etiketten',
+    placeholder: '— Etiketten —',
+    filterPlaceholder: 'Alle Etiketten',
+    namePlaceholder: 'Etikettname',
+    empty: 'Noch keine Etiketten.',
+    errors: {
+      missingName: 'Namen eingeben und Farbe wählen.',
+    },
+  },
+  wipLimits: {
+    title: 'WIP-Limits',
+    subtitle: 'Maximale Anzahl Aufgaben gleichzeitig in jeder Kanban-Spalte. Leer heißt kein Limit.',
+    noLimit: 'kein Limit',
+    save: 'Speichern',
+    errors: {
+      limitReached: 'Diese Spalte hat ihr Aufgabenlimit erreicht.',
+    },
   },
   export: {
     csv: 'CSV',

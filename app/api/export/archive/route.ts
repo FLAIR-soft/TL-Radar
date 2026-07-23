@@ -42,8 +42,9 @@ export async function GET(request: Request) {
   let pauses: TaskPause[] = [];
   const assigneeNamesByTask = new Map<string, string[]>();
   const assigneeIdsByTask = new Map<string, string[]>();
+  const labelIdsByTask = new Map<string, string[]>();
   if (done.length) {
-    const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
+    const [{ data: pauseData }, { data: assigneeData }, { data: labelData }] = await Promise.all([
       supabase
         .from('task_pauses')
         .select('*')
@@ -59,6 +60,13 @@ export async function GET(request: Request) {
           done.map((t) => t.id)
         )
         .is('removed_at', null),
+      supabase
+        .from('task_labels')
+        .select('task_id, label_id')
+        .in(
+          'task_id',
+          done.map((t) => t.id)
+        ),
     ]);
     pauses = pauseData ?? [];
     for (const a of assigneeData ?? []) {
@@ -71,6 +79,11 @@ export async function GET(request: Request) {
       ids.push(a.assignee_id);
       assigneeIdsByTask.set(a.task_id, ids);
     }
+    for (const l of labelData ?? []) {
+      const ids = labelIdsByTask.get(l.task_id) ?? [];
+      ids.push(l.label_id);
+      labelIdsByTask.set(l.task_id, ids);
+    }
   }
 
   const pausesByTask = new Map<string, TaskPause[]>();
@@ -81,7 +94,7 @@ export async function GET(request: Request) {
   }
 
   const filteredDone = hasActiveFilters(filters)
-    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters))
+    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
   const header = [

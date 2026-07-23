@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { DeleteUserButton } from './DeleteUserButton';
+import { WipLimitsForm } from './WipLimitsForm';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -22,15 +23,18 @@ export default async function AdminPage() {
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, name, username, role')
-    .order('name', { ascending: true });
+  const [{ data: profiles }, { data: wipLimits }] = await Promise.all([
+    supabase.from('profiles').select('id, name, username, role').order('name', { ascending: true }),
+    supabase.from('wip_limits').select('*'),
+  ]);
 
   return (
     <div className="page-fade">
       <h2 className="section-title">{dict.admin.title}</h2>
       <p className="section-sub">{dict.admin.subtitle}</p>
+      <h3 className="section-title analytics-subsection-title">{dict.wipLimits.title}</h3>
+      <p className="section-sub">{dict.wipLimits.subtitle}</p>
+      <WipLimitsForm limits={wipLimits ?? []} />
       <div className="admin-list">
         {(profiles ?? []).map((p) => (
           <div key={p.id} className="admin-row">

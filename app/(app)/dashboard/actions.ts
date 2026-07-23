@@ -61,10 +61,18 @@ function readAssigneeIds(formData: FormData): string[] {
     .filter(Boolean);
 }
 
+function readLabelIds(formData: FormData): string[] {
+  return formData
+    .getAll('labelIds')
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
 export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
   const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
   const assigneeIds = readAssigneeIds(formData);
+  const labelIds = readLabelIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
@@ -103,6 +111,12 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
     await logActivity(supabase, 'task', task.id, 'assignee_added', userId, { assigneeId });
   }
   await notifyMany(supabase, assigneeIds, userId, 'assigned', task.id, { title: fields.title });
+
+  if (labelIds.length) {
+    await supabase.from('task_labels').insert(
+      labelIds.map((label_id) => ({ task_id: task.id, label_id, added_by: userId }))
+    );
+  }
 
   // Sozdaniye iz shablona (Etap 7): kopiruyem chek-list shablona v novuyu
   // zadachu — izmeneniye shablona posle etogo uzhe ne vliyayet na zadachu.
@@ -162,6 +176,7 @@ export async function editTaskFields(
   const { supabase, userId, dict } = await requireAuth();
   const fields = readTaskFields(formData);
   const assigneeIds = readAssigneeIds(formData);
+  const labelIds = readLabelIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
@@ -229,6 +244,21 @@ export async function editTaskFields(
     await notifyMany(supabase, toAdd, userId, 'assigned', taskId, { title: fields.title });
   }
 
+  const { data: currentLabels } = await supabase.from('task_labels').select('label_id').eq('task_id', taskId);
+  const currentLabelIds = new Set((currentLabels ?? []).map((l) => l.label_id));
+  const newLabelIds = new Set(labelIds);
+  const labelsToRemove = [...currentLabelIds].filter((id) => !newLabelIds.has(id));
+  const labelsToAdd = labelIds.filter((id) => !currentLabelIds.has(id));
+
+  if (labelsToRemove.length) {
+    await supabase.from('task_labels').delete().eq('task_id', taskId).in('label_id', labelsToRemove);
+  }
+  if (labelsToAdd.length) {
+    await supabase
+      .from('task_labels')
+      .insert(labelsToAdd.map((label_id) => ({ task_id: taskId, label_id, added_by: userId })));
+  }
+
   revalidatePath('/dashboard');
   redirect('/dashboard');
 }
@@ -258,6 +288,24 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
     .single();
 
   if (!task) return {};
+
+  if (task.status !== newStatus && (newStatus === 'waiting' || newStatus === 'in_progress' || newStatus === 'paused')) {
+    const { data: limitRow } = await supabase
+      .from('wip_limits')
+      .select('limit_count')
+      .eq('status', newStatus)
+      .single();
+    if (limitRow?.limit_count !== null && limitRow?.limit_count !== undefined) {
+      const { count } = await supabase
+        .from('tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', newStatus)
+        .is('deleted_at', null);
+      if ((count ?? 0) >= limitRow.limit_count) {
+        return { error: dict.wipLimits.errors.limitReached };
+      }
+    }
+  }
 
   const now = new Date().toISOString();
   const update: {
