@@ -115,6 +115,16 @@ body {
     transform: translateY(0);
   }
 }
+@keyframes fadeSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1670,6 +1680,9 @@ p.section-sub {
   overflow: hidden;
   animation: fadeSlideIn 0.15s ease both;
 }
+.notif-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
+}
 .notif-panel-head {
   display: flex;
   align-items: center;
@@ -1692,6 +1705,7 @@ p.section-sub {
   border-bottom: 1px solid var(--border);
   color: var(--ink);
   transition: background-color 0.15s ease;
+  animation: fadeSlideIn 0.2s ease both;
 }
 .notif-row:last-child {
   border-bottom: none;
@@ -1733,6 +1747,9 @@ p.section-sub {
   padding-top: 15vh;
   animation: fadeIn 0.15s ease;
 }
+.cmdk-backdrop.is-closing {
+  animation: fadeOut 0.15s ease forwards;
+}
 .cmdk-panel {
   width: 560px;
   max-width: calc(100vw - 32px);
@@ -1744,6 +1761,9 @@ p.section-sub {
   flex-direction: column;
   overflow: hidden;
   animation: fadeSlideIn 0.15s ease both;
+}
+.cmdk-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
 }
 .cmdk-input-row {
   display: flex;
@@ -2102,6 +2122,9 @@ p.section-sub {
   justify-content: flex-end;
   animation: fadeIn 0.18s ease;
 }
+.slideover-backdrop.is-closing {
+  animation: fadeOut 0.18s ease forwards;
+}
 .slideover-panel {
   width: 50%;
   min-width: 420px;
@@ -2113,12 +2136,31 @@ p.section-sub {
   flex-direction: column;
   animation: slideInRight 0.22s ease;
 }
+.slideover-panel.is-closing {
+  animation: slideOutRight 0.22s ease forwards;
+}
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
   }
   to {
     transform: translateX(0);
+  }
+}
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 .slideover-header {
@@ -2229,6 +2271,16 @@ p.section-sub {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-alt);
+  overflow: hidden;
+  animation: fadeSlideIn 0.2s ease both;
+  transition: max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease, border-width 0.22s ease;
+}
+.comment-row.is-removing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
 }
 .comment-body {
   font-size: var(--fs-sm);
@@ -2338,7 +2390,14 @@ p.section-sub {
   gap: 8px;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
-  transition: background-color 0.15s ease;
+  overflow: hidden;
+  animation: fadeSlideIn 0.2s ease both;
+  transition: background-color 0.15s ease, max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease;
+}
+.checklist-row.is-removing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .checklist-row:hover {
   background: var(--hover-bg);

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from './ToastProvider';
+import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
 import { canViewStats } from '@/lib/logic/access';
 import { quickCreateTask } from '@/app/(app)/dashboard/actions';
 import type { UserRole } from '@/lib/supabase/types';
@@ -20,6 +21,7 @@ export function CommandPalette({ role }: { role: UserRole }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { phase, onAnimationEnd } = useAnimatedUnmount(open);
 
   function close() {
     setOpen(false);
@@ -123,10 +125,18 @@ export function CommandPalette({ role }: { role: UserRole }) {
       >
         <Search size={17} strokeWidth={1.75} />
       </button>
-      {open &&
+      {phase !== 'closed' &&
         createPortal(
-          <div className="cmdk-backdrop" onClick={close}>
-            <div className="cmdk-panel" onClick={(e) => e.stopPropagation()} data-testid="command-palette">
+          <div
+            className={`cmdk-backdrop ${phase === 'closing' ? 'is-closing' : ''}`}
+            onClick={close}
+            onAnimationEnd={onAnimationEnd}
+          >
+            <div
+              className={`cmdk-panel ${phase === 'closing' ? 'is-closing' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+              data-testid="command-palette"
+            >
               <div className="cmdk-input-row">
                 <Search size={16} strokeWidth={1.75} />
                 <input

@@ -10,6 +10,10 @@ import { addComment, deleteComment } from '@/app/(app)/dashboard/comments-action
 import type { TaskComment } from '@/lib/supabase/types';
 
 const MENTION_SUGGESTION_LIMIT = 6;
+// Matches the .comment-row max-height/opacity/padding transition duration in
+// globals.css — the row stays in the DOM this long after delete so the
+// collapse animation can play, instead of just vanishing.
+const EXIT_MS = 240;
 
 export function CommentList({
   taskId,
@@ -33,6 +37,7 @@ export function CommentList({
   const [mentionProfiles, setMentionProfiles] = useState<MentionableProfile[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -126,11 +131,31 @@ export function CommentList({
     });
   }
 
-  function handleDelete(commentId: string) {
+  function handleDelete(commentId: string, rowEl: HTMLElement | null) {
     if (!confirm(dict.comments.deleteConfirm)) return;
+
+    if (rowEl) {
+      rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
+      void rowEl.offsetHeight; // force reflow so the browser has a starting height to transition from
+      requestAnimationFrame(() => {
+        rowEl.style.maxHeight = '0px';
+      });
+    }
+    setRemovingIds((prev) => new Set(prev).add(commentId));
+
+    const settle = new Promise<void>((resolve) => setTimeout(resolve, EXIT_MS));
     startTransition(() => {
-      deleteComment(commentId).then((result) => {
-        if (result?.error) toast.error(result.error);
+      Promise.all([deleteComment(commentId), settle]).then(([result]) => {
+        setRemovingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(commentId);
+          return next;
+        });
+        if (result?.error) {
+          if (rowEl) rowEl.style.maxHeight = '';
+          toast.error(result.error);
+          return;
+        }
         onChange();
       });
     });
@@ -141,8 +166,12 @@ export function CommentList({
       {comments.length === 0 ? (
         <div className="empty-note">{dict.comments.empty}</div>
       ) : (
-        comments.map((c) => (
-          <div className="comment-row" key={c.id}>
+        comments.map((c, i) => (
+          <div
+            className={`comment-row ${removingIds.has(c.id) ? 'is-removing' : ''}`}
+            key={c.id}
+            style={{ animationDelay: `${i * 25}ms` }}
+          >
             <div className="comment-body">
               {splitMentionSegments(c.body).map((seg, i) => {
                 const name = seg.mentionUsername ? usernameToName.get(seg.mentionUsername) : null;
@@ -165,7 +194,7 @@ export function CommentList({
                   className="icon-btn comment-delete"
                   title={dict.comments.deleteTitle}
                   disabled={isPending}
-                  onClick={() => handleDelete(c.id)}
+                  onClick={(e) => handleDelete(c.id, e.currentTarget.closest<HTMLElement>('.comment-row'))}
                   data-testid="delete-comment"
                 >
                   <Trash2 size={14} strokeWidth={1.75} />

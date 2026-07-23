@@ -6,6 +6,7 @@ import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { createClient } from '@/lib/supabase/client';
+import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import type { NotificationType, NotificationView } from '@/lib/supabase/types';
 
@@ -52,6 +53,7 @@ export function NotificationBell({ userId }: { userId: string }) {
   const [count, setCount] = useState(0);
   const [items, setItems] = useState<NotificationView[] | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const { phase, onAnimationEnd } = useAnimatedUnmount(open);
 
   useEffect(() => {
     let cancelled = false;
@@ -161,8 +163,11 @@ export function NotificationBell({ userId }: { userId: string }) {
           </span>
         )}
       </button>
-      {open && (
-        <div className="notif-panel">
+      {phase !== 'closed' && (
+        <div
+          className={`notif-panel ${phase === 'closing' ? 'is-closing' : ''}`}
+          onAnimationEnd={onAnimationEnd}
+        >
           <div className="notif-panel-head">
             <span>{dict.notifications.title}</span>
             <button type="button" className="link-btn" onClick={handleMarkAll} data-testid="notif-mark-all">
@@ -178,7 +183,7 @@ export function NotificationBell({ userId }: { userId: string }) {
             <div className="empty-note">{dict.notifications.empty}</div>
           ) : (
             <div className="notif-list">
-              {items.map((n) => {
+              {items.map((n, i) => {
                 const Icon = TYPE_ICON[n.type];
                 const href = n.taskStatus === 'done' ? '/archive' : '/dashboard';
                 return (
@@ -188,6 +193,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                     className={`notif-row ${n.read_at ? '' : 'notif-unread'}`}
                     onClick={() => handleItemClick(n)}
                     data-testid="notification-row"
+                    style={{ animationDelay: `${i * 25}ms` }}
                   >
                     <Icon size={16} strokeWidth={1.75} className="notif-icon" />
                     <div className="notif-body">
