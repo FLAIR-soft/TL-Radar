@@ -2457,6 +2457,16 @@ p.section-sub {
   outline: none;
   border-color: var(--brand);
 }
+.checklist-add-btn {
+  /* .btn-primary defaults to width: 100% for standalone form submits; here
+     it shares a row with a flex:1 input, and that width would out-compete
+     the input for space (its would-be flex-basis), squeezing the input down
+     to a sliver. Sized to content instead, like any other inline button. */
+  width: auto;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: var(--fs-sm);
+}
 
 /* ---------- Labels ---------- */
 .t-labels {

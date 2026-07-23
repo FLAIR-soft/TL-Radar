@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from './ToastProvider';
 import {
@@ -155,10 +155,11 @@ export function ChecklistList({
         />
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary checklist-add-btn"
           disabled={isPending || !title.trim()}
           data-testid="checklist-submit"
         >
+          <Plus size={16} strokeWidth={2} />
           {dict.checklist.addButton}
         </button>
       </form>
