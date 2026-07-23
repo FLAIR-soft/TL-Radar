@@ -3,9 +3,12 @@
 import { useState, useTransition } from 'react';
 import {
   DndContext,
+  DragOverlay,
   useDraggable,
   useDroppable,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -50,8 +53,21 @@ export function KanbanBoard({
   // revalidatePath() (inside setStatus) refreshes `tasks` with the confirmed
   // value from the server, or explicitly on a rejected transition (rollback).
   const [overrides, setOverrides] = useState<Record<string, TaskStatus>>({});
+  // Task ids with a setStatus() call in flight — dragging the same card again
+  // before the server confirms/rejects would race the optimistic override.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  // MouseSensor (not PointerSensor) + TouchSensor kept deliberately separate:
+  // PointerSensor's onPointerDown activator also fires for touch input, so
+  // pairing it with TouchSensor would race the mouse's 5px activation
+  // against the touch long-press delay and win, breaking column scroll on
+  // touch. MouseSensor only reacts to real mousedown, so the two never
+  // compete for the same gesture.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor)
+  );
 
   function statusOf(task: Task): TaskStatus {
     return overrides[task.id] ?? task.status;
@@ -76,8 +92,14 @@ export function KanbanBoard({
     if (currentStatus === newStatus || !isValidKanbanTransition(currentStatus, newStatus)) return;
 
     setOverrides((prev) => ({ ...prev, [taskId]: newStatus }));
+    setPendingIds((prev) => new Set(prev).add(taskId));
     startTransition(() => {
       setStatus(taskId, newStatus).then((result) => {
+        setPendingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
         if (result?.error) {
           setOverrides((prev) => {
             const next = { ...prev };
@@ -114,7 +136,7 @@ export function KanbanBoard({
               <div className="card-stack">
                 {items.length ? (
                   items.map((t, i) => (
-                    <DraggableTaskCard key={t.id} task={t}>
+                    <DraggableTaskCard key={t.id} task={t} disabled={pendingIds.has(t.id)}>
                       <TaskCard
                         task={t}
                         pauses={pausesByTask.get(t.id) ?? []}
@@ -137,6 +159,23 @@ export function KanbanBoard({
           );
         })}
       </div>
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+        {activeTask ? (
+          <div className="task-card-overlay">
+            <TaskCard
+              task={activeTask}
+              pauses={pausesByTask.get(activeTask.id) ?? []}
+              assigneeNames={assigneeNamesByTask.get(activeTask.id) ?? []}
+              projectName={activeTask.project_id ? projectNames.get(activeTask.project_id) ?? null : null}
+              pausedByName={pausedByNameByTask.get(activeTask.id) ?? null}
+              profileNames={profileNames}
+              commentCount={commentCountsByTask.get(activeTask.id) ?? 0}
+              checklistProgress={checklistProgressByTask.get(activeTask.id)}
+              labels={labelsByTask?.get(activeTask.id) ?? []}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -163,24 +202,31 @@ function KanbanColumn({
   );
 }
 
-function DraggableTaskCard({ task, children }: { task: Task; children: React.ReactNode }) {
-  // Only the pointer listeners are spread, not dnd-kit's `attributes`
-  // (role="button", tabIndex) — the card already contains real buttons and
-  // links, and declaring the whole wrapper as a nested "button" would be
-  // invalid a11y for no gain, since only PointerSensor is wired up here
-  // (no keyboard-drag support to make that role meaningful). The existing
-  // status buttons remain the accessible/keyboard path, per design.
-  const { listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
-  // useDraggable only reports the offset — applying it as a transform is on us.
-  const style: React.CSSProperties | undefined = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+function DraggableTaskCard({
+  task,
+  disabled,
+  children,
+}: {
+  task: Task;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  // `attributes` (role="button", tabIndex, aria-*) are spread now that
+  // KeyboardSensor makes keyboard dragging real — the card does still nest
+  // real buttons/links, which isn't strictly valid nested-interactive-content
+  // markup, but it's the same tradeoff every kanban UI with keyboard drag
+  // makes (Trello, Linear, GitHub Projects): the wrapper is Tab-reachable,
+  // its own buttons stay reachable right after it in DOM order.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id, disabled });
+  // No transform here: DragOverlay renders the moving clone, so the source
+  // slot just sits still and fades (task-card-dragging) instead of tracking
+  // the pointer itself.
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      {...attributes}
       {...listeners}
-      className={`draggable-task ${isDragging ? 'task-card-dragging' : ''}`}
+      className={`draggable-task ${isDragging ? 'task-card-dragging' : ''} ${disabled ? 'draggable-task-disabled' : ''}`}
     >
       {children}
     </div>

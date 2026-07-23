@@ -721,12 +721,19 @@ p.section-sub {
   cursor: grab;
   touch-action: none;
 }
+.draggable-task-disabled {
+  cursor: not-allowed;
+}
 .task-card-dragging {
   cursor: grabbing;
-  opacity: 0.85;
+  opacity: 0.4;
+}
+.task-card-overlay {
+  cursor: grabbing;
   box-shadow: var(--shadow-hover);
-  z-index: 50;
-  position: relative;
+}
+.task-card-overlay .task-card {
+  animation: none;
 }
 .task-card {
   background: var(--surface);
