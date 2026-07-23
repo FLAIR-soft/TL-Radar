@@ -3,14 +3,23 @@ import { Inbox, SearchX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { lastPausedBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
+import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskTable } from './TaskTable';
 import { CalendarView } from './CalendarView';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
-import type { TaskPause } from '@/lib/supabase/types';
+import type { Task } from '@/lib/supabase/types';
+
+const TASKS_SELECT = `
+  *,
+  task_pauses(*),
+  task_assignees(assignee_id),
+  task_comments(count),
+  task_checklist_items(done),
+  task_labels(label_id)
+`;
 
 export default async function DashboardPage({
   searchParams,
@@ -29,13 +38,16 @@ export default async function DashboardPage({
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }, { data: savedViews }, { data: labels }, { data: wipLimits }] =
+  const [{ data: taskRows }, { data: profiles }, { data: projects }, { data: savedViews }, { data: labels }, { data: wipLimits }] =
     await Promise.all([
       supabase
         .from('tasks')
-        .select('*')
+        .select(TASKS_SELECT)
         .neq('status', 'done')
         .is('deleted_at', null)
+        .is('task_assignees.removed_at', null)
+        .is('task_comments.deleted_at', null)
+        .is('task_checklist_items.deleted_at', null)
         .order('created_at', { ascending: true }),
       supabase.from('profiles').select('id, name').order('name'),
       supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
@@ -44,7 +56,7 @@ export default async function DashboardPage({
       supabase.from('wip_limits').select('*'),
     ]);
 
-  const active = tasks ?? [];
+  const active = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
   const profileList = profiles ?? [];
   const projectList = projects ?? [];
   const savedViewList = savedViews ?? [];
@@ -52,92 +64,18 @@ export default async function DashboardPage({
   const limitByStatus = new Map((wipLimits ?? []).map((w) => [w.status, w.limit_count]));
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
+  const labelById = new Map(labelList.map((l) => [l.id, l]));
 
-  let pauses: TaskPause[] = [];
-  const assigneeNamesByTask = new Map<string, string[]>();
-  const assigneeIdsByTask = new Map<string, string[]>();
-  const commentCountsByTask = new Map<string, number>();
-  const checklistProgressByTask = new Map<string, { done: number; total: number }>();
-  const labelIdsByTask = new Map<string, string[]>();
-  if (active.length) {
-    const [{ data: pauseData }, { data: assigneeData }, { data: commentData }, { data: checklistData }, { data: labelData }] =
-      await Promise.all([
-        supabase
-          .from('task_pauses')
-          .select('*')
-          .in(
-            'task_id',
-            active.map((t) => t.id)
-          ),
-        supabase
-          .from('task_assignees')
-          .select('task_id, assignee_id')
-          .in(
-            'task_id',
-            active.map((t) => t.id)
-          )
-          .is('removed_at', null),
-        supabase
-          .from('task_comments')
-          .select('task_id')
-          .in(
-            'task_id',
-            active.map((t) => t.id)
-          )
-          .is('deleted_at', null),
-        supabase
-          .from('task_checklist_items')
-          .select('task_id, done')
-          .in(
-            'task_id',
-            active.map((t) => t.id)
-          )
-          .is('deleted_at', null),
-        supabase
-          .from('task_labels')
-          .select('task_id, label_id')
-          .in(
-            'task_id',
-            active.map((t) => t.id)
-          ),
-      ]);
-    pauses = pauseData ?? [];
-    for (const a of assigneeData ?? []) {
-      const names = assigneeNamesByTask.get(a.task_id) ?? [];
-      const name = profileNames.get(a.assignee_id);
-      if (name) names.push(name);
-      assigneeNamesByTask.set(a.task_id, names);
-
-      const ids = assigneeIdsByTask.get(a.task_id) ?? [];
-      ids.push(a.assignee_id);
-      assigneeIdsByTask.set(a.task_id, ids);
-    }
-    for (const c of commentData ?? []) {
-      commentCountsByTask.set(c.task_id, (commentCountsByTask.get(c.task_id) ?? 0) + 1);
-    }
-    for (const item of checklistData ?? []) {
-      const progress = checklistProgressByTask.get(item.task_id) ?? { done: 0, total: 0 };
-      progress.total += 1;
-      if (item.done) progress.done += 1;
-      checklistProgressByTask.set(item.task_id, progress);
-    }
-    for (const l of labelData ?? []) {
-      const ids = labelIdsByTask.get(l.task_id) ?? [];
-      ids.push(l.label_id);
-      labelIdsByTask.set(l.task_id, ids);
-    }
-  }
-  const pausesByTask = new Map<string, TaskPause[]>();
-  for (const p of pauses) {
-    const list = pausesByTask.get(p.task_id) ?? [];
-    list.push(p);
-    pausesByTask.set(p.task_id, list);
-  }
-  const pausedByNameByTask = new Map<string, string | null>();
-  for (const [taskId, taskPauses] of pausesByTask) {
-    const id = lastPausedBy(taskPauses);
-    pausedByNameByTask.set(taskId, id ? profileNames.get(id) ?? null : null);
-  }
+  const {
+    pausesByTask,
+    pausedByNameByTask,
+    assigneeNamesByTask,
+    assigneeIdsByTask,
+    commentCountsByTask,
+    checklistProgressByTask,
+    labelIdsByTask,
+    labelsByTask,
+  } = buildTaskRelationMaps(active, profileNames, labelById);
 
   if (!active.length) {
     return (
@@ -158,14 +96,6 @@ export default async function DashboardPage({
   const filteredActive = filtersActive
     ? active.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : active;
-
-  const labelById = new Map(labelList.map((l) => [l.id, l]));
-  const labelsByTask = new Map(
-    [...labelIdsByTask.entries()].map(([taskId, ids]) => [
-      taskId,
-      ids.map((id) => labelById.get(id)).filter((l): l is NonNullable<typeof l> => !!l),
-    ])
-  );
 
   return (
     <div className="page-fade">

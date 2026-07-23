@@ -5,11 +5,19 @@ import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
+import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { TaskPause } from '@/lib/supabase/types';
+import type { Task, TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
 import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
+
+const TASKS_SELECT = `
+  *,
+  task_pauses(*),
+  task_assignees(assignee_id),
+  task_labels(label_id)
+`;
 
 export default async function ArchivePage({
   searchParams,
@@ -24,19 +32,21 @@ export default async function ArchivePage({
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }, { data: labels }] = await Promise.all([
+  const [{ data: taskRows }, { data: profiles }, { data: projects }, { data: labels }] = await Promise.all([
     supabase
       .from('tasks')
-      .select('*')
+      .select(TASKS_SELECT)
       .eq('status', 'done')
       .is('deleted_at', null)
-      .order('created_at', { ascending: false }),
+      .is('task_assignees.removed_at', null)
+      .order('created_at', { ascending: false })
+      .order('paused_at', { ascending: true, referencedTable: 'task_pauses' }),
     supabase.from('profiles').select('id, name').order('name'),
     supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
     supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);
 
-  const done = tasks ?? [];
+  const done = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
   const profileList = profiles ?? [];
   const projectList = projects ?? [];
   const labelList = labels ?? [];
@@ -44,60 +54,11 @@ export default async function ArchivePage({
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
   const labelById = new Map(labelList.map((l) => [l.id, l]));
 
-  let pauses: TaskPause[] = [];
-  const assigneeNamesByTask = new Map<string, string[]>();
-  const assigneeIdsByTask = new Map<string, string[]>();
-  const labelIdsByTask = new Map<string, string[]>();
-  if (done.length) {
-    const [{ data: pauseData }, { data: assigneeData }, { data: labelData }] = await Promise.all([
-      supabase
-        .from('task_pauses')
-        .select('*')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        )
-        .order('paused_at', { ascending: true }),
-      supabase
-        .from('task_assignees')
-        .select('task_id, assignee_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        )
-        .is('removed_at', null),
-      supabase
-        .from('task_labels')
-        .select('task_id, label_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        ),
-    ]);
-    pauses = pauseData ?? [];
-    for (const a of assigneeData ?? []) {
-      const names = assigneeNamesByTask.get(a.task_id) ?? [];
-      const name = profileNames.get(a.assignee_id);
-      if (name) names.push(name);
-      assigneeNamesByTask.set(a.task_id, names);
-
-      const ids = assigneeIdsByTask.get(a.task_id) ?? [];
-      ids.push(a.assignee_id);
-      assigneeIdsByTask.set(a.task_id, ids);
-    }
-    for (const l of labelData ?? []) {
-      const ids = labelIdsByTask.get(l.task_id) ?? [];
-      ids.push(l.label_id);
-      labelIdsByTask.set(l.task_id, ids);
-    }
-  }
-
-  const pausesByTask = new Map<string, TaskPause[]>();
-  for (const p of pauses) {
-    const list = pausesByTask.get(p.task_id) ?? [];
-    list.push(p);
-    pausesByTask.set(p.task_id, list);
-  }
+  const { pausesByTask, assigneeNamesByTask, assigneeIdsByTask, labelIdsByTask, labelsByTask } = buildTaskRelationMaps(
+    done,
+    profileNames,
+    labelById
+  );
 
   if (!done.length) {
     return (
@@ -121,7 +82,7 @@ export default async function ArchivePage({
       taskPauses,
       net: netDuration(t, taskPauses),
       assignees: assigneeNamesByTask.get(t.id) ?? [],
-      labels: (labelIdsByTask.get(t.id) ?? []).map((id) => labelById.get(id)).filter((l): l is NonNullable<typeof l> => !!l),
+      labels: labelsByTask.get(t.id) ?? [],
       lateMs: completedLateBy(t),
     };
   });
