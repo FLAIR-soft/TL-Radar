@@ -732,4 +732,43 @@ test.describe('golden path', () => {
     await page.locator('[data-testid=task-table-row]', { hasText: titleHigh }).locator('[data-testid=delete-task]').click();
     await expect(page.locator('[data-testid=task-table-row]', { hasText: titleHigh })).toHaveCount(0);
   });
+
+  test('analytics shows a cumulative flow chart and estimate accuracy for completed tasks', async ({ page }) => {
+    const owner = uniqueName('Gp20');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Analytics Done ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.fill('input[name=estimatedMinutes]', '10');
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    const startBtn = card.locator('button:has-text("Starten")');
+    // Outside Munich work hours status changes are blocked app-wide (existing,
+    // unrelated gating) — skip the completion flow rather than fight the clock.
+    const withinWorkHours = (await startBtn.count()) > 0;
+    if (withinWorkHours) {
+      await startBtn.click();
+      await page.waitForTimeout(300);
+      await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+      await page.locator('.task-card', { hasText: title }).locator('button:has-text("Fertig")').click();
+      await page.waitForTimeout(300);
+    }
+
+    await page.click('text=Analytik');
+    await page.waitForURL('**/analytics');
+    await expect(page.locator('.cfd-svg')).toBeVisible();
+    await expect(page.locator('.cfd-legend-item')).toHaveCount(4);
+
+    if (!withinWorkHours) return; // outside work hours: no completed task to assert on below
+
+    const row = page.locator('.archive-table .archive-row', { hasText: owner.fullName });
+    await expect(row).toBeVisible();
+    await expect(row.locator('.pill')).toBeVisible();
+  });
 });

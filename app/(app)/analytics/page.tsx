@@ -5,8 +5,12 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
+import { computeCumulativeFlow } from '@/lib/logic/cumulative-flow';
+import { computeEstimateAccuracy } from '@/lib/logic/estimate-accuracy';
 import { EmptyState } from '@/components/EmptyState';
 import { AnalyticsStats } from './AnalyticsStats';
+import { CumulativeFlowChart } from '@/components/CumulativeFlowChart';
+import { EstimateAccuracyTable } from '@/components/EstimateAccuracyTable';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -44,18 +48,27 @@ export default async function AnalyticsPage({
 
   const [{ data: profiles }, { data: tasks }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('tasks').select('*').is('deleted_at', null).not('started_at', 'is', null),
+    // Vse nezaudalyonnyye zadachi (ne tol'ko zapushchennyye) — nuzhny i
+    // 'waiting' zadachi dlya cumulative flow (Etap 11).
+    supabase.from('tasks').select('*').is('deleted_at', null),
   ]);
 
-  const activeTasks = tasks ?? [];
-  const taskIds = activeTasks.map((t) => t.id);
+  const allTasks = tasks ?? [];
+  const activeTasks = allTasks.filter((t) => t.started_at);
+  const taskIds = allTasks.map((t) => t.id);
 
-  const [{ data: pauses }, { data: assignees }] = taskIds.length
+  const [{ data: pauses }, { data: assignees }, { data: statusChanges }] = taskIds.length
     ? await Promise.all([
         supabase.from('task_pauses').select('*').in('task_id', taskIds),
         supabase.from('task_assignees').select('*').in('task_id', taskIds),
+        supabase
+          .from('activity_log')
+          .select('*')
+          .eq('entity_type', 'task')
+          .eq('event_type', 'status_changed')
+          .in('entity_id', taskIds),
       ])
-    : [{ data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }, { data: [] }];
 
   const stats = computePersonStats({
     profiles: profiles ?? [],
@@ -67,6 +80,20 @@ export default async function AnalyticsPage({
   });
 
   const availableMs = availableWorkingMs(rangeStart, rangeEnd);
+
+  const cumulativeFlow = computeCumulativeFlow({
+    tasks: allTasks,
+    statusChanges: statusChanges ?? [],
+    rangeStart,
+    rangeEnd,
+  });
+
+  const estimateAccuracy = computeEstimateAccuracy({
+    profiles: profiles ?? [],
+    tasks: allTasks,
+    pauses: pauses ?? [],
+    assignees: assignees ?? [],
+  });
 
   return (
     <div className="page-fade">
@@ -82,7 +109,17 @@ export default async function AnalyticsPage({
       {(profiles ?? []).length === 0 ? (
         <EmptyState icon={Users} title={dict.analytics.empty} />
       ) : (
-        <AnalyticsStats stats={stats} availableMs={availableMs} />
+        <>
+          <AnalyticsStats stats={stats} availableMs={availableMs} />
+
+          <h3 className="section-title analytics-subsection-title">{dict.analytics.cumulativeFlowTitle}</h3>
+          <p className="section-sub">{dict.analytics.cumulativeFlowSubtitle}</p>
+          <CumulativeFlowChart data={cumulativeFlow} dict={dict} />
+
+          <h3 className="section-title analytics-subsection-title">{dict.analytics.estimateAccuracyTitle}</h3>
+          <p className="section-sub">{dict.analytics.estimateAccuracySubtitle}</p>
+          <EstimateAccuracyTable stats={estimateAccuracy} dict={dict} />
+        </>
       )}
     </div>
   );

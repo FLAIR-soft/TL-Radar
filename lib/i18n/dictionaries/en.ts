@@ -319,6 +319,13 @@ const en = {
       30: '30 days',
       90: '90 days',
     },
+    cumulativeFlowTitle: 'Tasks by status over time',
+    cumulativeFlowSubtitle: 'How many tasks were in each status at the end of each day, over the selected period.',
+    estimateAccuracyTitle: 'Estimate accuracy',
+    estimateAccuracySubtitle: 'Actual time in progress relative to the estimate, per person (completed tasks with an estimate only).',
+    estimateAccuracyEmpty: 'No completed tasks with a time estimate yet.',
+    estimateAccuracyColCount: 'Tasks',
+    estimateAccuracyColRatio: 'Actual / Estimate',
   },
   landing: {
     eyebrow: 'For team leads and small teams',

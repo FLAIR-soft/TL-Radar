@@ -319,6 +319,13 @@ const de = {
       30: '30 Tage',
       90: '90 Tage',
     },
+    cumulativeFlowTitle: 'Aufgaben nach Status im Zeitverlauf',
+    cumulativeFlowSubtitle: 'Wie viele Aufgaben am Ende jedes Tages in welchem Status waren — für den gewählten Zeitraum.',
+    estimateAccuracyTitle: 'Schätzgenauigkeit',
+    estimateAccuracySubtitle: 'Tatsächliche Bearbeitungszeit im Verhältnis zur Schätzung, pro Person (nur abgeschlossene Aufgaben mit Schätzung).',
+    estimateAccuracyEmpty: 'Noch keine abgeschlossenen Aufgaben mit Zeitschätzung.',
+    estimateAccuracyColCount: 'Aufgaben',
+    estimateAccuracyColRatio: 'Ist / Schätzung',
   },
   landing: {
     eyebrow: 'Für Teamleads und kleine Teams',

@@ -317,6 +317,13 @@ const ru = {
       30: '30 дней',
       90: '90 дней',
     },
+    cumulativeFlowTitle: 'Распределение задач по статусам',
+    cumulativeFlowSubtitle: 'Сколько задач было в каждом статусе на конец дня — за выбранный период.',
+    estimateAccuracyTitle: 'Точность оценок',
+    estimateAccuracySubtitle: 'Фактическое время в работе относительно оценки, по людям (только завершённые задачи с указанной оценкой).',
+    estimateAccuracyEmpty: 'Пока нет завершённых задач с оценкой времени.',
+    estimateAccuracyColCount: 'Задач',
+    estimateAccuracyColRatio: 'Факт / Оценка',
   },
   landing: {
     eyebrow: 'Для тимлидов и небольших команд',

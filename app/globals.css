@@ -1231,6 +1231,46 @@ p.section-sub {
   font-size: var(--fs-xs);
   color: var(--ink-muted);
 }
+.analytics-subsection-title {
+  margin-top: 32px;
+  font-size: var(--fs-lg);
+}
+.cfd-wrap {
+  max-width: 760px;
+}
+.cfd-svg {
+  width: 100%;
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.cfd-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+.cfd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+}
+.cfd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cfd-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
 
 /* ---------- Loading skeletons ---------- */
 @keyframes shimmer {
