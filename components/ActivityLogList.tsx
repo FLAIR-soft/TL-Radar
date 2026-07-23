@@ -1,6 +1,6 @@
 'use client';
 
-import { CirclePlus, Pencil, ArrowRightLeft, Trash2, UserPlus, UserMinus } from 'lucide-react';
+import { CirclePlus, Pencil, ArrowRightLeft, Trash2, UserPlus, UserMinus, MessageSquare } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import type { ActivityLog, ActivityEventType, TaskStatus } from '@/lib/supabase/types';
@@ -12,6 +12,7 @@ const EVENT_ICON: Record<ActivityEventType, typeof Pencil> = {
   deleted: Trash2,
   assignee_added: UserPlus,
   assignee_removed: UserMinus,
+  comment_added: MessageSquare,
 };
 
 export function ActivityLogList({
@@ -47,6 +48,8 @@ export function ActivityLogList({
         return `${dict.activityLog.assigneeAdded}: ${resolveName(log.detail?.assigneeId as string | undefined)}`;
       case 'assignee_removed':
         return `${dict.activityLog.assigneeRemoved}: ${resolveName(log.detail?.assigneeId as string | undefined)}`;
+      case 'comment_added':
+        return dict.activityLog.commentAdded;
       default:
         return log.event_type;
     }

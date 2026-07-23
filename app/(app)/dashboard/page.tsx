@@ -50,8 +50,9 @@ export default async function DashboardPage({
   let pauses: TaskPause[] = [];
   const assigneeNamesByTask = new Map<string, string[]>();
   const assigneeIdsByTask = new Map<string, string[]>();
+  const commentCountsByTask = new Map<string, number>();
   if (active.length) {
-    const [{ data: pauseData }, { data: assigneeData }] = await Promise.all([
+    const [{ data: pauseData }, { data: assigneeData }, { data: commentData }] = await Promise.all([
       supabase
         .from('task_pauses')
         .select('*')
@@ -67,6 +68,14 @@ export default async function DashboardPage({
           active.map((t) => t.id)
         )
         .is('removed_at', null),
+      supabase
+        .from('task_comments')
+        .select('task_id')
+        .in(
+          'task_id',
+          active.map((t) => t.id)
+        )
+        .is('deleted_at', null),
     ]);
     pauses = pauseData ?? [];
     for (const a of assigneeData ?? []) {
@@ -78,6 +87,9 @@ export default async function DashboardPage({
       const ids = assigneeIdsByTask.get(a.task_id) ?? [];
       ids.push(a.assignee_id);
       assigneeIdsByTask.set(a.task_id, ids);
+    }
+    for (const c of commentData ?? []) {
+      commentCountsByTask.set(c.task_id, (commentCountsByTask.get(c.task_id) ?? 0) + 1);
     }
   }
   const pausesByTask = new Map<string, TaskPause[]>();
@@ -135,6 +147,7 @@ export default async function DashboardPage({
           projectNames={projectNames}
           pausedByNameByTask={pausedByNameByTask}
           profileNames={profileNames}
+          commentCountsByTask={commentCountsByTask}
         />
       )}
     </div>

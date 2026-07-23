@@ -70,7 +70,8 @@ export type ActivityEventType =
   | 'status_changed'
   | 'deleted'
   | 'assignee_added'
-  | 'assignee_removed';
+  | 'assignee_removed'
+  | 'comment_added';
 
 export type ActivityLog = {
   id: string;
@@ -80,6 +81,15 @@ export type ActivityLog = {
   actor_id: string | null;
   detail: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type TaskComment = {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+  deleted_at: string | null;
 };
 
 export interface Database {
@@ -125,6 +135,12 @@ export interface Database {
         Row: ActivityLog;
         Insert: Partial<ActivityLog> & Pick<ActivityLog, 'entity_type' | 'entity_id' | 'event_type'>;
         Update: Partial<ActivityLog>;
+        Relationships: [];
+      };
+      task_comments: {
+        Row: TaskComment;
+        Insert: Partial<TaskComment> & Pick<TaskComment, 'task_id' | 'body'>;
+        Update: Partial<TaskComment>;
         Relationships: [];
       };
     };

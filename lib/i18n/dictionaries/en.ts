@@ -153,7 +153,21 @@ const en = {
     statusChanged: 'Status changed',
     assigneeAdded: 'Assignee added',
     assigneeRemoved: 'Assignee removed',
+    commentAdded: 'Comment added',
     unknownUser: 'unknown user',
+  },
+  comments: {
+    title: 'Comments',
+    empty: 'No comments yet.',
+    loading: 'Loading…',
+    placeholder: 'Write a comment…',
+    submit: 'Send',
+    deleteTitle: 'Delete comment',
+    deleteConfirm: 'Delete this comment?',
+    errors: {
+      empty: 'Enter a comment.',
+      notAllowed: 'You can only delete your own comment.',
+    },
   },
   admin: {
     title: 'Admin',

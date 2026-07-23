@@ -151,7 +151,21 @@ const ru = {
     statusChanged: 'Статус изменён',
     assigneeAdded: 'Исполнитель добавлен',
     assigneeRemoved: 'Исполнитель снят',
+    commentAdded: 'Добавлен комментарий',
     unknownUser: 'неизвестный пользователь',
+  },
+  comments: {
+    title: 'Комментарии',
+    empty: 'Комментариев пока нет.',
+    loading: 'Загрузка…',
+    placeholder: 'Написать комментарий…',
+    submit: 'Отправить',
+    deleteTitle: 'Удалить комментарий',
+    deleteConfirm: 'Удалить этот комментарий?',
+    errors: {
+      empty: 'Введите текст комментария.',
+      notAllowed: 'Можно удалить только свой комментарий.',
+    },
   },
   admin: {
     title: 'Админ',

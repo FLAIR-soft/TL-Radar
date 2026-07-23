@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown } from 'lucide-react';
+import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare } from 'lucide-react';
 import type { Task, TaskPause, TaskStatus } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -31,6 +31,7 @@ export function TaskCard({
   projectName,
   pausedByName,
   profileNames,
+  commentCount = 0,
   style,
 }: {
   task: Task;
@@ -39,6 +40,7 @@ export function TaskCard({
   projectName: string | null;
   pausedByName: string | null;
   profileNames: Map<string, string>;
+  commentCount?: number;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -229,6 +231,12 @@ export function TaskCard({
         >
           <Trash2 size={18} strokeWidth={1.75} />
         </button>
+        {commentCount > 0 && (
+          <span className="comment-count-badge" title={dict.comments.title}>
+            <MessageSquare size={14} strokeWidth={1.75} />
+            {commentCount}
+          </span>
+        )}
         <TaskDetailPanel task={task} assigneeNames={assigneeNames} projectName={projectName} profileNames={profileNames} />
       </div>
     </div>

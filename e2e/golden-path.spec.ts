@@ -384,4 +384,42 @@ test.describe('golden path', () => {
     await expect(waitingCol.locator('.task-card', { hasText: title })).toBeVisible();
     await expect(pausedCol.locator('.task-card', { hasText: title })).toHaveCount(0);
   });
+
+  test('adding and deleting a task comment updates the counter and activity log', async ({ page }) => {
+    const owner = uniqueName('Gp12');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Comment Task ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    // Filter down to just this task (see the drag & drop tests above for why).
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    await expect(card.locator('.comment-count-badge')).toHaveCount(0);
+
+    await card.locator('[data-testid=view-task-log]').click();
+    await expect(page.locator('.comment-list .empty-note')).toBeVisible();
+
+    const commentBody = 'E2E comment body ' + rand;
+    await page.fill('[data-testid=comment-input]', commentBody);
+    await page.click('[data-testid=comment-submit]');
+    await expect(page.locator('.comment-row', { hasText: commentBody })).toBeVisible();
+    await expect(page.locator('[data-testid=delete-comment]')).toHaveCount(1);
+    await expect(page.locator('.activity-log-row', { hasText: 'Kommentar' })).toBeVisible();
+
+    await page.click('[data-testid=slideover-close]');
+    await expect(card.locator('.comment-count-badge')).toHaveText('1');
+
+    await card.locator('[data-testid=view-task-log]').click();
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.click('[data-testid=delete-comment]');
+    await expect(page.locator('.comment-list .empty-note')).toBeVisible();
+    await page.click('[data-testid=slideover-close]');
+    await expect(card.locator('.comment-count-badge')).toHaveCount(0);
+  });
 });

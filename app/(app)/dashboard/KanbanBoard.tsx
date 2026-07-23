@@ -26,6 +26,7 @@ export function KanbanBoard({
   projectNames,
   pausedByNameByTask,
   profileNames,
+  commentCountsByTask,
 }: {
   tasks: Task[];
   pausesByTask: Map<string, TaskPause[]>;
@@ -33,6 +34,7 @@ export function KanbanBoard({
   projectNames: Map<string, string>;
   pausedByNameByTask: Map<string, string | null>;
   profileNames: Map<string, string>;
+  commentCountsByTask: Map<string, number>;
 }) {
   const dict = useDictionary();
   const [, startTransition] = useTransition();
@@ -106,6 +108,7 @@ export function KanbanBoard({
                         projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                         pausedByName={pausedByNameByTask.get(t.id) ?? null}
                         profileNames={profileNames}
+                        commentCount={commentCountsByTask.get(t.id) ?? 0}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                       />
                     </DraggableTaskCard>

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { History, Folder, MapPin, CalendarClock } from 'lucide-react';
 import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
+import { CommentList } from '@/components/CommentList';
 import { getActivityLog } from '@/lib/logic/activity-log-query';
+import { getTaskComments, type TaskCommentsResult } from './comments-actions';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
@@ -25,11 +27,22 @@ export function TaskDetailPanel({
   const dict = useDictionary();
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
+  const [comments, setComments] = useState<TaskCommentsResult | null>(null);
 
   useEffect(() => {
     if (!open || logs !== null) return;
     getActivityLog('task', task.id).then(setLogs);
   }, [open, logs, task.id]);
+
+  useEffect(() => {
+    if (!open || comments !== null) return;
+    getTaskComments(task.id).then(setComments);
+  }, [open, comments, task.id]);
+
+  function refreshComments() {
+    getTaskComments(task.id).then(setComments);
+    getActivityLog('task', task.id).then(setLogs);
+  }
 
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
 
@@ -83,6 +96,24 @@ export function TaskDetailPanel({
               <span>{dict.taskCard.estimate}</span>
               <span className="mono">{fmtDuration(task.estimated_minutes * 60000, dict.duration)}</span>
             </div>
+          )}
+        </div>
+        <div className="detail-log">
+          <h4 className="detail-log-title">{dict.comments.title}</h4>
+          {comments === null ? (
+            <div className="empty-note loading-row">
+              <span className="loading-spinner" />
+              {dict.comments.loading}
+            </div>
+          ) : (
+            <CommentList
+              taskId={task.id}
+              comments={comments.comments}
+              currentUserId={comments.currentUserId}
+              isAdmin={comments.isAdmin}
+              profileNames={profileNames}
+              onChange={refreshComments}
+            />
           )}
         </div>
         <div className="detail-log">

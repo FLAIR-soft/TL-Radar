@@ -153,7 +153,21 @@ const de = {
     statusChanged: 'Status geändert',
     assigneeAdded: 'Zuständige Person hinzugefügt',
     assigneeRemoved: 'Zuständige Person entfernt',
+    commentAdded: 'Kommentar hinzugefügt',
     unknownUser: 'unbekannter Benutzer',
+  },
+  comments: {
+    title: 'Kommentare',
+    empty: 'Noch keine Kommentare.',
+    loading: 'Wird geladen…',
+    placeholder: 'Kommentar schreiben…',
+    submit: 'Senden',
+    deleteTitle: 'Kommentar löschen',
+    deleteConfirm: 'Diesen Kommentar löschen?',
+    errors: {
+      empty: 'Bitte einen Kommentartext eingeben.',
+      notAllowed: 'Nur eigene Kommentare können gelöscht werden.',
+    },
   },
   admin: {
     title: 'Admin',
