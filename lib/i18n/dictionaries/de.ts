@@ -298,6 +298,7 @@ const de = {
     },
   },
   commandPalette: {
+    title: 'Befehlspalette',
     placeholder: 'Befehl oder Aufgabentitel eingeben…',
     addTaskPrefix: 'Aufgabe hinzufügen: ',
     noResults: 'Nichts gefunden.',

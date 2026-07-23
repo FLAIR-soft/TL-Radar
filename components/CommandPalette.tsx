@@ -7,6 +7,8 @@ import { Search } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from './ToastProvider';
 import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { useScrollLock } from '@/lib/hooks/useScrollLock';
 import { canViewStats } from '@/lib/logic/access';
 import { quickCreateTask } from '@/app/(app)/dashboard/actions';
 import type { UserRole } from '@/lib/supabase/types';
@@ -22,6 +24,9 @@ export function CommandPalette({ role }: { role: UserRole }) {
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const { phase, onAnimationEnd } = useAnimatedUnmount(open);
+  const active = phase !== 'closed';
+  const panelRef = useFocusTrap<HTMLDivElement>(active);
+  useScrollLock(active);
 
   function close() {
     setOpen(false);
@@ -53,10 +58,6 @@ export function CommandPalette({ role }: { role: UserRole }) {
     document.addEventListener('keydown', onGlobalKey);
     return () => document.removeEventListener('keydown', onGlobalKey);
   }, []);
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -133,8 +134,13 @@ export function CommandPalette({ role }: { role: UserRole }) {
             onAnimationEnd={onAnimationEnd}
           >
             <div
+              ref={panelRef}
               className={`cmdk-panel ${phase === 'closing' ? 'is-closing' : ''}`}
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={handleKeyDown}
+              role="dialog"
+              aria-modal="true"
+              aria-label={dict.commandPalette.title}
               data-testid="command-palette"
             >
               <div className="cmdk-input-row">
@@ -144,7 +150,6 @@ export function CommandPalette({ role }: { role: UserRole }) {
                   className="cmdk-input"
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
                   placeholder={dict.commandPalette.placeholder}
                   disabled={isPending}
                   data-testid="command-palette-input"

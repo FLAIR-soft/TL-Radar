@@ -7,6 +7,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { createClient } from '@/lib/supabase/client';
 import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import type { NotificationType, NotificationView } from '@/lib/supabase/types';
 
@@ -54,6 +55,7 @@ export function NotificationBell({ userId }: { userId: string }) {
   const [items, setItems] = useState<NotificationView[] | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const { phase, onAnimationEnd } = useAnimatedUnmount(open);
+  const panelRef = useFocusTrap<HTMLDivElement>(phase !== 'closed');
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +119,15 @@ export function NotificationBell({ userId }: { userId: string }) {
   }, []);
 
   useEffect(() => {
+    if (phase !== 'open') return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [phase]);
+
+  useEffect(() => {
     if (!open) return;
     fetch('/api/notifications?full=1')
       .then((r) => r.json())
@@ -153,6 +164,7 @@ export function NotificationBell({ userId }: { userId: string }) {
         className="icon-btn notif-bell-trigger"
         onClick={() => setOpen((v) => !v)}
         aria-label={dict.notifications.title}
+        aria-haspopup="dialog"
         aria-expanded={open}
         data-testid="notification-bell"
       >
@@ -165,8 +177,11 @@ export function NotificationBell({ userId }: { userId: string }) {
       </button>
       {phase !== 'closed' && (
         <div
+          ref={panelRef}
           className={`notif-panel ${phase === 'closing' ? 'is-closing' : ''}`}
           onAnimationEnd={onAnimationEnd}
+          role="dialog"
+          aria-label={dict.notifications.title}
         >
           <div className="notif-panel-head">
             <span>{dict.notifications.title}</span>

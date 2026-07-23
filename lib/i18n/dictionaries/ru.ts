@@ -296,6 +296,7 @@ const ru = {
     },
   },
   commandPalette: {
+    title: 'Палитра команд',
     placeholder: 'Введите команду или название задачи…',
     addTaskPrefix: 'Добавить задачу: ',
     noResults: 'Ничего не найдено.',

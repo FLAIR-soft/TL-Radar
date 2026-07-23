@@ -298,6 +298,7 @@ const en = {
     },
   },
   commandPalette: {
+    title: 'Command palette',
     placeholder: 'Type a command or task title…',
     addTaskPrefix: 'Add task: ',
     noResults: 'Nothing found.',
