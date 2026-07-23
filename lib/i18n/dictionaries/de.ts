@@ -169,6 +169,17 @@ const de = {
       notAllowed: 'Nur eigene Kommentare können gelöscht werden.',
     },
   },
+  notifications: {
+    title: 'Benachrichtigungen',
+    empty: 'Noch keine Benachrichtigungen.',
+    loading: 'Wird geladen…',
+    markAllRead: 'Alle als gelesen markieren',
+    unknownTask: 'unbekannte Aufgabe',
+    assigned: 'Sie wurden einer Aufgabe zugewiesen',
+    unassigned: 'Sie wurden von einer Aufgabe entfernt',
+    comment: 'Neuer Kommentar',
+    deadlineSoon: 'Frist läuft bald ab',
+  },
   admin: {
     title: 'Admin',
     subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',

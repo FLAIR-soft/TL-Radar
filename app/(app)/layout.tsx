@@ -7,6 +7,7 @@ import { getThemeCookie } from '@/lib/theme/cookie';
 import { TopTabs } from './TopTabs';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationBell } from '@/components/NotificationBell';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <TopTabs role={role} />
           </div>
           <div className="who">
+            <NotificationBell />
             <ThemeToggle theme={theme} />
             <LanguageSwitcher />
             <span className="name">{name}</span>

@@ -422,4 +422,62 @@ test.describe('golden path', () => {
     await page.click('[data-testid=slideover-close]');
     await expect(card.locator('.comment-count-badge')).toHaveCount(0);
   });
+
+  test('assigning, commenting, and unassigning notify the other person but not the actor', async ({ page }) => {
+    const owner = uniqueName('Gp13');
+    const helper = uniqueName('Gp14');
+
+    await register(page, owner.firstName, owner.lastName);
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+    await register(page, helper.firstName, helper.lastName);
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+
+    await signIn(page, owner.username);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Notif Task ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('.assignee-select-trigger');
+    await page.click(`.assignee-option:has-text("${helper.fullName}")`);
+    await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toBeVisible();
+    await page.click('input[name=title]');
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    // Commenting on the task should notify the assigned helper, not the owner
+    // (the actor performing the action never gets their own notification).
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    await page.locator('.task-card', { hasText: title }).locator('[data-testid=view-task-log]').click();
+    await page.fill('[data-testid=comment-input]', 'Please take a look.');
+    await page.click('[data-testid=comment-submit]');
+    await expect(page.locator('.comment-row')).toBeVisible();
+    await page.click('[data-testid=slideover-close]');
+    await expect(page.locator('[data-testid=notification-count]')).toHaveCount(0);
+
+    // Removing the helper as assignee should notify them too.
+    await page.locator('.task-card', { hasText: title }).getByTestId('edit-task').click();
+    await page.waitForURL('**/dashboard/new?edit=*');
+    await page.click(`.assignee-chip:has-text("${helper.fullName}") button`);
+    await page.click('button[type=submit]:has-text("Änderungen speichern")');
+    await page.waitForURL('**/dashboard');
+
+    await page.click('text=Abmelden');
+    await page.waitForURL('**/login');
+    await signIn(page, helper.username);
+
+    // Assigned + comment + unassigned = 3 unread notifications for the helper.
+    await expect(page.locator('[data-testid=notification-count]')).toHaveText('3');
+    await page.click('[data-testid=notification-bell]');
+    await expect(page.locator('[data-testid=notification-row]')).toHaveCount(3);
+    const panelText = await page.locator('.notif-list').textContent();
+    expect(panelText).toContain(title);
+
+    await page.click('[data-testid=notif-mark-all]');
+    await expect(page.locator('[data-testid=notification-count]')).toHaveCount(0);
+    await expect(page.locator('.notif-row.notif-unread')).toHaveCount(0);
+  });
 });

@@ -92,6 +92,23 @@ export type TaskComment = {
   deleted_at: string | null;
 };
 
+export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment';
+
+export type Notification = {
+  id: string;
+  recipient_id: string;
+  type: NotificationType;
+  task_id: string;
+  payload: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type NotificationView = Notification & {
+  taskTitle: string | null;
+  taskStatus: TaskStatus | null;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -141,6 +158,12 @@ export interface Database {
         Row: TaskComment;
         Insert: Partial<TaskComment> & Pick<TaskComment, 'task_id' | 'body'>;
         Update: Partial<TaskComment>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Partial<Notification> & Pick<Notification, 'recipient_id' | 'type' | 'task_id'>;
+        Update: Partial<Notification>;
         Relationships: [];
       };
     };

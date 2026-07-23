@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { isWithinWorkHours } from '@/lib/logic/tasks';
 import { logActivity } from '@/lib/logic/activity-log';
+import { notifyMany } from '@/lib/logic/notifications';
 import type { TaskStatus, Priority } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -101,6 +102,7 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
   for (const assigneeId of assigneeIds) {
     await logActivity(supabase, 'task', task.id, 'assignee_added', userId, { assigneeId });
   }
+  await notifyMany(supabase, assigneeIds, userId, 'assigned', task.id, { title: fields.title });
 
   revalidatePath('/dashboard');
   redirect('/dashboard');
@@ -157,6 +159,14 @@ export async function editTaskFields(
     for (const a of toRemove) {
       await logActivity(supabase, 'task', taskId, 'assignee_removed', userId, { assigneeId: a.assignee_id });
     }
+    await notifyMany(
+      supabase,
+      toRemove.map((a) => a.assignee_id),
+      userId,
+      'unassigned',
+      taskId,
+      { title: fields.title }
+    );
   }
   if (toAdd.length) {
     await supabase.from('task_assignees').insert(
@@ -170,6 +180,7 @@ export async function editTaskFields(
     for (const assigneeId of toAdd) {
       await logActivity(supabase, 'task', taskId, 'assignee_added', userId, { assigneeId });
     }
+    await notifyMany(supabase, toAdd, userId, 'assigned', taskId, { title: fields.title });
   }
 
   revalidatePath('/dashboard');

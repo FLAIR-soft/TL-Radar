@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
+import { notifyMany } from '@/lib/logic/notifications';
 import type { TaskComment } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -70,6 +71,20 @@ export async function addComment(taskId: string, formData: FormData): Promise<{ 
   }
 
   await logActivity(supabase, 'task', taskId, 'comment_added', userId, { commentId: comment.id });
+
+  const { data: assignees } = await supabase
+    .from('task_assignees')
+    .select('assignee_id')
+    .eq('task_id', taskId)
+    .is('removed_at', null);
+  await notifyMany(
+    supabase,
+    (assignees ?? []).map((a) => a.assignee_id),
+    userId,
+    'comment',
+    taskId,
+    { preview: body.slice(0, 140) }
+  );
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');

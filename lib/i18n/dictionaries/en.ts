@@ -169,6 +169,17 @@ const en = {
       notAllowed: 'You can only delete your own comment.',
     },
   },
+  notifications: {
+    title: 'Notifications',
+    empty: 'No notifications yet.',
+    loading: 'Loading…',
+    markAllRead: 'Mark all read',
+    unknownTask: 'unknown task',
+    assigned: 'You were assigned to a task',
+    unassigned: 'You were removed from a task',
+    comment: 'New comment',
+    deadlineSoon: 'Deadline coming up',
+  },
   admin: {
     title: 'Admin',
     subtitle: 'Reset a password or delete a user.',
