@@ -910,4 +910,31 @@ test.describe('golden path', () => {
     await page.click('[data-testid=view-calendar]');
     await expect(page.locator('.calendar-cell-today [data-testid=calendar-task]', { hasText: title })).toBeVisible();
   });
+
+  test('the app is installable: manifest is valid and a service worker registers and precaches the offline page', async ({
+    page,
+  }) => {
+    const owner = uniqueName('Gp25');
+    await register(page, owner.firstName, owner.lastName);
+
+    const manifestHref = await page.locator('link[rel=manifest]').getAttribute('href');
+    const manifestResp = await page.request.get(manifestHref!);
+    expect(manifestResp.status()).toBe(200);
+    const manifest = await manifestResp.json();
+    expect(manifest.start_url).toBe('/dashboard');
+    expect(manifest.display).toBe('standalone');
+    expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
+
+    const swState = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.active?.state ?? null;
+    });
+    expect(['activating', 'activated']).toContain(swState);
+
+    const offlineCached = await page.evaluate(async () => {
+      const cache = await caches.open('tlradar-shell-v1');
+      return !!(await cache.match('/offline.html'));
+    });
+    expect(offlineCached).toBe(true);
+  });
 });

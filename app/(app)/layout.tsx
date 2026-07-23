@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
+      <ServiceWorkerRegister />
       <div className="app-root">
         <div className="topbar">
           <div className="topbar-left">
