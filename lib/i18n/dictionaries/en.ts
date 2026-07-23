@@ -221,6 +221,10 @@ const en = {
     viewKanban: 'Kanban',
     viewTable: 'Table',
   },
+  export: {
+    csv: 'CSV',
+    xlsx: 'XLSX',
+  },
   savedViews: {
     placeholder: '— saved views —',
     namePlaceholder: 'View name',

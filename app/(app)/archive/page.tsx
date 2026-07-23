@@ -140,7 +140,7 @@ export default async function ArchivePage({
       <h2 className="section-title">{dict.archive.title}</h2>
       <p className="section-sub">{dict.archive.subtitle}</p>
       <Suspense fallback={null}>
-        <TaskFilterBar profiles={profileList} projects={projectList} />
+        <TaskFilterBar profiles={profileList} projects={projectList} showExport />
       </Suspense>
       {filtersActive && rows.length === 0 ? (
         <EmptyState

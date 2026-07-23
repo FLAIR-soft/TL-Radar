@@ -221,6 +221,10 @@ const de = {
     viewKanban: 'Kanban',
     viewTable: 'Tabelle',
   },
+  export: {
+    csv: 'CSV',
+    xlsx: 'XLSX',
+  },
   savedViews: {
     placeholder: '— gespeicherte Ansichten —',
     namePlaceholder: 'Name der Ansicht',

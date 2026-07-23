@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, LayoutGrid, Table2, Bookmark, Plus, Trash2 } from 'lucide-react';
+import { Search, X, LayoutGrid, Table2, Bookmark, Plus, Trash2, Download } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
@@ -12,11 +12,13 @@ export function TaskFilterBar({
   projects,
   savedViews = [],
   view = 'kanban',
+  showExport = false,
 }: {
   profiles: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   savedViews?: { id: string; name: string; filters: { qs: string } }[];
   view?: 'kanban' | 'table';
+  showExport?: boolean;
 }) {
   const dict = useDictionary();
   const router = useRouter();
@@ -204,6 +206,26 @@ export function TaskFilterBar({
           <Plus size={16} strokeWidth={1.75} />
         </button>
       </div>
+      {showExport && (
+        <div className="export-links">
+          <a
+            className="export-link"
+            href={`/api/export/archive?format=csv&${searchParams.toString()}`}
+            data-testid="export-csv"
+          >
+            <Download size={14} strokeWidth={1.75} />
+            {dict.export.csv}
+          </a>
+          <a
+            className="export-link"
+            href={`/api/export/archive?format=xlsx&${searchParams.toString()}`}
+            data-testid="export-xlsx"
+          >
+            <Download size={14} strokeWidth={1.75} />
+            {dict.export.xlsx}
+          </a>
+        </div>
+      )}
     </div>
   );
 }

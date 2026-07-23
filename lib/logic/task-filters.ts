@@ -20,6 +20,18 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+// Route Handlers poluchayut URLSearchParams (ne obychnyy plain object, kak u
+// Next.js Server Component searchParams) — konvertiruyem, sokhranyaya massivy
+// dlya povtoryayushchikhsya klyuchey (naprimer, neskol'ko `assignee=`).
+export function searchParamsRecordFromURL(searchParams: URLSearchParams): SearchParamsRecord {
+  const record: SearchParamsRecord = {};
+  for (const key of new Set(searchParams.keys())) {
+    const values = searchParams.getAll(key);
+    record[key] = values.length > 1 ? values : values[0];
+  }
+  return record;
+}
+
 export function parseTaskFilters(searchParams: SearchParamsRecord): TaskFilters {
   const q = (firstValue(searchParams.q) ?? '').trim();
 

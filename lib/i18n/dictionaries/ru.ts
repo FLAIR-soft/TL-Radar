@@ -219,6 +219,10 @@ const ru = {
     viewKanban: 'Канбан',
     viewTable: 'Таблица',
   },
+  export: {
+    csv: 'CSV',
+    xlsx: 'XLSX',
+  },
   savedViews: {
     placeholder: '— представления —',
     namePlaceholder: 'Название представления',

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Users } from 'lucide-react';
+import { Users, Download } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
@@ -105,6 +105,16 @@ export default async function AnalyticsPage({
             {dict.analytics.periodLabels[d]}
           </Link>
         ))}
+        <div className="export-links">
+          <a className="export-link" href={`/api/export/analytics?format=csv&days=${days}`} data-testid="export-csv">
+            <Download size={14} strokeWidth={1.75} />
+            {dict.export.csv}
+          </a>
+          <a className="export-link" href={`/api/export/analytics?format=xlsx&days=${days}`} data-testid="export-xlsx">
+            <Download size={14} strokeWidth={1.75} />
+            {dict.export.xlsx}
+          </a>
+        </div>
       </div>
       {(profiles ?? []).length === 0 ? (
         <EmptyState icon={Users} title={dict.analytics.empty} />

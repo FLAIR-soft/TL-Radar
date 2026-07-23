@@ -771,4 +771,53 @@ test.describe('golden path', () => {
     await expect(row).toBeVisible();
     await expect(row.locator('.pill')).toBeVisible();
   });
+
+  test('archive and analytics export CSV and XLSX with the task data', async ({ page }) => {
+    const owner = uniqueName('Gp21');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Export ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const startBtn = page.locator('.task-card', { hasText: title }).locator('button:has-text("Starten")');
+    const withinWorkHours = (await startBtn.count()) > 0;
+    if (withinWorkHours) {
+      await startBtn.click();
+      await page.waitForTimeout(300);
+      await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+      await page.locator('.task-card', { hasText: title }).locator('button:has-text("Fertig")').click();
+      await page.waitForTimeout(300);
+    }
+
+    if (!withinWorkHours) return; // outside work hours: task never reaches archive, nothing to export below
+
+    await page.goto('/archive');
+    const csvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
+    const xlsxHref = await page.locator('[data-testid=export-xlsx]').getAttribute('href');
+
+    const csvResp = await page.request.get(csvHref!);
+    expect(csvResp.status()).toBe(200);
+    expect(csvResp.headers()['content-type']).toContain('text/csv');
+    expect(csvResp.headers()['content-disposition']).toContain('archive.csv');
+    expect(await csvResp.text()).toContain(title);
+
+    const xlsxResp = await page.request.get(xlsxHref!);
+    expect(xlsxResp.status()).toBe(200);
+    expect(xlsxResp.headers()['content-type']).toContain('spreadsheetml');
+    expect(xlsxResp.headers()['content-disposition']).toContain('archive.xlsx');
+    expect((await xlsxResp.body()).length).toBeGreaterThan(0);
+
+    await page.click('text=Analytik');
+    await page.waitForURL('**/analytics');
+    const analyticsCsvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
+    const analyticsCsvResp = await page.request.get(analyticsCsvHref!);
+    expect(analyticsCsvResp.status()).toBe(200);
+    expect(await analyticsCsvResp.text()).toContain(owner.fullName);
+  });
 });

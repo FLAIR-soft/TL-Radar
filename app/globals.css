@@ -603,6 +603,30 @@ p.section-sub {
   min-width: 140px !important;
   height: 42px;
 }
+.export-links {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.export-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.export-link:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+  background: var(--hover-bg);
+}
 .table-sort-btn {
   display: inline-flex;
   align-items: center;
@@ -1173,6 +1197,9 @@ p.section-sub {
 /* ---------- Analytics ---------- */
 .period-switcher {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 18px;
 }
