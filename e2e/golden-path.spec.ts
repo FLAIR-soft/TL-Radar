@@ -600,4 +600,47 @@ test.describe('golden path', () => {
     await page.locator('.project-row', { hasText: title }).locator('[data-testid=delete-template]').click();
     await expect(page.locator('.project-row', { hasText: title })).toHaveCount(0);
   });
+
+  test('recurring rule can be created from a template, toggled inactive, and deleted', async ({ page }) => {
+    const owner = uniqueName('Gp17');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Recurring Source ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    await card.locator('[data-testid=view-task-log]').click();
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.click('[data-testid=save-as-template]');
+    await page.waitForTimeout(300);
+    await page.click('[data-testid=slideover-close]');
+
+    await page.click('text=Vorlagen');
+    await page.waitForURL('**/templates');
+    await page.click('[data-testid=open-create-rule]');
+    await page.selectOption('select[name=templateId]', { label: title });
+    await page.selectOption('select[name=frequency]', 'weekly');
+    await page.selectOption('select[name=weekday]', '1');
+    await page.click('.form-card button[type=submit]');
+
+    const ruleRow = page.locator('.rule-row', { hasText: title });
+    await expect(ruleRow).toBeVisible();
+    await expect(ruleRow).toContainText('Montag');
+    await expect(ruleRow.locator('[data-testid=rule-active-toggle]')).toBeChecked();
+
+    // Deactivating a rule must not delete it, just stop it from firing.
+    await ruleRow.locator('[data-testid=rule-active-toggle]').click();
+    await expect(ruleRow.locator('[data-testid=rule-active-toggle]')).not.toBeChecked();
+    await expect(ruleRow).toBeVisible();
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await ruleRow.locator('[data-testid=delete-rule]').click();
+    await expect(page.locator('.rule-row', { hasText: title })).toHaveCount(0);
+  });
 });

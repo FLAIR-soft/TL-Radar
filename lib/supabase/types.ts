@@ -118,6 +118,21 @@ export type TaskTemplate = {
   deleted_at: string | null;
 };
 
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly';
+
+export type RecurringRule = {
+  id: string;
+  template_id: string;
+  frequency: RecurringFrequency;
+  weekday: number | null;
+  day_of_month: number | null;
+  next_run_at: string;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+};
+
 export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment';
 
 export type Notification = {
@@ -202,6 +217,12 @@ export interface Database {
         Row: TaskTemplate;
         Insert: Partial<TaskTemplate> & Pick<TaskTemplate, 'title'>;
         Update: Partial<TaskTemplate>;
+        Relationships: [];
+      };
+      recurring_rules: {
+        Row: RecurringRule;
+        Insert: Partial<RecurringRule> & Pick<RecurringRule, 'template_id' | 'frequency' | 'next_run_at'>;
+        Update: Partial<RecurringRule>;
         Relationships: [];
       };
     };
