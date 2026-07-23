@@ -5,12 +5,14 @@ import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import { canViewStats } from '@/lib/logic/access';
 import { quickCreateTask } from '@/app/(app)/dashboard/actions';
 import type { UserRole } from '@/lib/supabase/types';
 
 export function CommandPalette({ role }: { role: UserRole }) {
   const dict = useDictionary();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -29,7 +31,7 @@ export function CommandPalette({ role }: { role: UserRole }) {
     startTransition(() => {
       quickCreateTask(title).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         const shouldNavigate = pathname !== '/dashboard';

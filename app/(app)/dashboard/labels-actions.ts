@@ -27,7 +27,7 @@ export async function getLabels(): Promise<Label[]> {
 
 export async function createLabel(name: string, color: string): Promise<{ error?: string; label?: Label }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').labels.errors.unauthorized };
   const { supabase, userId, dict } = auth;
 
   const trimmed = name.trim();

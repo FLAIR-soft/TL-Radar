@@ -2587,3 +2587,74 @@ p.section-sub {
     min-width: auto;
   }
 }
+
+/* ---------- Toasts (замена alert(), Этап 4 оптимизации) ---------- */
+.toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 70;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 40px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-hover);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  animation: fadeSlideIn 0.18s ease;
+}
+.toast.is-closing {
+  animation: toastFadeOut 0.2s ease forwards;
+}
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.toast-success .toast-icon {
+  color: var(--done);
+}
+.toast-error .toast-icon {
+  color: var(--brand-dark);
+}
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  color: var(--ink);
+}
+.toast-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.toast-close:hover {
+  background: var(--hover-bg);
+  color: var(--ink);
+}

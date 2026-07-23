@@ -20,6 +20,7 @@ import {
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { useNowTick } from '@/lib/hooks/useNowTick';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
@@ -50,6 +51,7 @@ export function TaskCard({
   const [isPending, startTransition] = useTransition();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const dict = useDictionary();
+  const toast = useToast();
   const overdue = isOverdue(task);
   const now = useNowTick();
 
@@ -77,7 +79,7 @@ export function TaskCard({
   function handleStatus(to: TaskStatus) {
     startTransition(() => {
       setStatus(task.id, to).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
       });
     });
   }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Search, X, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2, Download } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { LabelFilterSelect } from './LabelFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
@@ -25,6 +26,7 @@ export function TaskFilterBar({
   showExport?: boolean;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -108,7 +110,7 @@ export function TaskFilterBar({
     if (name === null) return;
     startTransition(() => {
       saveView(name, searchParams.toString()).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
       });
     });
   }

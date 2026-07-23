@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { updateWipLimit } from '@/app/(app)/dashboard/wip-actions';
 import type { WipLimit, WipStatus } from '@/lib/supabase/types';
 
@@ -9,6 +10,7 @@ const STATUSES: WipStatus[] = ['waiting', 'in_progress', 'paused'];
 
 export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const byStatus = new Map(limits.map((l) => [l.status, l.limit_count]));
   const [values, setValues] = useState<Record<WipStatus, string>>({
@@ -22,7 +24,8 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
     const limit = raw ? Number(raw) : null;
     startTransition(() => {
       updateWipLimit(status, limit).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
+        else toast.success(dict.wipLimits.saved);
       });
     });
   }

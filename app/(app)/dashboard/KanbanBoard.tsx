@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { STATUS_COLOR, compareByDeadlineUrgency, isValidKanbanTransition } from '@/lib/logic/tasks';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
@@ -43,6 +44,7 @@ export function KanbanBoard({
   labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [, startTransition] = useTransition();
   // Optimistic status overrides, keyed by task id — cleared implicitly once
   // revalidatePath() (inside setStatus) refreshes `tasks` with the confirmed
@@ -82,7 +84,7 @@ export function KanbanBoard({
             delete next[taskId];
             return next;
           });
-          alert(result.error);
+          toast.error(result.error);
         }
       });
     });

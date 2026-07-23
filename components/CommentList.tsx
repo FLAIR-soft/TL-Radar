@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { splitMentionSegments, type MentionableProfile } from '@/lib/logic/mentions';
 import { addComment, deleteComment } from '@/app/(app)/dashboard/comments-actions';
@@ -26,6 +27,7 @@ export function CommentList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
   const [mentionProfiles, setMentionProfiles] = useState<MentionableProfile[]>([]);
@@ -115,7 +117,7 @@ export function CommentList({
     startTransition(() => {
       addComment(taskId, formData).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         setBody('');
@@ -128,7 +130,7 @@ export function CommentList({
     if (!confirm(dict.comments.deleteConfirm)) return;
     startTransition(() => {
       deleteComment(commentId).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
         onChange();
       });
     });

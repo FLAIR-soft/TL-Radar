@@ -53,7 +53,7 @@ export async function getTaskComments(taskId: string): Promise<TaskCommentsResul
 
 export async function addComment(taskId: string, formData: FormData): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').comments.errors.unauthorized };
   const { supabase, userId, dict } = auth;
 
   const body = String(formData.get('body') || '').trim();
@@ -108,7 +108,7 @@ export async function addComment(taskId: string, formData: FormData): Promise<{ 
 
 export async function deleteComment(commentId: string): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').comments.errors.unauthorized };
   const { supabase, userId, isAdmin, dict } = auth;
 
   const { data: comment } = await supabase

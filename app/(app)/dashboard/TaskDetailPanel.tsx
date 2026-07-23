@@ -11,6 +11,7 @@ import { getTaskComments, type TaskCommentsResult } from './comments-actions';
 import { getChecklistItems } from './checklist-actions';
 import { createTemplateFromTask } from '@/app/(app)/templates/actions';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
@@ -28,6 +29,7 @@ export function TaskDetailPanel({
   profileNames: Map<string, string>;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
@@ -73,7 +75,8 @@ export function TaskDetailPanel({
   function handleSaveAsTemplate() {
     startTransition(() => {
       createTemplateFromTask(task.id).then((result) => {
-        alert(result?.error ?? dict.templates.savedConfirm);
+        if (result?.error) toast.error(result.error);
+        else toast.success(dict.templates.savedConfirm);
       });
     });
   }

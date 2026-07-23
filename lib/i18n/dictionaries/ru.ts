@@ -167,6 +167,7 @@ const ru = {
     errors: {
       empty: 'Введите текст комментария.',
       notAllowed: 'Можно удалить только свой комментарий.',
+      unauthorized: 'Вы не авторизованы.',
     },
   },
   notifications: {
@@ -197,6 +198,7 @@ const ru = {
     moveDown: 'Переместить вниз',
     errors: {
       empty: 'Введите текст пункта.',
+      unauthorized: 'Вы не авторизованы.',
     },
   },
   templates: {
@@ -233,6 +235,7 @@ const ru = {
     empty: 'Меток пока нет.',
     errors: {
       missingName: 'Введите название и выберите цвет.',
+      unauthorized: 'Вы не авторизованы.',
     },
   },
   wipLimits: {
@@ -240,8 +243,11 @@ const ru = {
     subtitle: 'Максимум задач одновременно в каждой колонке канбана. Пусто — без ограничения.',
     noLimit: 'без лимита',
     save: 'Сохранить',
+    saved: 'Лимит сохранён.',
     errors: {
       limitReached: 'Достигнут лимит задач в этой колонке.',
+      unauthorized: 'Вы не авторизованы.',
+      forbidden: 'Недостаточно прав.',
     },
   },
   export: {

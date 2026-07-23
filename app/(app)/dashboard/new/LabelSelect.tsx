@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { ChevronDown, Check, X, Plus } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { LABEL_COLORS } from '@/lib/logic/label-colors';
 import { createLabel } from '../labels-actions';
 import type { Label } from '@/lib/supabase/types';
@@ -19,6 +20,7 @@ export function LabelSelect({
   defaultSelected: string[];
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [allLabels, setAllLabels] = useState(labels);
   const [selected, setSelected] = useState<string[]>(defaultSelected);
   const [open, setOpen] = useState(false);
@@ -54,7 +56,7 @@ export function LabelSelect({
     createLabel(name, newColor).then((result) => {
       setCreating(false);
       if (result.error) {
-        alert(result.error);
+        toast.error(result.error);
         return;
       }
       if (result.label) {

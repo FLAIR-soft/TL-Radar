@@ -301,12 +301,6 @@ test.describe('golden path', () => {
     const card = waitingCol.locator('.draggable-task', { hasText: title });
     await card.waitFor();
 
-    let dialogMessage: string | null = null;
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
     const cardBox = await card.boundingBox();
     const targetBox = await inProgressCol.boundingBox();
     if (!cardBox || !targetBox) throw new Error('could not measure drag source/target');
@@ -339,7 +333,7 @@ test.describe('golden path', () => {
     const rolledBack = await backInWaiting.count();
     expect(succeeded + rolledBack).toBe(1);
     if (rolledBack) {
-      expect(dialogMessage).toBeTruthy();
+      await expect(page.locator('[data-testid=toast]')).toBeVisible();
     } else {
       await expect(landedInProgress.locator('.t-timer-primary')).toBeVisible();
     }
@@ -556,13 +550,8 @@ test.describe('golden path', () => {
       await expect(page.locator('.checklist-row', { hasText: item })).toBeVisible();
     }
 
-    let dialogMessage = '';
-    page.once('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
     await page.click('[data-testid=save-as-template]');
-    await expect.poll(() => dialogMessage).toContain('Vorlage gespeichert');
+    await expect(page.locator('[data-testid=toast]', { hasText: 'Vorlage gespeichert' })).toBeVisible();
     await page.click('[data-testid=slideover-close]');
 
     await page.click('text=Vorlagen');
@@ -616,9 +605,8 @@ test.describe('golden path', () => {
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
     await card.locator('[data-testid=view-task-log]').click();
-    page.once('dialog', (dialog) => dialog.accept());
     await page.click('[data-testid=save-as-template]');
-    await page.waitForTimeout(300);
+    await expect(page.locator('[data-testid=toast]')).toBeVisible();
     await page.click('[data-testid=slideover-close]');
 
     await page.click('text=Vorlagen');

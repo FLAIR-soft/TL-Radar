@@ -169,6 +169,7 @@ const en = {
     errors: {
       empty: 'Enter a comment.',
       notAllowed: 'You can only delete your own comment.',
+      unauthorized: 'Not signed in.',
     },
   },
   notifications: {
@@ -199,6 +200,7 @@ const en = {
     moveDown: 'Move down',
     errors: {
       empty: 'Enter an item.',
+      unauthorized: 'Not signed in.',
     },
   },
   templates: {
@@ -235,6 +237,7 @@ const en = {
     empty: 'No labels yet.',
     errors: {
       missingName: 'Enter a name and pick a color.',
+      unauthorized: 'Not signed in.',
     },
   },
   wipLimits: {
@@ -242,8 +245,11 @@ const en = {
     subtitle: 'Maximum tasks at once in each kanban column. Empty means no limit.',
     noLimit: 'no limit',
     save: 'Save',
+    saved: 'Limit saved.',
     errors: {
       limitReached: 'This column has reached its task limit.',
+      unauthorized: 'Not signed in.',
+      forbidden: 'Not allowed.',
     },
   },
   export: {

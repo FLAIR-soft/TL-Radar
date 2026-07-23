@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
 import type { WipLimit, WipStatus } from '@/lib/supabase/types';
 
 export async function getWipLimits(): Promise<WipLimit[]> {
@@ -15,10 +16,11 @@ export async function updateWipLimit(status: WipStatus, limit: number | null): P
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: 'unauthorized' };
+  if (!user) return { error: getDictionary('de').wipLimits.errors.unauthorized };
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return { error: 'forbidden' };
+  const { data: profile } = await supabase.from('profiles').select('role, locale').eq('id', user.id).single();
+  const dict = getDictionary(profile?.locale ?? 'de');
+  if (profile?.role !== 'admin') return { error: dict.wipLimits.errors.forbidden };
 
   const { error } = await supabase
     .from('wip_limits')

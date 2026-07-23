@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import {
   addChecklistItem,
   toggleChecklistItem,
@@ -21,6 +22,7 @@ export function ChecklistList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState('');
 
@@ -33,7 +35,7 @@ export function ChecklistList({
     startTransition(() => {
       addChecklistItem(taskId, formData).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         setTitle('');

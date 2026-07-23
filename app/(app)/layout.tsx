@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { ToastProvider } from '@/components/ToastProvider';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -29,33 +30,35 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
-      <ServiceWorkerRegister />
-      <div className="app-root">
-        <div className="topbar">
-          <div className="topbar-left">
-            <div className="topbar-brand">
-              <span className="topbar-brand-icon">
-                <Radar size={20} strokeWidth={2.25} />
-              </span>
-              <span className="topbar-brand-name">TL-Radar</span>
+      <ToastProvider>
+        <ServiceWorkerRegister />
+        <div className="app-root">
+          <div className="topbar">
+            <div className="topbar-left">
+              <div className="topbar-brand">
+                <span className="topbar-brand-icon">
+                  <Radar size={20} strokeWidth={2.25} />
+                </span>
+                <span className="topbar-brand-name">TL-Radar</span>
+              </div>
+              <TopTabs role={role} />
             </div>
-            <TopTabs role={role} />
+            <div className="who">
+              <CommandPalette role={role} />
+              <NotificationBell userId={user.id} />
+              <ThemeToggle theme={theme} />
+              <LanguageSwitcher />
+              <span className="name">{name}</span>
+              <form action={signOut}>
+                <button className="btn btn-ghost" type="submit">
+                  {dict.topbar.logout}
+                </button>
+              </form>
+            </div>
           </div>
-          <div className="who">
-            <CommandPalette role={role} />
-            <NotificationBell userId={user.id} />
-            <ThemeToggle theme={theme} />
-            <LanguageSwitcher />
-            <span className="name">{name}</span>
-            <form action={signOut}>
-              <button className="btn btn-ghost" type="submit">
-                {dict.topbar.logout}
-              </button>
-            </form>
-          </div>
+          <main>{children}</main>
         </div>
-        <main>{children}</main>
-      </div>
+      </ToastProvider>
     </LocaleProvider>
   );
 }

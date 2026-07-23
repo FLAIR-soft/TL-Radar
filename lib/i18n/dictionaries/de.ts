@@ -169,6 +169,7 @@ const de = {
     errors: {
       empty: 'Bitte einen Kommentartext eingeben.',
       notAllowed: 'Nur eigene Kommentare können gelöscht werden.',
+      unauthorized: 'Nicht angemeldet.',
     },
   },
   notifications: {
@@ -199,6 +200,7 @@ const de = {
     moveDown: 'Nach unten verschieben',
     errors: {
       empty: 'Bitte einen Text eingeben.',
+      unauthorized: 'Nicht angemeldet.',
     },
   },
   templates: {
@@ -235,6 +237,7 @@ const de = {
     empty: 'Noch keine Etiketten.',
     errors: {
       missingName: 'Namen eingeben und Farbe wählen.',
+      unauthorized: 'Nicht angemeldet.',
     },
   },
   wipLimits: {
@@ -242,8 +245,11 @@ const de = {
     subtitle: 'Maximale Anzahl Aufgaben gleichzeitig in jeder Kanban-Spalte. Leer heißt kein Limit.',
     noLimit: 'kein Limit',
     save: 'Speichern',
+    saved: 'Limit gespeichert.',
     errors: {
       limitReached: 'Diese Spalte hat ihr Aufgabenlimit erreicht.',
+      unauthorized: 'Nicht angemeldet.',
+      forbidden: 'Keine Berechtigung.',
     },
   },
   export: {

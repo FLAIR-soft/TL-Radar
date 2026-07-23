@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ArrowUp, ArrowDown, Pencil, Trash2, ListChecks, MessageSquare } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { STATUS_COLOR, isOverdue, fmtDate, isWithinWorkHours } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
@@ -144,6 +145,7 @@ function TaskTableRow({
   style?: React.CSSProperties;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const overdue = isOverdue(task);
   const withinWorkHours = isWithinWorkHours();
@@ -164,7 +166,7 @@ function TaskTableRow({
   function handleStatus(to: TaskStatus) {
     startTransition(() => {
       setStatus(task.id, to).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
       });
     });
   }
