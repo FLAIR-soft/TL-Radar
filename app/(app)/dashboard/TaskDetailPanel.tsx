@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { History, Folder, MapPin, CalendarClock } from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
+import { History, Folder, MapPin, CalendarClock, BookmarkPlus } from 'lucide-react';
 import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
 import { CommentList } from '@/components/CommentList';
@@ -9,6 +9,7 @@ import { ChecklistList } from '@/components/ChecklistList';
 import { getActivityLog } from '@/lib/logic/activity-log-query';
 import { getTaskComments, type TaskCommentsResult } from './comments-actions';
 import { getChecklistItems } from './checklist-actions';
+import { createTemplateFromTask } from '@/app/(app)/templates/actions';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
@@ -27,6 +28,7 @@ export function TaskDetailPanel({
   profileNames: Map<string, string>;
 }) {
   const dict = useDictionary();
+  const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<ActivityLog[] | null>(null);
   const [comments, setComments] = useState<TaskCommentsResult | null>(null);
@@ -59,6 +61,14 @@ export function TaskDetailPanel({
 
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
 
+  function handleSaveAsTemplate() {
+    startTransition(() => {
+      createTemplateFromTask(task.id).then((result) => {
+        alert(result?.error ?? dict.templates.savedConfirm);
+      });
+    });
+  }
+
   return (
     <>
       <button
@@ -81,6 +91,16 @@ export function TaskDetailPanel({
                 {dict.priority[task.priority]}
               </span>
             )}
+            <button
+              type="button"
+              className="icon-btn detail-save-template-btn"
+              title={dict.templates.saveAsTemplate}
+              disabled={isPending}
+              onClick={handleSaveAsTemplate}
+              data-testid="save-as-template"
+            >
+              <BookmarkPlus size={16} strokeWidth={1.75} />
+            </button>
           </div>
           {task.description && <p className="detail-desc">{task.description}</p>}
           <div className="t-meta detail-meta">

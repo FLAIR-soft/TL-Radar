@@ -6,27 +6,55 @@ import { TaskForm } from './TaskForm';
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; template?: string }>;
 }) {
-  const { edit } = await searchParams;
+  const { edit, template: templateId } = await searchParams;
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profiles }, { data: activeProjects }] = await Promise.all([
+  const [{ data: profiles }, { data: activeProjects }, { data: templateList }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),
     supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('task_templates').select('id, title').is('deleted_at', null).order('title'),
   ]);
   const assignees = profiles ?? [];
   const projects = activeProjects ?? [];
+  const templates = templateList ?? [];
 
   if (!edit) {
+    let editingFromTemplate = null;
+    if (templateId) {
+      const { data: template } = await supabase
+        .from('task_templates')
+        .select('*')
+        .eq('id', templateId)
+        .is('deleted_at', null)
+        .single();
+      if (template) {
+        editingFromTemplate = {
+          title: template.title,
+          description: template.description ?? '',
+          location: template.location ?? '',
+          deadline: '',
+          assigneeIds: [user!.id],
+          projectId: template.project_id ?? '',
+          estimatedMinutes: template.estimated_minutes ? String(template.estimated_minutes) : '',
+          icon: template.icon ?? '',
+          priority: template.priority ?? '',
+        };
+      }
+    }
+
     return (
       <TaskForm
+        key={templateId ?? 'new'}
         action={createTask}
-        editing={null}
+        editing={editingFromTemplate}
+        templates={templates}
+        templateId={templateId ?? null}
         assignees={assignees}
         projects={projects}
         currentUserId={user!.id}

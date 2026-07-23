@@ -33,6 +33,7 @@ const ru = {
     newTask: 'Новая задача',
     archive: 'Архив',
     projects: 'Проекты',
+    templates: 'Шаблоны',
     analytics: 'Аналитика',
     admin: 'Админ',
     logout: 'Выйти',
@@ -191,6 +192,20 @@ const ru = {
     moveDown: 'Переместить вниз',
     errors: {
       empty: 'Введите текст пункта.',
+    },
+  },
+  templates: {
+    title: 'Шаблоны',
+    subtitle: 'Типовые задачи — создаются в два клика.',
+    empty: 'Шаблонов пока нет — сохраните любую задачу как шаблон.',
+    deleteTitle: 'Удалить шаблон',
+    deleteConfirm: 'Удалить этот шаблон без возможности восстановления?',
+    saveAsTemplate: 'Сохранить как шаблон',
+    savedConfirm: 'Шаблон сохранён.',
+    useTemplate: 'Из шаблона',
+    noTemplate: '— без шаблона —',
+    errors: {
+      taskNotFound: 'Задача не найдена.',
     },
   },
   admin: {

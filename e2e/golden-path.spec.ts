@@ -528,4 +528,76 @@ test.describe('golden path', () => {
     await page.click('[data-testid=slideover-close]');
     await expect(card.locator('.comment-count-badge')).toHaveText('1/1');
   });
+
+  test('save task as template, create a new task from it with checklist copied, then delete the template', async ({
+    page,
+  }) => {
+    const owner = uniqueName('Gp16');
+    await register(page, owner.firstName, owner.lastName);
+
+    const rand = Math.random().toString(36).slice(2, 8);
+    const title = 'E2E Template Source ' + rand;
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.fill('input[name=title]', title);
+    await page.fill('input[name=location]', 'Room 42');
+    await page.fill('input[name=estimatedMinutes]', '30');
+    await page.fill('textarea[name=description]', 'Some description');
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const card = page.locator('.task-card', { hasText: title });
+    await card.locator('[data-testid=view-task-log]').click();
+    await expect(page.locator('.checklist-list .empty-note')).toBeVisible();
+    for (const item of ['Alpha step', 'Beta step']) {
+      await page.fill('[data-testid=checklist-input]', item);
+      await page.click('[data-testid=checklist-submit]');
+      await expect(page.locator('.checklist-row', { hasText: item })).toBeVisible();
+    }
+
+    let dialogMessage = '';
+    page.once('dialog', async (dialog) => {
+      dialogMessage = dialog.message();
+      await dialog.accept();
+    });
+    await page.click('[data-testid=save-as-template]');
+    await expect.poll(() => dialogMessage).toContain('Vorlage gespeichert');
+    await page.click('[data-testid=slideover-close]');
+
+    await page.click('text=Vorlagen');
+    await page.waitForURL('**/templates');
+    const templateRow = page.locator('.project-row', { hasText: title });
+    await expect(templateRow).toBeVisible();
+    await expect(templateRow).toContainText('2');
+
+    // Create a new task from the template and verify prefill + "add", not "edit".
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new');
+    await page.selectOption('.field:has(label:text-is("Aus Vorlage")) select', { label: title });
+    await page.waitForURL('**/dashboard/new?template=*');
+
+    await expect(page.locator('input[name=title]')).toHaveValue(title);
+    await expect(page.locator('input[name=location]')).toHaveValue('Room 42');
+    await expect(page.locator('input[name=estimatedMinutes]')).toHaveValue('30');
+    await expect(page.locator('textarea[name=description]')).toHaveValue('Some description');
+    await expect(page.locator('.form-actions button[type=submit]')).toHaveText('Aufgabe hinzufügen');
+    await expect(page.locator('h2')).toHaveText('Neue Aufgabe');
+
+    const newTitle = title + ' Copy';
+    await page.fill('input[name=title]', newTitle);
+    await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
+    const newCard = page.locator('.task-card', { hasText: newTitle });
+    await expect(newCard.locator('.comment-count-badge')).toHaveText('0/2');
+
+    // Delete the template.
+    await page.click('text=Vorlagen');
+    await page.waitForURL('**/templates');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('.project-row', { hasText: title }).locator('[data-testid=delete-template]').click();
+    await expect(page.locator('.project-row', { hasText: title })).toHaveCount(0);
+  });
 });

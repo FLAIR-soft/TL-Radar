@@ -35,6 +35,7 @@ const de = {
     newTask: 'Neue Aufgabe',
     archive: 'Archiv',
     projects: 'Projekte',
+    templates: 'Vorlagen',
     analytics: 'Analytik',
     admin: 'Admin',
     logout: 'Abmelden',
@@ -193,6 +194,20 @@ const de = {
     moveDown: 'Nach unten verschieben',
     errors: {
       empty: 'Bitte einen Text eingeben.',
+    },
+  },
+  templates: {
+    title: 'Vorlagen',
+    subtitle: 'Typische Aufgaben — in zwei Klicks erstellt.',
+    empty: 'Noch keine Vorlagen — speichern Sie eine Aufgabe als Vorlage.',
+    deleteTitle: 'Vorlage löschen',
+    deleteConfirm: 'Diese Vorlage unwiderruflich löschen?',
+    saveAsTemplate: 'Als Vorlage speichern',
+    savedConfirm: 'Vorlage gespeichert.',
+    useTemplate: 'Aus Vorlage',
+    noTemplate: '— keine Vorlage —',
+    errors: {
+      taskNotFound: 'Aufgabe nicht gefunden.',
     },
   },
   admin: {

@@ -104,6 +104,25 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
   }
   await notifyMany(supabase, assigneeIds, userId, 'assigned', task.id, { title: fields.title });
 
+  // Sozdaniye iz shablona (Etap 7): kopiruyem chek-list shablona v novuyu
+  // zadachu — izmeneniye shablona posle etogo uzhe ne vliyayet na zadachu.
+  const templateId = String(formData.get('templateId') || '').trim();
+  if (templateId) {
+    const { data: template } = await supabase
+      .from('task_templates')
+      .select('checklist')
+      .eq('id', templateId)
+      .single();
+
+    const checklist = (template?.checklist as string[] | null) ?? [];
+    for (let i = 0; i < checklist.length; i++) {
+      await supabase
+        .from('task_checklist_items')
+        .insert({ task_id: task.id, title: checklist[i], position: i });
+      await logActivity(supabase, 'task', task.id, 'checklist_item_added', userId, { title: checklist[i] });
+    }
+  }
+
   revalidatePath('/dashboard');
   redirect('/dashboard');
 }

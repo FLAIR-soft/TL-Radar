@@ -35,6 +35,7 @@ const en = {
     newTask: 'New Task',
     archive: 'Archive',
     projects: 'Projects',
+    templates: 'Templates',
     analytics: 'Analytics',
     admin: 'Admin',
     logout: 'Log out',
@@ -193,6 +194,20 @@ const en = {
     moveDown: 'Move down',
     errors: {
       empty: 'Enter an item.',
+    },
+  },
+  templates: {
+    title: 'Templates',
+    subtitle: 'Common tasks — created in two clicks.',
+    empty: 'No templates yet — save any task as a template.',
+    deleteTitle: 'Delete template',
+    deleteConfirm: 'Delete this template permanently?',
+    saveAsTemplate: 'Save as template',
+    savedConfirm: 'Template saved.',
+    useTemplate: 'From template',
+    noTemplate: '— no template —',
+    errors: {
+      taskNotFound: 'Task not found.',
     },
   },
   admin: {

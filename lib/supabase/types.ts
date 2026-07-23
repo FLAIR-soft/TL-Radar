@@ -103,6 +103,21 @@ export type TaskChecklistItem = {
   deleted_at: string | null;
 };
 
+export type TaskTemplate = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  estimated_minutes: number | null;
+  priority: Priority | null;
+  icon: string | null;
+  project_id: string | null;
+  checklist: string[] | null;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+};
+
 export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment';
 
 export type Notification = {
@@ -181,6 +196,12 @@ export interface Database {
         Row: TaskChecklistItem;
         Insert: Partial<TaskChecklistItem> & Pick<TaskChecklistItem, 'task_id' | 'title'>;
         Update: Partial<TaskChecklistItem>;
+        Relationships: [];
+      };
+      task_templates: {
+        Row: TaskTemplate;
+        Insert: Partial<TaskTemplate> & Pick<TaskTemplate, 'title'>;
+        Update: Partial<TaskTemplate>;
         Relationships: [];
       };
     };

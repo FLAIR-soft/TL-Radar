@@ -1996,6 +1996,11 @@ p.section-sub {
   align-items: center;
   gap: 8px;
 }
+.detail-save-template-btn {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+}
 .detail-meta {
   margin-top: 10px;
 }

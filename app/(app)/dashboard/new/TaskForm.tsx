@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { AssigneeSelect } from './AssigneeSelect';
 import { IconPicker } from '@/components/IconPicker';
@@ -16,6 +17,8 @@ export function TaskForm({
   assignees,
   projects,
   currentUserId,
+  templates = [],
+  templateId = null,
 }: {
   action: (prevState: TaskFormState, formData: FormData) => Promise<TaskFormState>;
   editing: {
@@ -32,17 +35,41 @@ export function TaskForm({
   assignees: { id: string; name: string }[];
   projects: { id: string; name: string }[];
   currentUserId: string;
+  templates?: { id: string; title: string }[];
+  templateId?: string | null;
 }) {
   const dict = useDictionary();
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(action, initialState);
+  // Prefill'd from a template on the "new task" page still counts as
+  // creating (not editing) — only editing an existing task (via ?edit=,
+  // no templateId ever passed then) shows the edit-specific copy.
+  const isEditingExisting = !!editing && !templateId;
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{editing ? dict.taskForm.editTitle : dict.taskForm.newTitle}</h2>
+      <h2 className="section-title">{isEditingExisting ? dict.taskForm.editTitle : dict.taskForm.newTitle}</h2>
       <p className="section-sub">{dict.taskForm.subtitle}</p>
       <div className="form-card">
         <form action={formAction}>
           {state.error && <div className="error-note">{state.error}</div>}
+          {templates.length > 0 && (
+            <div className="field">
+              <label>{dict.templates.useTemplate}</label>
+              <select
+                value={templateId ?? ''}
+                onChange={(e) => router.push(e.target.value ? `/dashboard/new?template=${e.target.value}` : '/dashboard/new')}
+              >
+                <option value="">{dict.templates.noTemplate}</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {templateId && <input type="hidden" name="templateId" value={templateId} />}
           <div className="field">
             <label>{dict.taskForm.title}</label>
             <div className="title-with-icon">
@@ -114,9 +141,9 @@ export function TaskForm({
           <div className="form-actions">
             <button className="btn btn-primary" disabled={pending} type="submit">
               {pending && <span className="btn-spinner" />}
-              {editing ? dict.taskForm.submitEdit : dict.taskForm.submitNew}
+              {isEditingExisting ? dict.taskForm.submitEdit : dict.taskForm.submitNew}
             </button>
-            {editing && (
+            {isEditingExisting && (
               <Link href="/dashboard" className="btn btn-ghost">
                 {dict.taskForm.cancel}
               </Link>
