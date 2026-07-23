@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
+import { createClient } from '@/lib/supabase/client';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import type { NotificationType, NotificationView } from '@/lib/supabase/types';
 
@@ -34,13 +35,18 @@ function describe(n: NotificationView, dict: Dictionary): string {
   }
 }
 
-const POLL_MS = 30000;
+const FALLBACK_POLL_MS = 30000;
 
 // Fetch obychnogo Route Handler (app/api/notifications), a ne Server Action:
-// fonovyy poll kazhdyye 30s ne dolzhen peresekat'sya s RSC/router-mekhanikoy
-// drugikh Server Actions (naprimer, redirect posle sozdaniya proekta) — eto
-// byla real'naya problema, poymannaya e2e-testami (sm. commit).
-export function NotificationBell() {
+// eto ne dolzhno peresekat'sya s RSC/router-mekhanikoy drugikh Server Actions
+// (naprimer, redirect posle sozdaniya proekta) — eto byla real'naya problema,
+// poymannaya e2e-testami (sm. commit).
+//
+// Schyotchik zhivyot na Realtime (postgres_changes INSERT po notifications,
+// 0030) — poll kazhdyye 30s bol'she ne nuzhen v fonovoy vkladke. Yesli
+// Realtime-kanal ne podnyalsya (status !== 'SUBSCRIBED'), vklyuchayetsya
+// fallback-poll, no tol'ko poka vkladka vidima (document.visibilityState).
+export function NotificationBell({ userId }: { userId: string }) {
   const dict = useDictionary();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -49,7 +55,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     let cancelled = false;
-    function poll() {
+    function fetchCount() {
       fetch('/api/notifications')
         .then((r) => r.json())
         .then((data) => {
@@ -57,13 +63,48 @@ export function NotificationBell() {
         })
         .catch(() => {});
     }
-    poll();
-    const id = setInterval(poll, POLL_MS);
+    function pollIfVisible() {
+      if (document.visibilityState === 'visible') fetchCount();
+    }
+
+    fetchCount();
+
+    const supabase = createClient();
+    const statusRef = { current: 'CLOSED' as string };
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+
+    function onVisibilityChange() {
+      if (statusRef.current !== 'SUBSCRIBED') pollIfVisible();
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
+        () => {
+          if (!cancelled) setCount((c) => c + 1);
+        }
+      )
+      .subscribe((status) => {
+        if (cancelled) return;
+        statusRef.current = status;
+        if (status === 'SUBSCRIBED' && fallbackInterval) {
+          clearInterval(fallbackInterval);
+          fallbackInterval = null;
+        } else if (status !== 'SUBSCRIBED' && !fallbackInterval) {
+          fallbackInterval = setInterval(pollIfVisible, FALLBACK_POLL_MS);
+        }
+      });
+
     return () => {
       cancelled = true;
-      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (fallbackInterval) clearInterval(fallbackInterval);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {

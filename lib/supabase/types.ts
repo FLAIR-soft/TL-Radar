@@ -295,6 +295,21 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_my_notifications: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: string;
+          recipient_id: string;
+          type: NotificationType;
+          task_id: string;
+          payload: Record<string, unknown> | null;
+          read_at: string | null;
+          created_at: string;
+          task_title: string | null;
+          task_status: TaskStatus | null;
+        }[];
+      };
+    };
   };
 }

@@ -43,7 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
           <div className="who">
             <CommandPalette role={role} />
-            <NotificationBell />
+            <NotificationBell userId={user.id} />
             <ThemeToggle theme={theme} />
             <LanguageSwitcher />
             <span className="name">{name}</span>

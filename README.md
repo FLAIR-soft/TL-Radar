@@ -335,6 +335,8 @@ Supabase Auth внутри всегда требует email-идентифик�
 | `0027_task_watchers_and_mentions.sql` | Таблица `task_watchers` (`task_id`, `user_id`, составной PK) — подписка на комментарии к задаче; RLS: читают все авторизованные (как `task_assignees` — автору комментария нужно видеть полный список наблюдателей), добавляет/убирает только сам пользователь; `notifications.type` дополнен значением `mention`. |
 | `0028_labels.sql` | Таблицы `labels` (`name`, `color`, мягкое удаление) и `task_labels` (связь многие-ко-многим, без `removed_at` — снятие метки это просто удаление строки); RLS как у `projects`/`task_assignees`. |
 | `0029_wip_limits.sql` | Таблица `wip_limits` — по строке на статус (`waiting`/`in_progress`/`paused`), `limit_count` (`null` — без ограничения), предзаполнена тремя строками; RLS: читают все, меняет только admin (строже обычного editor/admin — это общекомандная настройка процесса). |
+| `0030_notifications_realtime.sql` | `notifications` добавлена в publication `supabase_realtime` — колокольчик подписывается на `postgres_changes` (INSERT) вместо поллинга каждые 30с; существующая RLS (`notifications_select_own`) ограничивает видимость и для Realtime. |
+| `0031_notifications_with_task_fn.sql` | Функция `get_my_notifications(p_limit)` — `notifications` + название/статус задачи одним запросом (`LEFT JOIN` внутри функции, `security invoker`). `task_id` намеренно без FK (см. `0020`), поэтому обычный PostgREST-embed недостижим. |
 
 Детали отдельных миграций:
 
@@ -379,6 +381,16 @@ Supabase Auth внутри всегда требует email-идентифик�
   `fetch()` к Route Handler полностью независим от этого механизма.
   Мутации (`markRead`/`markAll`) остаются в том же Route Handler (POST),
   не в Server Actions — для единообразия одного эндпоинта.
+- **`0030`/`0031`** (оптимизация, этап 3): фоновый поллинг раз в 30 сек
+  заменён на Realtime-подписку (`postgres_changes` INSERT по
+  `notifications`, фильтр `recipient_id=eq.<uid>`) — счётчик у колокольчика
+  обновляется по событию, без опроса в фоновой вкладке. Поллинг остаётся
+  как fallback, если канал не поднялся (`status !== 'SUBSCRIBED'`), и
+  срабатывает только пока вкладка видима. `GET .../notifications?full=1`
+  вместо 2 последовательных запросов (`notifications`, затем `tasks` по
+  `task_id`) использует RPC `get_my_notifications()` — `task_id` намеренно
+  без FK (`0020`), поэтому обычный PostgREST-embed не выразим, вместо
+  этого один SQL-запрос с `LEFT JOIN` внутри функции.
 
 ### Локальное тестирование миграций
 
