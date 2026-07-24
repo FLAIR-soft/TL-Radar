@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { register, signIn, uniqueName } from './helpers';
+import { register, signIn, uniqueName, goToNewTaskFromTaskManager } from './helpers';
 
 test.describe('golden path', () => {
   test('register, create project, create task with project + multiple assignees + estimate, edit it', async ({
@@ -28,13 +28,7 @@ test.describe('golden path', () => {
     await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
 
     const taskTitle = 'E2E Task ' + Math.random().toString(36).slice(2, 8);
-    // "Neue Aufgabe" (stage 5) is a button on Task-Manager, not reachable
-    // from every page like the old top-nav tab was.
-    await page.click('text=Task-Manager');
-    await page.waitForURL('**/dashboard');
-    await page.waitForLoadState('networkidle');
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.fill('input[name=title]', taskTitle);
     await page.click('.assignee-select-trigger');
     await page.click(`.assignee-option:has-text("${helper.fullName}")`);
@@ -125,6 +119,11 @@ test.describe('golden path', () => {
     await page.waitForURL('**/dashboard');
 
     const card = page.locator('.task-card', { hasText: taskTitle });
+    // The redirect back to /dashboard lands before the newly-created task's
+    // card has necessarily rendered — .count() below doesn't auto-wait like
+    // .click()/expect(...).toBeVisible() do, so an un-awaited card would
+    // silently read as "neither state" instead of catching up.
+    await expect(card).toBeVisible();
     const startButton = card.locator('button', { hasText: 'Starten' });
     const lockedNote = card.locator('.t-locked-note');
 
@@ -171,13 +170,7 @@ test.describe('golden path', () => {
     await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
 
     const taskTitle = 'E2E Log Task ' + Math.random().toString(36).slice(2, 8);
-    // "Neue Aufgabe" (stage 5) is a button on Task-Manager, not reachable
-    // from every page like the old top-nav tab was.
-    await page.click('text=Task-Manager');
-    await page.waitForURL('**/dashboard');
-    await page.waitForLoadState('networkidle');
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
@@ -571,17 +564,7 @@ test.describe('golden path', () => {
     await expect(templateRow).toContainText('2');
 
     // Create a new task from the template and verify prefill + "add", not "edit".
-    // "Neue Aufgabe" is a button on Task-Manager now (stage 5), not a
-    // standalone top-nav tab reachable from every page. Two client-side
-    // navigations back-to-back (tab click, then button click) is a new
-    // sequence this test didn't need before — networkidle gives the first
-    // transition's data fetch a chance to finish before the next click,
-    // instead of occasionally racing it.
-    await page.click('text=Task-Manager');
-    await page.waitForURL('**/dashboard');
-    await page.waitForLoadState('networkidle');
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.selectOption('.field:has(label:text-is("Aus Vorlage")) select', { label: title });
     await page.waitForURL('**/dashboard/new?template=*');
 

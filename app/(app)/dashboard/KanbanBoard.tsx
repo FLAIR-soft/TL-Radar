@@ -230,6 +230,18 @@ function DraggableTaskCard({
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onKeyDown={(e) => {
+        // dnd-kit's own onKeyDown (from `listeners`) doesn't check that the
+        // keydown actually originated on this node — React's synthetic
+        // events bubble along the component tree, not the DOM tree, so a
+        // keystroke in a portaled descendant (TaskDetailPanel's SlideOver,
+        // e.g. the comment textarea) still reaches here and gets
+        // (mis)treated as a Space/Enter drag-start attempt, swallowing the
+        // keystroke before the input ever sees it. Only forward events that
+        // genuinely originated on the card itself.
+        if (e.target !== e.currentTarget) return;
+        listeners?.onKeyDown?.(e);
+      }}
       className={`draggable-task ${isDragging ? 'task-card-dragging' : ''} ${disabled ? 'draggable-task-disabled' : ''}`}
     >
       {children}
