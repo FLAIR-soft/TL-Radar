@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DndContext,
   DragOverlay,
@@ -162,24 +163,45 @@ export function KanbanBoard({
           );
         })}
       </div>
-      <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
-        {activeTask ? (
-          <div className="task-card-overlay">
-            <TaskCard
-              task={activeTask}
-              pauses={pausesByTask.get(activeTask.id) ?? []}
-              assigneeNames={assigneeNamesByTask.get(activeTask.id) ?? []}
-              projectName={activeTask.project_id ? projectNames.get(activeTask.project_id) ?? null : null}
-              projectColor={activeTask.project_id ? projectColors?.get(activeTask.project_id) ?? null : null}
-              pausedByName={pausedByNameByTask.get(activeTask.id) ?? null}
-              profileNames={profileNames}
-              commentCount={commentCountsByTask.get(activeTask.id) ?? 0}
-              checklistProgress={checklistProgressByTask.get(activeTask.id)}
-              labels={labelsByTask?.get(activeTask.id) ?? []}
-            />
-          </div>
-        ) : null}
-      </DragOverlay>
+      {
+        // dnd-kit's DragOverlay renders `position: fixed` inline in the
+        // React tree (this version has no `container` prop to portal it
+        // itself), so it inherits whatever containing block its DOM
+        // ancestors create. .page-fade (wrapping every page) plays an
+        // entrance animation with `animation-fill-mode: both`, which keeps
+        // its final `transform: translateY(0)` as a live computed value
+        // forever after — and *any* non-`none` transform on an ancestor,
+        // including a no-op translateY(0), turns it into the containing
+        // block for fixed-position descendants instead of the viewport.
+        // That's what was throwing the overlay off from the cursor by a
+        // fixed amount (the page wrapper's own offset). Portaling straight
+        // to document.body sidesteps it entirely — same fix already used
+        // for SlideOver. `document` is only unavailable during SSR, where
+        // activeTask is always null anyway, so nothing is lost by skipping
+        // the portal there.
+        typeof document !== 'undefined' &&
+          createPortal(
+            <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+              {activeTask ? (
+                <div className="task-card-overlay">
+                  <TaskCard
+                    task={activeTask}
+                    pauses={pausesByTask.get(activeTask.id) ?? []}
+                    assigneeNames={assigneeNamesByTask.get(activeTask.id) ?? []}
+                    projectName={activeTask.project_id ? projectNames.get(activeTask.project_id) ?? null : null}
+                    projectColor={activeTask.project_id ? projectColors?.get(activeTask.project_id) ?? null : null}
+                    pausedByName={pausedByNameByTask.get(activeTask.id) ?? null}
+                    profileNames={profileNames}
+                    commentCount={commentCountsByTask.get(activeTask.id) ?? 0}
+                    checklistProgress={checklistProgressByTask.get(activeTask.id)}
+                    labels={labelsByTask?.get(activeTask.id) ?? []}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body
+          )
+      }
     </DndContext>
   );
 }
