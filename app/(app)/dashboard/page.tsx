@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { Inbox, SearchX } from 'lucide-react';
+import Link from 'next/link';
+import { Inbox, SearchX, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
@@ -81,14 +82,17 @@ export default async function DashboardPage({
   if (!active.length) {
     return (
       <div className="page-fade">
-        <h2 className="section-title">{dict.dashboard.title}</h2>
-        <p className="section-sub">{dict.dashboard.subtitle}</p>
-        <EmptyState
-          icon={Inbox}
-          title={dict.dashboard.empty}
-          ctaHref="/dashboard/new"
-          ctaLabel={dict.topbar.newTask}
-        />
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.dashboard.title}</h2>
+            <p className="section-sub">{dict.dashboard.subtitle}</p>
+          </div>
+          <Link href="/dashboard/new" className="btn btn-primary" data-testid="new-task-button">
+            <Plus size={16} strokeWidth={1.75} />
+            {dict.topbar.newTask}
+          </Link>
+        </div>
+        <EmptyState icon={Inbox} title={dict.dashboard.empty} />
       </div>
     );
   }
@@ -100,8 +104,16 @@ export default async function DashboardPage({
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.dashboard.title}</h2>
-      <p className="section-sub">{dict.dashboard.subtitle}</p>
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.dashboard.title}</h2>
+          <p className="section-sub">{dict.dashboard.subtitle}</p>
+        </div>
+        <Link href="/dashboard/new" className="btn btn-primary" data-testid="new-task-button">
+          <Plus size={16} strokeWidth={1.75} />
+          {dict.topbar.newTask}
+        </Link>
+      </div>
       <Suspense fallback={null}>
         <TaskFilterBar
           profiles={profileList}

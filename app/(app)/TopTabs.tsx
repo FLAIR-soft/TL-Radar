@@ -11,7 +11,6 @@ export function TopTabs({ role }: { role: UserRole }) {
   const dict = useDictionary();
   const tabs = [
     { href: '/dashboard', label: dict.topbar.dashboard },
-    { href: '/dashboard/new', label: dict.topbar.newTask },
     { href: '/archive', label: dict.topbar.archive },
     { href: '/projects', label: dict.topbar.projects },
     { href: '/templates', label: dict.topbar.templates },
@@ -21,11 +20,17 @@ export function TopTabs({ role }: { role: UserRole }) {
 
   return (
     <div className="tabs">
-      {tabs.map((t) => (
-        <Link key={t.href} href={t.href} className={`tab ${pathname === t.href ? 'active' : ''}`}>
-          {t.label}
-        </Link>
-      ))}
+      {tabs.map((t) => {
+        // /dashboard/new no longer has its own tab (stage 5) — it's reached
+        // via a button on Task-Manager, so that tab should still read as
+        // active while creating a task there.
+        const active = pathname === t.href || (t.href === '/dashboard' && pathname.startsWith('/dashboard/new'));
+        return (
+          <Link key={t.href} href={t.href} className={`tab ${active ? 'active' : ''}`}>
+            {t.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }

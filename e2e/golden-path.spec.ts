@@ -28,6 +28,11 @@ test.describe('golden path', () => {
     await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
 
     const taskTitle = 'E2E Task ' + Math.random().toString(36).slice(2, 8);
+    // "Neue Aufgabe" (stage 5) is a button on Task-Manager, not reachable
+    // from every page like the old top-nav tab was.
+    await page.click('text=Task-Manager');
+    await page.waitForURL('**/dashboard');
+    await page.waitForLoadState('networkidle');
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
     await page.fill('input[name=title]', taskTitle);
@@ -166,6 +171,11 @@ test.describe('golden path', () => {
     await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
 
     const taskTitle = 'E2E Log Task ' + Math.random().toString(36).slice(2, 8);
+    // "Neue Aufgabe" (stage 5) is a button on Task-Manager, not reachable
+    // from every page like the old top-nav tab was.
+    await page.click('text=Task-Manager');
+    await page.waitForURL('**/dashboard');
+    await page.waitForLoadState('networkidle');
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
     await page.fill('input[name=title]', taskTitle);
@@ -561,6 +571,15 @@ test.describe('golden path', () => {
     await expect(templateRow).toContainText('2');
 
     // Create a new task from the template and verify prefill + "add", not "edit".
+    // "Neue Aufgabe" is a button on Task-Manager now (stage 5), not a
+    // standalone top-nav tab reachable from every page. Two client-side
+    // navigations back-to-back (tab click, then button click) is a new
+    // sequence this test didn't need before — networkidle gives the first
+    // transition's data fetch a chance to finish before the next click,
+    // instead of occasionally racing it.
+    await page.click('text=Task-Manager');
+    await page.waitForURL('**/dashboard');
+    await page.waitForLoadState('networkidle');
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
     await page.selectOption('.field:has(label:text-is("Aus Vorlage")) select', { label: title });
