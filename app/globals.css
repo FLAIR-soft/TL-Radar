@@ -736,7 +736,18 @@ p.section-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 40px;
+  /* On desktop the 3 columns share one CSS grid row, so `align-items:
+     stretch` (grid's default) already equalizes .kanban-col height across
+     columns regardless of card count — an empty column's droppable still
+     spans the row's full height. Below 820px each column becomes its own
+     grid row (see the media query below), so that stretching no longer has
+     anything to stretch against: a column's box shrinks to fit its own
+     content, and with 0-1 cards that's barely taller than the header. The
+     drop target then only exists over the header + the few cards, not
+     "the column" as the user sees it — dragging has to land squarely on an
+     existing card to register. A generous min-height keeps every column a
+     real target size on any viewport, not just wide ones. */
+  min-height: 160px;
 }
 .kanban-col {
   border-radius: var(--radius-md);
