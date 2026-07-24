@@ -750,16 +750,18 @@ p.section-sub {
   min-height: 160px;
 }
 .kanban-col {
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 6px;
   margin: -6px;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 .kanban-col-no-drop {
   opacity: 0.45;
 }
 .kanban-col-droppable.kanban-col-over {
   background: var(--tint-red-bg);
+  border-color: var(--brand);
   box-shadow: inset 0 0 0 2px var(--brand);
 }
 .draggable-task {
@@ -1076,6 +1078,11 @@ p.section-sub {
 .archive-cards {
   display: none;
 }
+.archive-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 /* Ниже 720px архив показывается карточками вместо горизонтального
    скролла девятиколоночной таблицы (Этап 6 редизайна). */
@@ -1107,9 +1114,6 @@ p.section-sub {
     font-weight: 700;
     font-size: var(--fs-sm);
     flex: 1;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
   }
   .archive-card-grid {
     display: grid;
