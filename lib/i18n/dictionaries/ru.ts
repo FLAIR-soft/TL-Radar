@@ -251,6 +251,7 @@ const ru = {
     },
   },
   export: {
+    title: 'Экспорт',
     csv: 'CSV',
     xlsx: 'XLSX',
   },

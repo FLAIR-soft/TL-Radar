@@ -253,6 +253,7 @@ const en = {
     },
   },
   export: {
+    title: 'Export',
     csv: 'CSV',
     xlsx: 'XLSX',
   },

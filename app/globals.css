@@ -613,12 +613,11 @@ p.section-sub {
   min-width: 140px !important;
   height: 42px;
 }
-.export-links {
-  display: inline-flex;
-  gap: 6px;
+.export-menu {
+  position: relative;
   flex-shrink: 0;
 }
-.export-link {
+.export-menu-trigger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -626,15 +625,50 @@ p.section-sub {
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  background: none;
   color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.export-menu-trigger:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+  background: var(--hover-bg);
+}
+.export-menu-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hover);
+  overflow: hidden;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeSlideIn 0.15s ease both;
+}
+.export-menu-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
+}
+.export-menu-item {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
   font-size: var(--fs-sm);
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
-.export-link:hover {
-  border-color: var(--ink-muted);
-  color: var(--ink);
+.export-menu-item:hover {
   background: var(--hover-bg);
 }
 .table-sort-btn {

@@ -786,6 +786,7 @@ test.describe('golden path', () => {
     if (!withinWorkHours) return; // outside work hours: task never reaches archive, nothing to export below
 
     await page.goto('/archive');
+    await page.click('[data-testid=export-menu-trigger]');
     const csvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
     const xlsxHref = await page.locator('[data-testid=export-xlsx]').getAttribute('href');
 
@@ -803,6 +804,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
+    await page.click('[data-testid=export-menu-trigger]');
     const analyticsCsvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
     const analyticsCsvResp = await page.request.get(analyticsCsvHref!);
     expect(analyticsCsvResp.status()).toBe(200);

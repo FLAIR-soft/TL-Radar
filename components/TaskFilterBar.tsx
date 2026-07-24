@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2, Download } from 'lucide-react';
+import { Search, X, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from './ToastProvider';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { LabelFilterSelect } from './LabelFilterSelect';
+import { ExportMenu } from './ExportMenu';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
 import type { Label } from '@/lib/supabase/types';
 
@@ -238,24 +239,10 @@ export function TaskFilterBar({
         </button>
       </div>
       {showExport && (
-        <div className="export-links">
-          <a
-            className="export-link"
-            href={`/api/export/archive?format=csv&${searchParams.toString()}`}
-            data-testid="export-csv"
-          >
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.csv}
-          </a>
-          <a
-            className="export-link"
-            href={`/api/export/archive?format=xlsx&${searchParams.toString()}`}
-            data-testid="export-xlsx"
-          >
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.xlsx}
-          </a>
-        </div>
+        <ExportMenu
+          csvHref={`/api/export/archive?format=csv&${searchParams.toString()}`}
+          xlsxHref={`/api/export/archive?format=xlsx&${searchParams.toString()}`}
+        />
       )}
     </div>
   );
