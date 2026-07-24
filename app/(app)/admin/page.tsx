@@ -26,10 +26,11 @@ export default async function AdminPage() {
   return (
     <div className="page-fade">
       <h2 className="section-title">{dict.admin.title}</h2>
-      <p className="section-sub">{dict.admin.subtitle}</p>
       <h3 className="section-title analytics-subsection-title">{dict.wipLimits.title}</h3>
       <p className="section-sub">{dict.wipLimits.subtitle}</p>
       <WipLimitsForm limits={wipLimits ?? []} />
+      <h3 className="section-title analytics-subsection-title">{dict.admin.usersTitle}</h3>
+      <p className="section-sub">{dict.admin.subtitle}</p>
       <div className="admin-list">
         {(profiles ?? []).map((p) => (
           <div key={p.id} className="admin-row">

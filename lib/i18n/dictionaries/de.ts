@@ -308,6 +308,7 @@ const de = {
   },
   admin: {
     title: 'Admin',
+    usersTitle: 'Benutzer',
     subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',
     roleEditor: 'Editor',
     roleAdmin: 'Admin',

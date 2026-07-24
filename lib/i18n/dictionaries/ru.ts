@@ -306,6 +306,7 @@ const ru = {
   },
   admin: {
     title: 'Админ',
+    usersTitle: 'Пользователи',
     subtitle: 'Сброс пароля или удаление любого пользователя.',
     roleEditor: 'редактор',
     roleAdmin: 'админ',
