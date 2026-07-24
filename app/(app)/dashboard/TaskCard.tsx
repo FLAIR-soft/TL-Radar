@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare, ListChecks } from 'lucide-react';
+import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare, ListChecks, User } from 'lucide-react';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -108,11 +108,15 @@ export function TaskCard({
           : null;
 
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
+  const creatorName = task.created_by ? profileNames.get(task.created_by) : undefined;
 
   return (
     <div
       className={`task-card ${isPending ? 'task-card-pending' : ''} ${overdue ? 'task-card-overdue' : ''}`}
-      style={{ borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)', ...style }}
+      // Project color, not priority — priority now has its own visible pill
+      // in the header, so the border is free to carry "which project" at a
+      // glance instead (and stays neutral for project-less tasks).
+      style={{ borderLeftColor: projectColor ?? 'var(--border)', ...style }}
     >
       <div className="t-card-header">
         {assigneeNames.length > 0 ? (
@@ -122,6 +126,11 @@ export function TaskCard({
         )}
         <div className="t-card-header-right">
           {overdue && <span className="overdue-badge">{dict.taskCard.overdue}</span>}
+          {task.priority && (
+            <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
+              {dict.priority[task.priority]}
+            </span>
+          )}
           <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
             {dict.status[task.status]}
           </span>
@@ -142,6 +151,12 @@ export function TaskCard({
       )}
       {task.description && <div className="t-desc">{task.description}</div>}
       <div className="t-meta">
+        {creatorName && (
+          <span>
+            <User size={14} strokeWidth={1.75} />
+            {dict.taskCard.createdByPrefix} {creatorName}
+          </span>
+        )}
         {projectName && (
           <span className="project-tag">
             {projectColor && <span className="project-color-dot" style={{ background: projectColor }} />}
