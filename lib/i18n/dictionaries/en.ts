@@ -107,6 +107,7 @@ const en = {
     colPauses: 'Pauses',
     colNetDuration: 'Net time',
     colEstimate: 'Actual / Estimate',
+    colAssignees: 'Assignees',
     lateBy: 'Late by',
   },
   status: {

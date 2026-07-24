@@ -1098,9 +1098,6 @@ p.section-sub {
     align-items: center;
     gap: 6px;
   }
-  .archive-card-assignees {
-    margin-bottom: 8px;
-  }
   .archive-card-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

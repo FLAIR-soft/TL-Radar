@@ -137,6 +137,7 @@ export default async function ArchivePage({
               <th>{dict.archive.colPauses}</th>
               <th>{dict.archive.colNetDuration}</th>
               <th>{dict.archive.colEstimate}</th>
+              <th>{dict.archive.colAssignees}</th>
               <th></th>
             </tr>
           </thead>
@@ -163,12 +164,6 @@ export default async function ArchivePage({
                       ))}
                     </div>
                   )}
-                  {assignees.length > 0 && (
-                    <>
-                      <br />
-                      <span className="mono">{assignees.join(', ')}</span>
-                    </>
-                  )}
                 </td>
                 <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
                 <td>{t.location || '—'}</td>
@@ -188,6 +183,7 @@ export default async function ArchivePage({
                 <td>{pausesCell(taskPauses)}</td>
                 <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
                 <td className="mono">{estimateCell(t, net)}</td>
+                <td>{assignees.join(', ') || '—'}</td>
                 <td>
                   <TaskDetailPanel
                     task={t}
@@ -232,8 +228,11 @@ export default async function ArchivePage({
                 ))}
               </div>
             )}
-            {assignees.length > 0 && <div className="mono archive-card-assignees">{assignees.join(', ')}</div>}
             <div className="archive-card-grid">
+              <div>
+                <span className="archive-card-label">{dict.archive.colAssignees}</span>
+                <span>{assignees.join(', ') || '—'}</span>
+              </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colProject}</span>
                 <span>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</span>
