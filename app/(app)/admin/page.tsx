@@ -1,0 +1,56 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { ResetPasswordForm } from './ResetPasswordForm';
+import { DeleteUserButton } from './DeleteUserButton';
+import { WipLimitsForm } from './WipLimitsForm';
+
+export default async function AdminPage() {
+  const supabase = await createClient();
+  const user = await getCachedUser();
+
+  if (!user) redirect('/login');
+
+  const profile = await getCachedProfile(user.id);
+
+  if (profile?.role !== 'admin') redirect('/dashboard');
+
+  const dict = getDictionary(profile?.locale ?? 'de');
+
+  const [{ data: profiles }, { data: wipLimits }] = await Promise.all([
+    supabase.from('profiles').select('id, name, username, role').order('name', { ascending: true }),
+    supabase.from('wip_limits').select('*'),
+  ]);
+
+  return (
+    <div className="page-fade">
+      <h2 className="section-title">{dict.admin.title}</h2>
+      <h3 className="section-title analytics-subsection-title">{dict.wipLimits.title}</h3>
+      <p className="section-sub">{dict.wipLimits.subtitle}</p>
+      <WipLimitsForm limits={wipLimits ?? []} />
+      <h3 className="section-title analytics-subsection-title">{dict.admin.usersTitle}</h3>
+      <p className="section-sub">{dict.admin.subtitle}</p>
+      <div className="admin-list">
+        {(profiles ?? []).map((p) => (
+          <div key={p.id} className="admin-row">
+            <div className="admin-row-info">
+              <span className="admin-row-name">{p.name}</span>
+              <span className="admin-row-username mono">@{p.username}</span>
+              <span
+                className="pill"
+                style={{ ['--pill-color' as string]: p.role === 'admin' ? 'var(--brand-dark)' : 'var(--tint-indigo-ink)' }}
+              >
+                {p.role === 'admin' ? dict.admin.roleAdmin : dict.admin.roleEditor}
+              </span>
+            </div>
+            <div className="admin-row-actions">
+              <ResetPasswordForm userId={p.id} />
+              {p.id !== user.id && <DeleteUserButton userId={p.id} />}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

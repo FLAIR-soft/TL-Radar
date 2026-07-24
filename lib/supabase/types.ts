@@ -1,0 +1,316 @@
+export type UserRole = 'viewer' | 'editor' | 'admin';
+export type TaskStatus = 'waiting' | 'in_progress' | 'paused' | 'done';
+export type Locale = 'ru' | 'de' | 'en';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type Profile = {
+  id: string;
+  name: string;
+  username: string;
+  role: UserRole;
+  created_at: string;
+  locale: Locale;
+};
+
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  deadline: string | null;
+  status: TaskStatus;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  deleted_at: string | null;
+  project_id: string | null;
+  estimated_minutes: number | null;
+  icon: string | null;
+  priority: Priority | null;
+};
+
+export type Project = {
+  id: string;
+  name: string;
+  description: string | null;
+  location: string | null;
+  owner_id: string | null;
+  created_at: string;
+  created_by: string | null;
+  deleted_at: string | null;
+  icon: string | null;
+  priority: Priority | null;
+  color: string | null;
+};
+
+export type TaskPause = {
+  id: string;
+  task_id: string;
+  paused_at: string;
+  resumed_at: string | null;
+  auto: boolean;
+  created_by: string | null;
+};
+
+export type TaskAssignee = {
+  id: string;
+  task_id: string;
+  assignee_id: string;
+  added_at: string;
+  added_by: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
+};
+
+export type ActivityEntityType = 'task' | 'project';
+export type ActivityEventType =
+  | 'created'
+  | 'updated'
+  | 'status_changed'
+  | 'deleted'
+  | 'assignee_added'
+  | 'assignee_removed'
+  | 'comment_added'
+  | 'checklist_item_added';
+
+export type ActivityLog = {
+  id: string;
+  entity_type: ActivityEntityType;
+  entity_id: string;
+  event_type: ActivityEventType;
+  actor_id: string | null;
+  detail: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type TaskComment = {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type TaskChecklistItem = {
+  id: string;
+  task_id: string;
+  title: string;
+  done: boolean;
+  position: number;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type TaskTemplate = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  estimated_minutes: number | null;
+  priority: Priority | null;
+  icon: string | null;
+  project_id: string | null;
+  checklist: string[] | null;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly';
+
+export type RecurringRule = {
+  id: string;
+  template_id: string;
+  frequency: RecurringFrequency;
+  weekday: number | null;
+  day_of_month: number | null;
+  next_run_at: string;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type SavedView = {
+  id: string;
+  user_id: string;
+  name: string;
+  filters: { qs: string };
+  created_at: string;
+  deleted_at: string | null;
+};
+
+export type TaskWatcher = {
+  task_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type Label = {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  created_by: string | null;
+  deleted_at: string | null;
+};
+
+export type TaskLabel = {
+  task_id: string;
+  label_id: string;
+  added_at: string;
+  added_by: string | null;
+};
+
+export type WipStatus = 'waiting' | 'in_progress' | 'paused';
+
+export type WipLimit = {
+  status: WipStatus;
+  limit_count: number | null;
+};
+
+export type NotificationType = 'assigned' | 'unassigned' | 'deadline_soon' | 'comment' | 'mention';
+
+export type Notification = {
+  id: string;
+  recipient_id: string;
+  type: NotificationType;
+  task_id: string;
+  payload: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type NotificationView = Notification & {
+  taskTitle: string | null;
+  taskStatus: TaskStatus | null;
+};
+
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: Partial<Profile> & Pick<Profile, 'id' | 'name' | 'username'>;
+        Update: Partial<Profile>;
+        Relationships: [];
+      };
+      tasks: {
+        Row: Task;
+        Insert: Partial<Task> & Pick<Task, 'title'>;
+        Update: Partial<Task>;
+        Relationships: [];
+      };
+      task_pauses: {
+        Row: TaskPause;
+        Insert: Partial<TaskPause> & Pick<TaskPause, 'task_id'>;
+        Update: Partial<TaskPause>;
+        Relationships: [];
+      };
+      projects: {
+        Row: Project;
+        Insert: Partial<Project> & Pick<Project, 'name'>;
+        Update: Partial<Project>;
+        Relationships: [];
+      };
+      task_assignees: {
+        Row: TaskAssignee;
+        Insert: Partial<TaskAssignee> & Pick<TaskAssignee, 'task_id' | 'assignee_id'>;
+        Update: Partial<TaskAssignee>;
+        Relationships: [];
+      };
+      system_state: {
+        Row: { key: string; value: string | null };
+        Insert: { key: string; value?: string | null };
+        Update: { key?: string; value?: string | null };
+        Relationships: [];
+      };
+      activity_log: {
+        Row: ActivityLog;
+        Insert: Partial<ActivityLog> & Pick<ActivityLog, 'entity_type' | 'entity_id' | 'event_type'>;
+        Update: Partial<ActivityLog>;
+        Relationships: [];
+      };
+      task_comments: {
+        Row: TaskComment;
+        Insert: Partial<TaskComment> & Pick<TaskComment, 'task_id' | 'body'>;
+        Update: Partial<TaskComment>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Partial<Notification> & Pick<Notification, 'recipient_id' | 'type' | 'task_id'>;
+        Update: Partial<Notification>;
+        Relationships: [];
+      };
+      task_checklist_items: {
+        Row: TaskChecklistItem;
+        Insert: Partial<TaskChecklistItem> & Pick<TaskChecklistItem, 'task_id' | 'title'>;
+        Update: Partial<TaskChecklistItem>;
+        Relationships: [];
+      };
+      task_templates: {
+        Row: TaskTemplate;
+        Insert: Partial<TaskTemplate> & Pick<TaskTemplate, 'title'>;
+        Update: Partial<TaskTemplate>;
+        Relationships: [];
+      };
+      recurring_rules: {
+        Row: RecurringRule;
+        Insert: Partial<RecurringRule> & Pick<RecurringRule, 'template_id' | 'frequency' | 'next_run_at'>;
+        Update: Partial<RecurringRule>;
+        Relationships: [];
+      };
+      saved_views: {
+        Row: SavedView;
+        Insert: Partial<SavedView> & Pick<SavedView, 'user_id' | 'name' | 'filters'>;
+        Update: Partial<SavedView>;
+        Relationships: [];
+      };
+      task_watchers: {
+        Row: TaskWatcher;
+        Insert: Partial<TaskWatcher> & Pick<TaskWatcher, 'task_id' | 'user_id'>;
+        Update: Partial<TaskWatcher>;
+        Relationships: [];
+      };
+      labels: {
+        Row: Label;
+        Insert: Partial<Label> & Pick<Label, 'name' | 'color'>;
+        Update: Partial<Label>;
+        Relationships: [];
+      };
+      task_labels: {
+        Row: TaskLabel;
+        Insert: Partial<TaskLabel> & Pick<TaskLabel, 'task_id' | 'label_id'>;
+        Update: Partial<TaskLabel>;
+        Relationships: [];
+      };
+      wip_limits: {
+        Row: WipLimit;
+        Insert: Partial<WipLimit> & Pick<WipLimit, 'status'>;
+        Update: Partial<WipLimit>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      get_my_notifications: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: string;
+          recipient_id: string;
+          type: NotificationType;
+          task_id: string;
+          payload: Record<string, unknown> | null;
+          read_at: string | null;
+          created_at: string;
+          task_title: string | null;
+          task_status: TaskStatus | null;
+        }[];
+      };
+    };
+  };
+}

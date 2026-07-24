@@ -1,0 +1,370 @@
+'use server';
+
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { createClient } from '@/lib/supabase/server';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { isWithinWorkHours } from '@/lib/logic/tasks';
+import { logActivity } from '@/lib/logic/activity-log';
+import { notifyMany } from '@/lib/logic/notifications';
+import type { TaskStatus, Priority } from '@/lib/supabase/types';
+
+async function requireAuth() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('locale')
+    .eq('id', user.id)
+    .single();
+
+  const dict = getDictionary(profile?.locale ?? 'de');
+
+  return { supabase, userId: user.id, dict };
+}
+
+export interface TaskFormState {
+  error: string | null;
+}
+
+const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
+
+function readPriority(formData: FormData): Priority | null {
+  const raw = String(formData.get('priority') || '').trim();
+  return (PRIORITIES as string[]).includes(raw) ? (raw as Priority) : null;
+}
+
+function readTaskFields(formData: FormData) {
+  const estimatedRaw = String(formData.get('estimatedMinutes') || '').trim();
+  const estimatedMinutes = estimatedRaw ? Number(estimatedRaw) : null;
+
+  return {
+    title: String(formData.get('title') || '').trim(),
+    description: String(formData.get('description') || '').trim(),
+    location: String(formData.get('location') || '').trim(),
+    deadline: (String(formData.get('deadline') || '').trim() || null) as string | null,
+    project_id: (String(formData.get('projectId') || '').trim() || null) as string | null,
+    estimated_minutes: estimatedMinutes && estimatedMinutes > 0 ? Math.round(estimatedMinutes) : null,
+    icon: (String(formData.get('icon') || '').trim() || null) as string | null,
+    priority: readPriority(formData),
+  };
+}
+
+function readAssigneeIds(formData: FormData): string[] {
+  return formData
+    .getAll('assigneeIds')
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
+function readLabelIds(formData: FormData): string[] {
+  return formData
+    .getAll('labelIds')
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
+export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
+  const { supabase, userId, dict } = await requireAuth();
+  const fields = readTaskFields(formData);
+  const assigneeIds = readAssigneeIds(formData);
+  const labelIds = readLabelIds(formData);
+
+  if (!fields.title) {
+    return { error: dict.taskForm.errors.missingFields };
+  }
+  if (!assigneeIds.length) {
+    return { error: dict.taskForm.errors.missingAssignee };
+  }
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .insert({
+      ...fields,
+      status: 'waiting',
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select('id')
+    .single();
+
+  if (error || !task) {
+    return { error: error?.message ?? dict.taskForm.errors.missingFields };
+  }
+
+  const now = new Date().toISOString();
+  await supabase.from('task_assignees').insert(
+    assigneeIds.map((assignee_id) => ({
+      task_id: task.id,
+      assignee_id,
+      added_at: now,
+      added_by: userId,
+    }))
+  );
+
+  await logActivity(supabase, 'task', task.id, 'created', userId, { title: fields.title });
+  for (const assigneeId of assigneeIds) {
+    await logActivity(supabase, 'task', task.id, 'assignee_added', userId, { assigneeId });
+  }
+  await notifyMany(supabase, assigneeIds, userId, 'assigned', task.id, { title: fields.title });
+
+  if (labelIds.length) {
+    await supabase.from('task_labels').insert(
+      labelIds.map((label_id) => ({ task_id: task.id, label_id, added_by: userId }))
+    );
+  }
+
+  // Sozdaniye iz shablona (Etap 7): kopiruyem chek-list shablona v novuyu
+  // zadachu — izmeneniye shablona posle etogo uzhe ne vliyayet na zadachu.
+  const templateId = String(formData.get('templateId') || '').trim();
+  if (templateId) {
+    const { data: template } = await supabase
+      .from('task_templates')
+      .select('checklist')
+      .eq('id', templateId)
+      .single();
+
+    const checklist = (template?.checklist as string[] | null) ?? [];
+    for (let i = 0; i < checklist.length; i++) {
+      await supabase
+        .from('task_checklist_items')
+        .insert({ task_id: task.id, title: checklist[i], position: i });
+      await logActivity(supabase, 'task', task.id, 'checklist_item_added', userId, { title: checklist[i] });
+    }
+  }
+
+  revalidatePath('/dashboard');
+  redirect('/dashboard');
+}
+
+// Bystroye sozdaniye zadachi iz command palette (Etap 9) — tol'ko nazvaniye,
+// avtor srazu naznachayetsya ispolnitelem. V otlichiye ot createTask,
+// vyzyvayetsya napryamuyu iz klientskogo komponenta (ne cherez <form
+// action>), poetomu bez redirect() — palette sama reshayet, kuda perekhodit'.
+export async function quickCreateTask(title: string): Promise<{ error?: string; taskId?: string }> {
+  const { supabase, userId, dict } = await requireAuth();
+  const trimmed = title.trim();
+  if (!trimmed) return { error: dict.taskForm.errors.missingFields };
+
+  const { data: task, error } = await supabase
+    .from('tasks')
+    .insert({ title: trimmed, status: 'waiting', created_by: userId, updated_by: userId })
+    .select('id')
+    .single();
+
+  if (error || !task) return { error: error?.message ?? dict.taskForm.errors.missingFields };
+
+  const now = new Date().toISOString();
+  await supabase
+    .from('task_assignees')
+    .insert({ task_id: task.id, assignee_id: userId, added_at: now, added_by: userId });
+  await logActivity(supabase, 'task', task.id, 'created', userId, { title: trimmed });
+
+  revalidatePath('/dashboard');
+  return { taskId: task.id };
+}
+
+export async function editTaskFields(
+  taskId: string,
+  _prevState: TaskFormState,
+  formData: FormData
+): Promise<TaskFormState> {
+  const { supabase, userId, dict } = await requireAuth();
+  const fields = readTaskFields(formData);
+  const assigneeIds = readAssigneeIds(formData);
+  const labelIds = readLabelIds(formData);
+
+  if (!fields.title) {
+    return { error: dict.taskForm.errors.missingFields };
+  }
+  if (!assigneeIds.length) {
+    return { error: dict.taskForm.errors.missingAssignee };
+  }
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({ ...fields, updated_by: userId })
+    .eq('id', taskId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  await logActivity(supabase, 'task', taskId, 'updated', userId, { title: fields.title });
+
+  const { data: current } = await supabase
+    .from('task_assignees')
+    .select('id, assignee_id')
+    .eq('task_id', taskId)
+    .is('removed_at', null);
+
+  const currentIds = new Set((current ?? []).map((a) => a.assignee_id));
+  const newIds = new Set(assigneeIds);
+  const now = new Date().toISOString();
+
+  const toRemove = (current ?? []).filter((a) => !newIds.has(a.assignee_id));
+  const toAdd = assigneeIds.filter((id) => !currentIds.has(id));
+
+  if (toRemove.length) {
+    await supabase
+      .from('task_assignees')
+      .update({ removed_at: now, removed_by: userId })
+      .in(
+        'id',
+        toRemove.map((a) => a.id)
+      );
+    for (const a of toRemove) {
+      await logActivity(supabase, 'task', taskId, 'assignee_removed', userId, { assigneeId: a.assignee_id });
+    }
+    await notifyMany(
+      supabase,
+      toRemove.map((a) => a.assignee_id),
+      userId,
+      'unassigned',
+      taskId,
+      { title: fields.title }
+    );
+  }
+  if (toAdd.length) {
+    await supabase.from('task_assignees').insert(
+      toAdd.map((assignee_id) => ({
+        task_id: taskId,
+        assignee_id,
+        added_at: now,
+        added_by: userId,
+      }))
+    );
+    for (const assigneeId of toAdd) {
+      await logActivity(supabase, 'task', taskId, 'assignee_added', userId, { assigneeId });
+    }
+    await notifyMany(supabase, toAdd, userId, 'assigned', taskId, { title: fields.title });
+  }
+
+  const { data: currentLabels } = await supabase.from('task_labels').select('label_id').eq('task_id', taskId);
+  const currentLabelIds = new Set((currentLabels ?? []).map((l) => l.label_id));
+  const newLabelIds = new Set(labelIds);
+  const labelsToRemove = [...currentLabelIds].filter((id) => !newLabelIds.has(id));
+  const labelsToAdd = labelIds.filter((id) => !currentLabelIds.has(id));
+
+  if (labelsToRemove.length) {
+    await supabase.from('task_labels').delete().eq('task_id', taskId).in('label_id', labelsToRemove);
+  }
+  if (labelsToAdd.length) {
+    await supabase
+      .from('task_labels')
+      .insert(labelsToAdd.map((label_id) => ({ task_id: taskId, label_id, added_by: userId })));
+  }
+
+  revalidatePath('/dashboard');
+  redirect('/dashboard');
+}
+
+export async function deleteTask(taskId: string) {
+  const { supabase, userId } = await requireAuth();
+  await supabase
+    .from('tasks')
+    .update({ deleted_at: new Date().toISOString(), updated_by: userId })
+    .eq('id', taskId);
+  await logActivity(supabase, 'task', taskId, 'deleted', userId);
+  revalidatePath('/dashboard');
+  revalidatePath('/archive');
+}
+
+export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<{ error?: string }> {
+  const { supabase, userId, dict } = await requireAuth();
+
+  if (!isWithinWorkHours()) {
+    return { error: dict.taskCard.outsideWorkHours };
+  }
+
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('status, started_at')
+    .eq('id', taskId)
+    .single();
+
+  if (!task) return {};
+
+  if (task.status !== newStatus && (newStatus === 'waiting' || newStatus === 'in_progress' || newStatus === 'paused')) {
+    const { data: limitRow } = await supabase
+      .from('wip_limits')
+      .select('limit_count')
+      .eq('status', newStatus)
+      .single();
+    if (limitRow?.limit_count !== null && limitRow?.limit_count !== undefined) {
+      const { count } = await supabase
+        .from('tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', newStatus)
+        .is('deleted_at', null);
+      if ((count ?? 0) >= limitRow.limit_count) {
+        return { error: dict.wipLimits.errors.limitReached };
+      }
+    }
+  }
+
+  const now = new Date().toISOString();
+  const update: {
+    status: TaskStatus;
+    started_at?: string;
+    completed_at?: string;
+    updated_by: string;
+  } = {
+    status: newStatus,
+    updated_by: userId,
+  };
+
+  if (newStatus === 'in_progress' && !task.started_at) {
+    update.started_at = now;
+  }
+
+  if (task.status === 'in_progress' && newStatus === 'paused') {
+    await supabase
+      .from('task_pauses')
+      .insert({ task_id: taskId, paused_at: now, resumed_at: null, auto: false, created_by: userId });
+  }
+
+  if (task.status === 'paused' && newStatus === 'in_progress') {
+    const { data: openPause } = await supabase
+      .from('task_pauses')
+      .select('id')
+      .eq('task_id', taskId)
+      .is('resumed_at', null)
+      .order('paused_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (openPause) {
+      await supabase.from('task_pauses').update({ resumed_at: now }).eq('id', openPause.id);
+    }
+  }
+
+  if (newStatus === 'done') {
+    const { data: openPause } = await supabase
+      .from('task_pauses')
+      .select('id')
+      .eq('task_id', taskId)
+      .is('resumed_at', null)
+      .order('paused_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (openPause) {
+      await supabase.from('task_pauses').update({ resumed_at: now }).eq('id', openPause.id);
+    }
+    update.completed_at = now;
+    if (!task.started_at) update.started_at = now;
+  }
+
+  await supabase.from('tasks').update(update).eq('id', taskId);
+  await logActivity(supabase, 'task', taskId, 'status_changed', userId, {
+    from: task.status,
+    to: newStatus,
+  });
+
+  revalidatePath('/dashboard');
+  if (newStatus === 'done') revalidatePath('/archive');
+  return {};
+}
