@@ -2,7 +2,7 @@
 
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDuration } from '@/lib/logic/tasks';
-import type { PersonStat } from '@/lib/logic/analytics';
+import { remainingCapacityPercent, type PersonStat } from '@/lib/logic/analytics';
 
 export function AnalyticsStats({
   stats,
@@ -20,8 +20,8 @@ export function AnalyticsStats({
       </div>
       <div className="stat-rows">
         {stats.map((s) => {
-          const pct = availableMs > 0 ? (s.workedMs / availableMs) * 100 : 0;
-          const over = pct > 100;
+          const pct = remainingCapacityPercent(s.workedMs, availableMs);
+          const over = pct < 0;
           return (
             <div className="stat-row" key={s.id}>
               <div className="stat-row-head">
@@ -31,7 +31,13 @@ export function AnalyticsStats({
               <div className="stat-bar-track">
                 <div
                   className={`stat-bar-fill ${over ? 'stat-bar-over' : ''}`}
-                  style={{ width: `${Math.min(100, pct)}%` }}
+                  // Negative remaining capacity has no natural bar width of
+                  // its own — clamping to 0 would render an empty track with
+                  // no visible warning color at all. Filling it completely
+                  // instead reads as "capacity used up, and then some",
+                  // which the row's own (possibly negative) percentage text
+                  // still spells out precisely.
+                  style={{ width: `${over ? 100 : Math.min(100, pct)}%` }}
                 />
               </div>
               <div className="stat-row-foot mono">

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
-import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
+import { availableWorkingMs, computePersonStats, remainingCapacityPercent } from '@/lib/logic/analytics';
 import { fmtDuration } from '@/lib/logic/tasks';
 import { exportResponse, parseFormat } from '@/lib/export/respond';
 
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
 
   const header = [dict.analytics.colPerson, dict.analytics.colWorked, dict.analytics.colPercent];
   const rows = stats.map((s) => {
-    const pct = availableMs > 0 ? Math.round((s.workedMs / availableMs) * 100) : 0;
+    const pct = Math.round(remainingCapacityPercent(s.workedMs, availableMs));
     return [s.name, fmtDuration(s.workedMs, dict.duration), `${pct}%`];
   });
 
