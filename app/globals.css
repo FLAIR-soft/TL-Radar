@@ -1507,12 +1507,21 @@ p.section-sub {
   padding: 13px 14px;
   border-left: 4px solid var(--border);
   box-shadow: var(--shadow-resting);
+  overflow: hidden;
   animation: fadeSlideIn 0.3s ease both;
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, max-height 0.22s ease, opacity 0.22s ease,
+    padding 0.22s ease, border-width 0.22s ease;
 }
 .project-row:hover {
   box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
+}
+.project-row.is-removing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
 }
 .project-row-head {
   display: flex;

@@ -1,12 +1,18 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { Trash2, Folder, MapPin, ListChecks } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { deleteTemplate } from './actions';
 import type { TaskTemplate } from '@/lib/supabase/types';
+
+// Matches the .project-row max-height/opacity/padding transition duration
+// in globals.css — the row stays on screen this long after delete so the
+// collapse animation can play, instead of just popping out of the list the
+// instant revalidatePath() refreshes it.
+const EXIT_MS = 240;
 
 export function TemplateRow({
   template,
@@ -19,11 +25,24 @@ export function TemplateRow({
 }) {
   const dict = useDictionary();
   const [isPending, startTransition] = useTransition();
+  const [removing, setRemoving] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   function handleDelete() {
     if (!confirm(dict.templates.deleteConfirm)) return;
+    const rowEl = rowRef.current;
+    if (rowEl) {
+      rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
+      void rowEl.offsetHeight; // force reflow so the browser has a starting height to transition from
+      requestAnimationFrame(() => {
+        rowEl.style.maxHeight = '0px';
+      });
+    }
+    setRemoving(true);
     startTransition(() => {
-      deleteTemplate(template.id);
+      setTimeout(() => {
+        deleteTemplate(template.id);
+      }, EXIT_MS);
     });
   }
 
@@ -32,7 +51,8 @@ export function TemplateRow({
 
   return (
     <div
-      className={`project-row ${isPending ? 'task-card-pending' : ''}`}
+      ref={rowRef}
+      className={`project-row ${isPending ? 'task-card-pending' : ''} ${removing ? 'is-removing' : ''}`}
       style={{ borderLeftColor: template.priority ? PRIORITY_COLOR[template.priority] : 'var(--border)', ...style }}
     >
       <div className="project-row-main">
@@ -45,7 +65,7 @@ export function TemplateRow({
             <button
               className="icon-btn"
               title={dict.templates.deleteTitle}
-              disabled={isPending}
+              disabled={isPending || removing}
               onClick={handleDelete}
               data-testid="delete-template"
             >
