@@ -16,7 +16,7 @@ export default async function NewTaskPage({
 
   const [{ data: profiles }, { data: activeProjects }, { data: templateList }, { data: labelList }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
     supabase.from('task_templates').select('id, title').is('deleted_at', null).order('title'),
     supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);

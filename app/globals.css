@@ -2554,6 +2554,28 @@ p.section-sub {
 .label-swatch-active {
   border-color: var(--ink);
 }
+.label-swatch-none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1;
+}
+.project-color-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.table-project-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .label-create-btn {
   width: 28px;
   height: 28px;

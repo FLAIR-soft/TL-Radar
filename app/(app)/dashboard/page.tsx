@@ -50,7 +50,7 @@ export default async function DashboardPage({
         .is('task_checklist_items.deleted_at', null)
         .order('created_at', { ascending: true }),
       supabase.from('profiles').select('id, name').order('name'),
-      supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+      supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
       supabase.from('saved_views').select('id, name, filters').is('deleted_at', null).order('created_at', { ascending: true }),
       supabase.from('labels').select('*').is('deleted_at', null).order('name'),
       supabase.from('wip_limits').select('*'),
@@ -64,6 +64,7 @@ export default async function DashboardPage({
   const limitByStatus = new Map((wipLimits ?? []).map((w) => [w.status, w.limit_count]));
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
+  const projectColors = new Map(projectList.map((p) => [p.id, p.color]));
   const labelById = new Map(labelList.map((l) => [l.id, l]));
 
   const {
@@ -123,6 +124,7 @@ export default async function DashboardPage({
           tasks={filteredActive}
           assigneeNamesByTask={assigneeNamesByTask}
           projectNames={projectNames}
+          projectColors={projectColors}
           profileNames={profileNames}
           commentCountsByTask={commentCountsByTask}
           checklistProgressByTask={checklistProgressByTask}
@@ -133,6 +135,7 @@ export default async function DashboardPage({
           tasks={filteredActive}
           assigneeNamesByTask={assigneeNamesByTask}
           projectNames={projectNames}
+          projectColors={projectColors}
           profileNames={profileNames}
           labelsByTask={labelsByTask}
           month={typeof resolvedSearchParams.month === 'string' ? resolvedSearchParams.month : undefined}
@@ -144,6 +147,7 @@ export default async function DashboardPage({
           pausesByTask={pausesByTask}
           assigneeNamesByTask={assigneeNamesByTask}
           projectNames={projectNames}
+          projectColors={projectColors}
           pausedByNameByTask={pausedByNameByTask}
           profileNames={profileNames}
           commentCountsByTask={commentCountsByTask}

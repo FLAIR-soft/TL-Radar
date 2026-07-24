@@ -329,6 +329,7 @@ const ru = {
     locationLabel: 'Место проведения',
     locationPlaceholder: 'Где физически проходит',
     ownerLabel: 'Ответственный',
+    colorLabel: 'Цвет',
     noOwner: '— не назначен —',
     addButton: 'Добавить проект',
     saveButton: 'Сохранить',

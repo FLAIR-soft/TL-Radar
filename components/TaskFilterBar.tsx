@@ -20,7 +20,7 @@ export function TaskFilterBar({
   showExport = false,
 }: {
   profiles: { id: string; name: string }[];
-  projects: { id: string; name: string }[];
+  projects: { id: string; name: string; color?: string | null }[];
   labels?: Label[];
   savedViews?: { id: string; name: string; filters: { qs: string } }[];
   view?: 'kanban' | 'table' | 'calendar';
@@ -153,7 +153,7 @@ export function TaskFilterBar({
         <option value="">{dict.filters.allProjects}</option>
         <option value="none">{dict.filters.noProject}</option>
         {projects.map((p) => (
-          <option key={p.id} value={p.id}>
+          <option key={p.id} value={p.id} style={p.color ? { color: p.color } : undefined}>
             {p.name}
           </option>
         ))}

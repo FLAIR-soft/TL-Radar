@@ -331,6 +331,7 @@ const de = {
     locationLabel: 'Ort',
     locationPlaceholder: 'Wo das Projekt stattfindet',
     ownerLabel: 'Verantwortlich',
+    colorLabel: 'Farbe',
     noOwner: '— nicht zugewiesen —',
     addButton: 'Projekt hinzufügen',
     saveButton: 'Speichern',

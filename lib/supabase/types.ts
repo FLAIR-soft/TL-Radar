@@ -42,6 +42,7 @@ export type Project = {
   deleted_at: string | null;
   icon: string | null;
   priority: Priority | null;
+  color: string | null;
 };
 
 export type TaskPause = {

@@ -29,6 +29,7 @@ export function KanbanBoard({
   pausesByTask,
   assigneeNamesByTask,
   projectNames,
+  projectColors,
   pausedByNameByTask,
   profileNames,
   commentCountsByTask,
@@ -40,6 +41,7 @@ export function KanbanBoard({
   pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
+  projectColors?: Map<string, string | null>;
   pausedByNameByTask: Map<string, string | null>;
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
@@ -142,6 +144,7 @@ export function KanbanBoard({
                         pauses={pausesByTask.get(t.id) ?? []}
                         assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                         projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                        projectColor={t.project_id ? projectColors?.get(t.project_id) ?? null : null}
                         pausedByName={pausedByNameByTask.get(t.id) ?? null}
                         profileNames={profileNames}
                         commentCount={commentCountsByTask.get(t.id) ?? 0}
@@ -167,6 +170,7 @@ export function KanbanBoard({
               pauses={pausesByTask.get(activeTask.id) ?? []}
               assigneeNames={assigneeNamesByTask.get(activeTask.id) ?? []}
               projectName={activeTask.project_id ? projectNames.get(activeTask.project_id) ?? null : null}
+              projectColor={activeTask.project_id ? projectColors?.get(activeTask.project_id) ?? null : null}
               pausedByName={pausedByNameByTask.get(activeTask.id) ?? null}
               profileNames={profileNames}
               commentCount={commentCountsByTask.get(activeTask.id) ?? 0}

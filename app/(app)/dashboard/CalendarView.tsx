@@ -31,6 +31,7 @@ export function CalendarView({
   tasks,
   assigneeNamesByTask,
   projectNames,
+  projectColors,
   profileNames,
   labelsByTask,
   month,
@@ -38,6 +39,7 @@ export function CalendarView({
   tasks: Task[];
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
+  projectColors?: Map<string, string | null>;
   profileNames: Map<string, string>;
   labelsByTask?: Map<string, Label[]>;
   month?: string;
@@ -115,8 +117,16 @@ export function CalendarView({
                       task={t}
                       assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                       projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                      projectColor={t.project_id ? projectColors?.get(t.project_id) ?? null : null}
                       profileNames={profileNames}
                     />
+                    {t.project_id && projectColors?.get(t.project_id) && (
+                      <span
+                        className="calendar-label-dot"
+                        style={{ background: projectColors.get(t.project_id) ?? undefined }}
+                        title={projectNames.get(t.project_id)}
+                      />
+                    )}
                     {(labelsByTask?.get(t.id) ?? []).map((l) => (
                       <span key={l.id} className="calendar-label-dot" style={{ background: l.color }} title={l.name} />
                     ))}

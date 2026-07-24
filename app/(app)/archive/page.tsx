@@ -42,7 +42,7 @@ export default async function ArchivePage({
       .order('created_at', { ascending: false })
       .order('paused_at', { ascending: true, referencedTable: 'task_pauses' }),
     supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
     supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);
 
@@ -52,6 +52,7 @@ export default async function ArchivePage({
   const labelList = labels ?? [];
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
+  const projectColors = new Map(projectList.map((p) => [p.id, p.color]));
   const labelById = new Map(labelList.map((l) => [l.id, l]));
 
   const { pausesByTask, assigneeNamesByTask, assigneeIdsByTask, labelIdsByTask, labelsByTask } = buildTaskRelationMaps(
@@ -165,7 +166,21 @@ export default async function ArchivePage({
                     </div>
                   )}
                 </td>
-                <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
+                <td>
+                  {t.project_id && projectNames.get(t.project_id) ? (
+                    <span className="table-project-cell">
+                      {projectColors.get(t.project_id) && (
+                        <span
+                          className="project-color-dot"
+                          style={{ background: projectColors.get(t.project_id) ?? undefined }}
+                        />
+                      )}
+                      {projectNames.get(t.project_id)}
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td>{t.location || '—'}</td>
                 <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
                 <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
@@ -189,6 +204,7 @@ export default async function ArchivePage({
                     task={t}
                     assigneeNames={assignees}
                     projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                    projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
                     profileNames={profileNames}
                   />
                 </td>
@@ -216,6 +232,7 @@ export default async function ArchivePage({
                 task={t}
                 assigneeNames={assignees}
                 projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
                 profileNames={profileNames}
               />
             </div>
@@ -235,7 +252,15 @@ export default async function ArchivePage({
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colProject}</span>
-                <span>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</span>
+                <span className="table-project-cell">
+                  {t.project_id && projectColors.get(t.project_id) && (
+                    <span
+                      className="project-color-dot"
+                      style={{ background: projectColors.get(t.project_id) ?? undefined }}
+                    />
+                  )}
+                  {t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}
+                </span>
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colLocation}</span>

@@ -45,6 +45,7 @@ export function ProjectRow({
             ownerId: project.owner_id ?? '',
             icon: project.icon ?? '',
             priority: project.priority ?? '',
+            color: project.color ?? '',
           }}
           profiles={profiles}
           onSaved={() => setEditing(false)}
@@ -64,6 +65,7 @@ export function ProjectRow({
       <div className="project-row-main">
         <div className="project-row-head">
           <span className="project-row-name">
+            {project.color && <span className="project-color-dot" style={{ background: project.color }} />}
             {ProjectIcon && <ProjectIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
             {project.name}
           </span>

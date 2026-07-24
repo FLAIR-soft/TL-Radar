@@ -30,6 +30,7 @@ export function TaskCard({
   pauses,
   assigneeNames,
   projectName,
+  projectColor,
   pausedByName,
   profileNames,
   commentCount = 0,
@@ -41,6 +42,7 @@ export function TaskCard({
   pauses: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
+  projectColor?: string | null;
   pausedByName: string | null;
   profileNames: Map<string, string>;
   commentCount?: number;
@@ -142,6 +144,7 @@ export function TaskCard({
       <div className="t-meta">
         {projectName && (
           <span className="project-tag">
+            {projectColor && <span className="project-color-dot" style={{ background: projectColor }} />}
             <Folder size={14} strokeWidth={1.75} />
             {projectName}
           </span>
@@ -258,7 +261,13 @@ export function TaskCard({
             {commentCount}
           </span>
         )}
-        <TaskDetailPanel task={task} assigneeNames={assigneeNames} projectName={projectName} profileNames={profileNames} />
+        <TaskDetailPanel
+          task={task}
+          assigneeNames={assigneeNames}
+          projectName={projectName}
+          projectColor={projectColor}
+          profileNames={profileNames}
+        />
       </div>
     </div>
   );

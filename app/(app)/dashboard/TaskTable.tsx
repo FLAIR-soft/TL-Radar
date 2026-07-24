@@ -20,6 +20,7 @@ export function TaskTable({
   tasks,
   assigneeNamesByTask,
   projectNames,
+  projectColors,
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
@@ -28,6 +29,7 @@ export function TaskTable({
   tasks: Task[];
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
+  projectColors?: Map<string, string | null>;
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
@@ -112,6 +114,7 @@ export function TaskTable({
               task={task}
               assigneeNames={assigneeNamesByTask.get(task.id) ?? []}
               projectName={task.project_id ? (projectNames.get(task.project_id) ?? null) : null}
+              projectColor={task.project_id ? (projectColors?.get(task.project_id) ?? null) : null}
               profileNames={profileNames}
               commentCount={commentCountsByTask.get(task.id) ?? 0}
               checklistProgress={checklistProgressByTask.get(task.id)}
@@ -129,6 +132,7 @@ function TaskTableRow({
   task,
   assigneeNames,
   projectName,
+  projectColor,
   profileNames,
   commentCount,
   checklistProgress,
@@ -138,6 +142,7 @@ function TaskTableRow({
   task: Task;
   assigneeNames: string[];
   projectName: string | null;
+  projectColor?: string | null;
   profileNames: Map<string, string>;
   commentCount: number;
   checklistProgress?: { done: number; total: number };
@@ -202,7 +207,16 @@ function TaskTableRow({
           {dict.status[task.status]}
         </span>
       </td>
-      <td>{projectName ?? '—'}</td>
+      <td>
+        {projectName ? (
+          <span className="table-project-cell">
+            {projectColor && <span className="project-color-dot" style={{ background: projectColor }} />}
+            {projectName}
+          </span>
+        ) : (
+          '—'
+        )}
+      </td>
       <td>
         {task.priority ? (
           <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
@@ -262,7 +276,13 @@ function TaskTableRow({
               {commentCount}
             </span>
           )}
-          <TaskDetailPanel task={task} assigneeNames={assigneeNames} projectName={projectName} profileNames={profileNames} />
+          <TaskDetailPanel
+            task={task}
+            assigneeNames={assigneeNames}
+            projectName={projectName}
+            projectColor={projectColor}
+            profileNames={profileNames}
+          />
         </div>
       </td>
     </tr>

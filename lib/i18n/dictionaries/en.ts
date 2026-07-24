@@ -331,6 +331,7 @@ const en = {
     locationLabel: 'Location',
     locationPlaceholder: 'Where the project takes place',
     ownerLabel: 'Responsible',
+    colorLabel: 'Color',
     noOwner: '— not assigned —',
     addButton: 'Add project',
     saveButton: 'Save',

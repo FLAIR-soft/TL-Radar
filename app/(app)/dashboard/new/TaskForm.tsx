@@ -37,7 +37,7 @@ export function TaskForm({
     priority: string;
   } | null;
   assignees: { id: string; name: string }[];
-  projects: { id: string; name: string }[];
+  projects: { id: string; name: string; color?: string | null }[];
   labels: Label[];
   currentUserId: string;
   templates?: { id: string; title: string }[];
@@ -104,7 +104,7 @@ export function TaskForm({
               <select name="projectId" defaultValue={editing?.projectId ?? ''}>
                 <option value="">{dict.taskForm.noProject}</option>
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} style={p.color ? { color: p.color } : undefined}>
                     {p.name}
                   </option>
                 ))}

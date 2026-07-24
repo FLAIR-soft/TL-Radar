@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from 'react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { IconPicker } from '@/components/IconPicker';
 import { PrioritySelect } from '@/components/PrioritySelect';
+import { ColorPicker } from '@/components/ColorPicker';
 import type { ProjectFormState } from './actions';
 
 const initialState: ProjectFormState = { error: null };
@@ -23,6 +24,7 @@ export function ProjectForm({
     ownerId: string;
     icon: string;
     priority: string;
+    color: string;
   } | null;
   profiles: { id: string; name: string }[];
   onSaved?: () => void;
@@ -76,6 +78,10 @@ export function ProjectForm({
       <div className="field">
         <label>{dict.priority.label}</label>
         <PrioritySelect name="priority" defaultValue={editing?.priority ?? null} />
+      </div>
+      <div className="field">
+        <label>{dict.projects.colorLabel}</label>
+        <ColorPicker name="color" defaultValue={editing?.color ?? null} />
       </div>
       <div className="field">
         <label>{dict.projects.descriptionLabel}</label>

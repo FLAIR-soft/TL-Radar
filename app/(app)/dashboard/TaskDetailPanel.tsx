@@ -21,11 +21,13 @@ export function TaskDetailPanel({
   task,
   assigneeNames,
   projectName,
+  projectColor,
   profileNames,
 }: {
   task: Task;
   assigneeNames: string[];
   projectName: string | null;
+  projectColor?: string | null;
   profileNames: Map<string, string>;
 }) {
   const dict = useDictionary();
@@ -139,6 +141,7 @@ export function TaskDetailPanel({
           <div className="t-meta detail-meta">
             {projectName && (
               <span className="project-tag">
+                {projectColor && <span className="project-color-dot" style={{ background: projectColor }} />}
                 <Folder size={14} strokeWidth={1.75} />
                 {projectName}
               </span>
