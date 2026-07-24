@@ -59,6 +59,7 @@ const ru = {
     timePaused: 'На паузе',
     timeTotalPaused: 'Всего на паузе',
     pausedBy: 'Поставил(а) на паузу',
+    createdByPrefix: 'Создал(а)',
     estimate: 'Оценка',
     details: 'Подробнее',
     outsideWorkHours: 'Смена статуса недоступна с 16:00 до 7:30.',

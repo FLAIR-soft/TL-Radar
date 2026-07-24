@@ -61,6 +61,7 @@ const de = {
     timePaused: 'Pausiert seit',
     timeTotalPaused: 'Gesamt pausiert',
     pausedBy: 'Pausiert von',
+    createdByPrefix: 'Erstellt von',
     estimate: 'Schätzung',
     details: 'Details',
     outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',
