@@ -27,8 +27,12 @@ export default async function TemplatesPage() {
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.templates.title}</h2>
-      <p className="section-sub">{dict.templates.subtitle}</p>
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.templates.title}</h2>
+          <p className="section-sub">{dict.templates.subtitle}</p>
+        </div>
+      </div>
       {list.length ? (
         <div className="project-list">
           {list.map((t, i) => (
