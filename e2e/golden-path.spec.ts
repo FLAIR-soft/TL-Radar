@@ -216,7 +216,9 @@ test.describe('golden path', () => {
 
     const overdueCard = page.locator('.task-card', { hasText: overdueTitle });
     await expect(overdueCard).toHaveClass(/task-card-overdue/);
-    await expect(overdueCard.locator('.overdue-badge')).toBeVisible();
+    // Просрочка отмечается плашкой сверху карточки (редизайн v2, этап 4);
+    // в компактном режиме её место занимает бейдж в шапке.
+    await expect(overdueCard.locator('.t-overdue-banner')).toBeVisible();
 
     const futureCard = page.locator('.task-card', { hasText: futureTitle });
     await expect(futureCard).not.toHaveClass(/task-card-overdue/);

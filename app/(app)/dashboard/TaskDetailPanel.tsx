@@ -28,6 +28,7 @@ import type { Task, TaskPause, ActivityLog, TaskChecklistItem } from '@/lib/supa
 
 export function TaskDetailPanel({
   task,
+  triggerLabel,
   pauses = [],
   assigneeNames,
   projectName,
@@ -35,6 +36,8 @@ export function TaskDetailPanel({
   profileNames,
 }: {
   task: Task;
+  /** Если задан — кнопка открытия рисуется подписанной, а не иконкой (карточка в расширенном режиме). */
+  triggerLabel?: string;
   pauses?: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
@@ -122,12 +125,13 @@ export function TaskDetailPanel({
   return (
     <>
       <button
-        className="icon-btn"
+        className={triggerLabel ? 'btn btn-ghost detail-trigger-labelled' : 'icon-btn'}
         title={dict.activityLog.viewTitle}
         onClick={() => setOpen(true)}
         data-testid="view-task-log"
       >
-        <History size={18} strokeWidth={1.75} />
+        <History size={triggerLabel ? 16 : 18} strokeWidth={1.75} />
+        {triggerLabel}
       </button>
       <SlideOver open={open} onClose={() => setOpen(false)} title={task.title}>
         <div className="detail-section">

@@ -47,6 +47,17 @@ export function fmtDate(iso: string | null, intlLocale: string): string {
   });
 }
 
+// Короткая дата для компактной карточки (скрин 03: «04.08.») — без года,
+// формат задаёт локаль, поэтому отдельных строк в словарях не нужно.
+export function fmtDateShort(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(intlLocale, {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
 export function fmtDuration(ms: number, units: { hourShort: string; minuteShort: string }): string {
   if (ms < 0) ms = 0;
   const totalMin = Math.round(ms / 60000);
@@ -98,6 +109,21 @@ export function isOverdue(task: Task): boolean {
   if (todayKey > deadlineKey) return true;
   if (todayKey < deadlineKey) return false;
   return now.hour >= CUTOFF_HOUR;
+}
+
+// Сколько полных суток прошло с дедлайна — для плашки «Überfällig seit N Tagen»
+// на карточке (редизайн v2, этап 4). Считается по календарным датам Мюнхена,
+// тем же ключом год*10000+месяц*100+день, что и isOverdue, поэтому переход
+// через 16:00 в день дедлайна даёт 0 дней, а не «полдня».
+export function overdueDays(task: Task): number | null {
+  if (!isOverdue(task) || !task.deadline) return null;
+
+  const [year, month, day] = task.deadline.split('-').map(Number);
+  const now = berlinDateParts(new Date());
+
+  const deadlineUtc = Date.UTC(year, month - 1, day);
+  const todayUtc = Date.UTC(now.year, now.month - 1, now.day);
+  return Math.max(0, Math.round((todayUtc - deadlineUtc) / 86400000));
 }
 
 // Deadline "istekaet" v 16:00 po Myunhenu v svoyu datu (tot zhe cutoff, chto i u
