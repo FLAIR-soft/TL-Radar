@@ -57,15 +57,15 @@ export function TaskCard({
   const overdue = isOverdue(task);
   const now = useNowTick();
 
-  const nextActions: Partial<Record<TaskStatus, { to: TaskStatus; label: string }[]>> = {
-    waiting: [{ to: 'in_progress', label: dict.taskCard.start }],
+  const nextActions: Partial<Record<TaskStatus, { to: TaskStatus; label: string; variant: 'dark' | 'success' | 'ghost' }[]>> = {
+    waiting: [{ to: 'in_progress', label: dict.taskCard.start, variant: 'dark' }],
     in_progress: [
-      { to: 'paused', label: dict.taskCard.pause },
-      { to: 'done', label: dict.taskCard.done },
+      { to: 'paused', label: dict.taskCard.pause, variant: 'ghost' },
+      { to: 'done', label: dict.taskCard.done, variant: 'success' },
     ],
     paused: [
-      { to: 'in_progress', label: dict.taskCard.resume },
-      { to: 'done', label: dict.taskCard.done },
+      { to: 'in_progress', label: dict.taskCard.resume, variant: 'dark' },
+      { to: 'done', label: dict.taskCard.done, variant: 'ghost' },
     ],
   };
   const actions = nextActions[task.status] || [];
@@ -180,7 +180,11 @@ export function TaskCard({
       </div>
       <div className="t-timers">
         {primaryMetric && (
-          <div className="t-timer-row t-timer-live t-timer-primary">
+          <div
+            className={`t-timer-row t-timer-live t-timer-primary ${
+              task.status === 'in_progress' ? 't-timer-primary-progress' : task.status === 'paused' ? 't-timer-primary-paused' : ''
+            }`}
+          >
             <span>{primaryMetric.label}</span>
             <span className="mono">{fmtDuration(primaryMetric.value, dict.duration)}</span>
           </div>
@@ -243,7 +247,12 @@ export function TaskCard({
       <div className="t-actions">
         {withinWorkHours &&
           actions.map((a) => (
-            <button key={a.to} className="btn btn-ghost" disabled={isPending} onClick={() => handleStatus(a.to)}>
+            <button
+              key={a.to}
+              className={`btn ${a.variant === 'dark' ? 'btn-dark' : a.variant === 'success' ? 'btn-success' : 'btn-ghost'}`}
+              disabled={isPending}
+              onClick={() => handleStatus(a.to)}
+            >
               {a.label}
             </button>
           ))}
