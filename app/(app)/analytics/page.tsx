@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { AnalyticsStats } from './AnalyticsStats';
 import { CumulativeFlowChart } from '@/components/CumulativeFlowChart';
 import { EstimateAccuracyTable } from '@/components/EstimateAccuracyTable';
-import { ExportMenu } from '@/components/ExportMenu';
+import { ExportButtons } from '@/components/ExportButtons';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -93,20 +93,24 @@ export default async function AnalyticsPage({
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.analytics.title}</h2>
-      <p className="section-sub">{dict.analytics.subtitle}</p>
-      <div className="period-switcher">
-        <div className="period-switcher-tabs">
-          {PERIOD_OPTIONS.map((d) => (
-            <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
-              {dict.analytics.periodLabels[d]}
-            </Link>
-          ))}
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.analytics.title}</h2>
+          <p className="section-sub">{dict.analytics.subtitle}</p>
         </div>
-        <ExportMenu
-          csvHref={`/api/export/analytics?format=csv&days=${days}`}
-          xlsxHref={`/api/export/analytics?format=xlsx&days=${days}`}
-        />
+        <div className="page-header-actions">
+          <div className="period-switcher-tabs">
+            {PERIOD_OPTIONS.map((d) => (
+              <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
+                {dict.analytics.periodLabels[d]}
+              </Link>
+            ))}
+          </div>
+          <ExportButtons
+            csvHref={`/api/export/analytics?format=csv&days=${days}`}
+            xlsxHref={`/api/export/analytics?format=xlsx&days=${days}`}
+          />
+        </div>
       </div>
       {(profiles ?? []).length === 0 ? (
         <EmptyState icon={Users} title={dict.analytics.empty} />

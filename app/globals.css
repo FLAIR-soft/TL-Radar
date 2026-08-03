@@ -742,146 +742,196 @@ p.section-sub {
   align-items: center;
   gap: 6px;
 }
+/* Правая часть шапки: у аналитики это переключатель периода + экспорт,
+   у архива только экспорт (эталоны 01 и 08). */
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  .page-header {
+    flex-wrap: wrap;
+  }
+  .page-header-actions,
+  .export-buttons {
+    flex: 1 1 100%;
+  }
+}
 
-/* ---------- Task filters ---------- */
+/* ---------- Task filters ----------
+   Редизайн v2, этап 1: панель фильтров — белая карточка с рамкой и тенью,
+   внутри растянутый поиск без собственной рамки и чипы-селекты на --surface-3
+   (эталон: design/redesign-v2/screens/08-archiv-light.png). */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 8px;
   margin-bottom: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
 }
 .filter-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  height: 42px;
-  border: 1px solid var(--border);
+  padding: 0 10px;
+  height: 32px;
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink-muted);
+  color: var(--text-3);
   flex: 2 1 220px;
   min-width: 180px;
 }
 .filter-search input {
   border: none;
   background: transparent;
-  color: var(--ink);
-  font-size: var(--fs-base);
+  color: var(--text);
+  font-size: 12.5px;
   width: 100%;
   padding: 0;
+}
+.filter-search input::placeholder {
+  color: var(--text-3);
 }
 .filter-search input:focus {
   outline: none;
 }
-.filter-bar .assignee-select {
-  flex: 1 1 180px;
-  min-width: 160px;
-}
-.filter-bar select {
-  flex: 1 1 140px;
-  min-width: 120px;
-  height: 42px;
-  padding: 0 10px;
-}
-.filter-reset {
+/* Чип-селект: нативный <select> без стрелки браузера + отдельная иконка
+   ChevronDown рядом, чтобы не хардкодить SVG-стрелку с цветом в CSS. */
+.filter-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 12px;
-  height: 42px;
-  border: 1px solid var(--tint-red-border);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.filter-chip select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 30px 0 12px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--tint-red-bg-2);
-  color: var(--brand-dark);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.filter-chip select:hover {
+  border-color: var(--border-strong);
+}
+.filter-chip select:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--focus-ring);
+}
+.filter-chip > svg {
+  position: absolute;
+  right: 10px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.filter-bar .assignee-select {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.filter-bar .assignee-select-trigger {
+  min-height: 32px;
+  padding: 4px 10px;
+  border-color: transparent;
+  background: var(--surface-3);
+  font-size: 12.5px;
+}
+.filter-bar .assignee-select-trigger:hover {
+  border-color: var(--border-strong);
+}
+.filter-bar .assignee-select-placeholder {
+  color: var(--text-2);
+}
+.filter-reset {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12.5px;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 .filter-reset:hover {
-  background: var(--tint-red-active-bg);
+  color: var(--text);
 }
 .view-toggle {
   display: inline-flex;
   gap: 4px;
   flex-shrink: 0;
 }
+.view-toggle .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-color: transparent;
+  background: var(--surface-3);
+}
 .view-toggle-active {
-  background: var(--hover-bg);
+  background: var(--surface) !important;
+  border-color: var(--border-strong) !important;
   color: var(--brand);
 }
 .saved-views {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--ink-muted);
+  color: var(--text-3);
   flex-shrink: 0;
 }
-.saved-views select {
-  flex: none !important;
-  min-width: 140px !important;
-  height: 42px;
+.saved-views-chip select {
+  min-width: 140px;
 }
-.export-menu {
-  position: relative;
-  flex-shrink: 0;
+.saved-views .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-color: transparent;
+  background: var(--surface-3);
 }
-.export-menu-trigger {
+/* Экспорт: две отдельные кнопки в шапке страницы (откат K2, этап 1) */
+.export-buttons {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: none;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.export-menu-trigger:hover {
-  border-color: var(--ink-muted);
-  color: var(--ink);
-  background: var(--hover-bg);
-}
-.export-menu-panel {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 140px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-hover);
-  overflow: hidden;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  animation: fadeSlideIn 0.15s ease both;
-}
-.export-menu-panel.is-closing {
-  animation: fadeSlideOut 0.15s ease forwards;
-}
-.export-menu-item {
-  display: block;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  font-size: var(--fs-sm);
+  color: var(--text);
+  font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 0.15s ease;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-.export-menu-item:hover {
-  background: var(--hover-bg);
+.export-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+.export-btn svg {
+  color: var(--text-2);
 }
 .table-sort-btn {
   display: inline-flex;

@@ -10,7 +10,21 @@ import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import type { Task, TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
+import { ExportButtons } from '@/components/ExportButtons';
 import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
+
+// The export links have to carry the current filters, and since the buttons
+// now live in the page header instead of inside TaskFilterBar, the query
+// string is rebuilt here from the same searchParams the page already reads.
+function toQueryString(params: SearchParamsRecord): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) for (const v of value) qs.append(key, v);
+    else qs.append(key, value);
+  }
+  return qs.toString();
+}
 
 const TASKS_SELECT = `
   *,
@@ -24,7 +38,9 @@ export default async function ArchivePage({
 }: {
   searchParams: Promise<SearchParamsRecord>;
 }) {
-  const filters = parseTaskFilters(await searchParams);
+  const rawSearchParams = await searchParams;
+  const filters = parseTaskFilters(rawSearchParams);
+  const exportQuery = toQueryString(rawSearchParams);
   const supabase = await createClient();
 
   const user = await getCachedUser();
@@ -64,8 +80,12 @@ export default async function ArchivePage({
   if (!done.length) {
     return (
       <div className="page-fade">
-        <h2 className="section-title">{dict.archive.title}</h2>
-        <p className="section-sub">{dict.archive.subtitle}</p>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.archive.title}</h2>
+            <p className="section-sub">{dict.archive.subtitle}</p>
+          </div>
+        </div>
         <EmptyState icon={ArchiveIcon} title={dict.archive.empty} subtitle={dict.archive.emptyTitle} />
       </div>
     );
@@ -110,10 +130,18 @@ export default async function ArchivePage({
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.archive.title}</h2>
-      <p className="section-sub">{dict.archive.subtitle}</p>
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.archive.title}</h2>
+          <p className="section-sub">{dict.archive.subtitle}</p>
+        </div>
+        <ExportButtons
+          csvHref={`/api/export/archive?format=csv&${exportQuery}`}
+          xlsxHref={`/api/export/archive?format=xlsx&${exportQuery}`}
+        />
+      </div>
       <Suspense fallback={null}>
-        <TaskFilterBar profiles={profileList} projects={projectList} labels={labelList} showExport />
+        <TaskFilterBar profiles={profileList} projects={projectList} labels={labelList} />
       </Suspense>
       {filtersActive && rows.length === 0 ? (
         <EmptyState
