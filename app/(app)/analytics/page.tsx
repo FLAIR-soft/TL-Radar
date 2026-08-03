@@ -96,11 +96,13 @@ export default async function AnalyticsPage({
       <h2 className="section-title">{dict.analytics.title}</h2>
       <p className="section-sub">{dict.analytics.subtitle}</p>
       <div className="period-switcher">
-        {PERIOD_OPTIONS.map((d) => (
-          <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
-            {dict.analytics.periodLabels[d]}
-          </Link>
-        ))}
+        <div className="period-switcher-tabs">
+          {PERIOD_OPTIONS.map((d) => (
+            <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
+              {dict.analytics.periodLabels[d]}
+            </Link>
+          ))}
+        </div>
         <ExportMenu
           csvHref={`/api/export/analytics?format=csv&days=${days}`}
           xlsxHref={`/api/export/analytics?format=xlsx&days=${days}`}

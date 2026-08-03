@@ -314,6 +314,7 @@ const en = {
     subtitle: 'Reset a password or delete a user.',
     roleEditor: 'editor',
     roleAdmin: 'admin',
+    selfLabel: 'You',
     newPasswordPlaceholder: 'New password',
     resetButton: 'Reset password',
     resetConfirm: 'Reset the password for this user?',

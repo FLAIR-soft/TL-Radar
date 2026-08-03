@@ -314,6 +314,7 @@ const de = {
     subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',
     roleEditor: 'Editor',
     roleAdmin: 'Admin',
+    selfLabel: 'Sie',
     newPasswordPlaceholder: 'Neues Passwort',
     resetButton: 'Passwort zurücksetzen',
     resetConfirm: 'Passwort für diesen Benutzer zurücksetzen?',

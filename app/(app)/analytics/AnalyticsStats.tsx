@@ -14,7 +14,7 @@ export function AnalyticsStats({
   const dict = useDictionary();
 
   return (
-    <div>
+    <div className="stat-card">
       <div className="stat-rows-caption">
         {dict.analytics.availableLabel}: <span className="mono">{fmtDuration(availableMs, dict.duration)}</span>
       </div>
@@ -22,8 +22,9 @@ export function AnalyticsStats({
         {stats.map((s) => {
           const pct = remainingCapacityPercent(s.workedMs, availableMs);
           const over = pct < 0;
+          const zero = s.workedMs === 0;
           return (
-            <div className="stat-row" key={s.id}>
+            <div className={`stat-row ${zero ? 'stat-row-zero' : ''}`} key={s.id}>
               <div className="stat-row-head">
                 <span className="stat-row-name">{s.name}</span>
                 <span className="stat-row-value mono">{fmtDuration(s.workedMs, dict.duration)}</span>
@@ -40,7 +41,7 @@ export function AnalyticsStats({
                   style={{ width: `${over ? 100 : Math.min(100, pct)}%` }}
                 />
               </div>
-              <div className="stat-row-foot mono">
+              <div className={`stat-row-foot mono ${over ? 'stat-row-foot-over' : ''}`}>
                 {Math.round(pct)}
                 {dict.analytics.colPercent}
               </div>

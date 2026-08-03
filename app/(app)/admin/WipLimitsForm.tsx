@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { updateWipLimit } from '@/app/(app)/dashboard/wip-actions';
+import { STATUS_COLOR } from '@/lib/logic/tasks';
 import type { WipLimit, WipStatus } from '@/lib/supabase/types';
 
 const STATUSES: WipStatus[] = ['waiting', 'in_progress', 'paused'];
@@ -34,7 +35,10 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
     <div className="wip-limits-form">
       {STATUSES.map((status) => (
         <div className="wip-limit-row" key={status}>
-          <span className="wip-limit-label">{dict.status[status]}</span>
+          <span className="wip-limit-label">
+            <span className="status-dot" style={{ background: STATUS_COLOR[status] }} />
+            {dict.status[status]}
+          </span>
           <input
             type="number"
             min={1}
@@ -46,7 +50,7 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
           />
           <button
             type="button"
-            className="btn btn-ghost"
+            className="btn btn-dark"
             disabled={isPending}
             onClick={() => handleSave(status)}
             data-testid={`wip-limit-save-${status}`}

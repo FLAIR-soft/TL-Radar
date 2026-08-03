@@ -312,6 +312,7 @@ const ru = {
     subtitle: 'Сброс пароля или удаление любого пользователя.',
     roleEditor: 'редактор',
     roleAdmin: 'админ',
+    selfLabel: 'Вы',
     newPasswordPlaceholder: 'Новый пароль',
     resetButton: 'Сбросить пароль',
     resetConfirm: 'Сбросить пароль для этого пользователя?',
