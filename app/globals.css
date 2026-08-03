@@ -901,15 +901,14 @@ p.section-sub {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  padding: 0 2px;
   font-weight: 700;
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 13.5px;
+  letter-spacing: -0.2px;
 }
 .signal {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -928,31 +927,43 @@ p.section-sub {
   }
 }
 .col-count {
-  color: var(--ink-muted);
+  font-family: var(--mono);
   font-weight: 600;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.col-count-limit {
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-border);
+  color: var(--brand);
 }
 .card-stack {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* On desktop the 3 columns share one CSS grid row, so `align-items:
-     stretch` (grid's default) already equalizes .kanban-col height across
-     columns regardless of card count — an empty column's droppable still
-     spans the row's full height. Below 820px each column becomes its own
-     grid row (see the media query below), so that stretching no longer has
-     anything to stretch against: a column's box shrinks to fit its own
-     content, and with 0-1 cards that's barely taller than the header. The
-     drop target then only exists over the header + the few cards, not
-     "the column" as the user sees it — dragging has to land squarely on an
-     existing card to register. A generous min-height keeps every column a
-     real target size on any viewport, not just wide ones. */
-  min-height: 160px;
+  min-height: 40px;
 }
 .kanban-col {
-  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 470px;
+  padding: 14px;
   border-radius: var(--radius-md);
-  padding: 6px;
-  margin: -6px;
+  /* Колонка как «матовая» панель поверх фона страницы — тот же приём,
+     что и в исходном макете редизайна: полупрозрачная поверхность вместо
+     плоской заливки, чтобы карточки внутри читались как отдельный слой.
+     На CSS Grid с одной строкой (см. .kanban) высота растягивается на
+     всю строку по умолчанию (align-items: stretch), а min-height здесь
+     держит колонку разумного размера и там, где сетка уже не растягивает
+     (одна колонка на узких экранах, см. медиа-запрос ниже) — то есть
+     drop-зона dnd-kit остаётся на всю видимую площадь столбца, а не
+     схлопывается до размера карточек. */
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, var(--bg));
   transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 .kanban-col-no-drop {
@@ -985,8 +996,8 @@ p.section-sub {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 13px 14px;
-  border-left: 4px solid var(--waiting);
+  padding: 16px;
+  border-left: 3px solid var(--waiting);
   box-shadow: var(--shadow-resting);
   animation: fadeSlideIn 0.3s ease both;
   transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
@@ -1072,8 +1083,11 @@ p.section-sub {
   color: color-mix(in srgb, var(--pill-color) 70%, black);
 }
 .task-card .t-title {
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--fs-md);
+  letter-spacing: -0.35px;
+  line-height: 1.3;
+  text-wrap: pretty;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -1085,26 +1099,23 @@ p.section-sub {
 }
 .task-card .t-desc {
   font-size: var(--fs-sm);
-  color: var(--ink-soft);
+  color: var(--text-2);
   margin-bottom: 8px;
   line-height: 1.55;
+  text-wrap: pretty;
 }
 .t-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 6px 14px;
   font-size: var(--fs-xs);
-  color: var(--ink-muted);
+  color: var(--text-2);
   margin-bottom: 10px;
 }
 .t-meta span {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+  gap: 5px;
 }
 .t-meta svg {
   flex-shrink: 0;
@@ -1112,13 +1123,14 @@ p.section-sub {
 .t-meta .overdue {
   color: var(--brand-dark);
   font-weight: 700;
-  background: var(--tint-red-bg);
-  border-color: var(--tint-red-border);
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-tint);
 }
 .t-timers {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-soft);
   margin-bottom: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1139,11 +1151,28 @@ p.section-sub {
   font-weight: 600;
 }
 .t-timer-primary {
+  align-items: baseline;
   font-size: var(--fs-sm);
+  color: var(--text-2);
   margin-bottom: 2px;
 }
 .t-timer-primary .mono {
-  font-size: var(--fs-sm);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.t-timer-primary-progress .mono {
+  color: var(--progress);
+}
+.t-timer-primary-paused .mono {
+  color: var(--paused);
+}
+/* --paused (#d97706) держится тёмным осознанно ради контраста на белом
+   фоне светлой темы — то же затемнение, что уже применяется к тексту
+   .pill (см. комментарий выше). В тёмной теме --paused уже светлый
+   (#fbbf24) и корректно читается на тёмной карточке без правок. */
+:root[data-theme="light"] .t-timer-primary-paused .mono {
+  color: color-mix(in srgb, var(--paused) 70%, black);
 }
 .t-timers-toggle {
   display: flex;
@@ -1180,8 +1209,8 @@ p.section-sub {
   padding: 2px 0 1px;
 }
 .t-estimate-bar {
-  height: 5px;
-  border-radius: 3px;
+  height: 6px;
+  border-radius: var(--radius-full);
   background: var(--border);
   overflow: hidden;
   margin-top: 4px;
@@ -1203,12 +1232,34 @@ p.section-sub {
 }
 .t-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .t-actions .btn {
-  padding: 6px 10px;
-  font-size: var(--fs-xs);
+  flex: 1;
+  padding: 9px 14px;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.t-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+.btn-dark {
+  background: var(--ink);
+  color: var(--surface);
+}
+.btn-dark:hover:not(:disabled) {
+  background: var(--ink-soft);
+}
+.btn-success {
+  background: var(--done);
+  color: #fff;
+}
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 .icon-btn {
   background: none;
@@ -2638,9 +2689,13 @@ p.section-sub {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--fs-xs);
-  color: var(--ink-muted);
-  padding: 0 4px;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-2);
+  padding: 6px 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
 }
 .checklist-list {
   display: flex;
@@ -2810,9 +2865,6 @@ p.section-sub {
 }
 
 /* ---------- WIP limits ---------- */
-.col-count-limit {
-  color: var(--priority-urgent);
-}
 .wip-limits-form {
   display: flex;
   flex-direction: column;
