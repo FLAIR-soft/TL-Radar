@@ -12,19 +12,30 @@ import { getChecklistItems } from './checklist-actions';
 import { createTemplateFromTask } from '@/app/(app)/templates/actions';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
-import { STATUS_COLOR, fmtDate, fmtDuration } from '@/lib/logic/tasks';
+import {
+  STATUS_COLOR,
+  fmtDate,
+  fmtDuration,
+  fmtTimer,
+  waitingDuration,
+  currentSessionDuration,
+  currentPauseDuration,
+} from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { Task, ActivityLog, TaskChecklistItem } from '@/lib/supabase/types';
+import { useNowTick } from '@/lib/hooks/useNowTick';
+import type { Task, TaskPause, ActivityLog, TaskChecklistItem } from '@/lib/supabase/types';
 
 export function TaskDetailPanel({
   task,
+  pauses = [],
   assigneeNames,
   projectName,
   projectColor,
   profileNames,
 }: {
   task: Task;
+  pauses?: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
   projectColor?: string | null;
@@ -71,6 +82,20 @@ export function TaskDetailPanel({
     getChecklistItems(task.id).then(setChecklist);
     getActivityLog('task', task.id).then(setLogs);
   }
+
+  // Живой таймер панели (этап 2). Тикать каждую секунду имеет смысл только у
+  // открытой панели задачи в работе; у закрытой интервал заведомо больше
+  // времени её жизни, так что лишних перерисовок это не добавляет.
+  const inProgress = task.status === 'in_progress';
+  const now = useNowTick(open ? (inProgress ? 1000 : 30000) : 3600000);
+  const liveMetric =
+    waitingDuration(task, now) !== null
+      ? { label: dict.taskCard.timeWaiting, value: waitingDuration(task, now)! }
+      : currentSessionDuration(task, pauses, now) !== null
+        ? { label: dict.taskCard.timeCurrentSession, value: currentSessionDuration(task, pauses, now)! }
+        : currentPauseDuration(task, pauses, now) !== null
+          ? { label: dict.taskCard.timePaused, value: currentPauseDuration(task, pauses, now)! }
+          : null;
 
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
 
@@ -160,6 +185,12 @@ export function TaskDetailPanel({
             )}
           </div>
           {assigneeNames.length > 0 && <div className="t-assignee">{assigneeNames.join(', ')}</div>}
+          {liveMetric && (
+            <div className="detail-row">
+              <span>{liveMetric.label}</span>
+              <span className="mono">{fmtTimer(liveMetric.value, inProgress)}</span>
+            </div>
+          )}
           {task.estimated_minutes !== null && (
             <div className="detail-row">
               <span>{dict.taskCard.estimate}</span>

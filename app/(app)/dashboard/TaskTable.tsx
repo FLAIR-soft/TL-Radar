@@ -10,7 +10,7 @@ import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, TaskStatus, Priority, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Priority, Label } from '@/lib/supabase/types';
 
 type SortKey = 'title' | 'status' | 'project' | 'priority' | 'deadline' | 'estimate';
 
@@ -18,6 +18,7 @@ const PRIORITY_ORDER: Record<Priority, number> = { low: 0, medium: 1, high: 2, u
 
 export function TaskTable({
   tasks,
+  pausesByTask,
   assigneeNamesByTask,
   projectNames,
   projectColors,
@@ -27,6 +28,7 @@ export function TaskTable({
   labelsByTask,
 }: {
   tasks: Task[];
+  pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
   projectColors?: Map<string, string | null>;
@@ -112,6 +114,7 @@ export function TaskTable({
             <TaskTableRow
               key={task.id}
               task={task}
+              pauses={pausesByTask.get(task.id) ?? []}
               assigneeNames={assigneeNamesByTask.get(task.id) ?? []}
               projectName={task.project_id ? (projectNames.get(task.project_id) ?? null) : null}
               projectColor={task.project_id ? (projectColors?.get(task.project_id) ?? null) : null}
@@ -130,6 +133,7 @@ export function TaskTable({
 
 function TaskTableRow({
   task,
+  pauses,
   assigneeNames,
   projectName,
   projectColor,
@@ -140,6 +144,7 @@ function TaskTableRow({
   style,
 }: {
   task: Task;
+  pauses: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
   projectColor?: string | null;
@@ -278,6 +283,7 @@ function TaskTableRow({
           )}
           <TaskDetailPanel
             task={task}
+            pauses={pauses}
             assigneeNames={assigneeNames}
             projectName={projectName}
             projectColor={projectColor}

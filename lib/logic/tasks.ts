@@ -55,6 +55,23 @@ export function fmtDuration(ms: number, units: { hourShort: string; minuteShort:
   return (h > 0 ? h + units.hourShort + ' ' : '') + m + units.minuteShort;
 }
 
+// Живой таймер на карточке и в панели задачи (редизайн v2, этап 2):
+// «Ч:ММ:СС» пока задача в работе и «Ч:ММ» в ожидании/на паузе — эталоны
+// screens/03 (1:24:08) и screens/05 (215:46). Часы не ограничены двумя
+// знаками: 215:46 — это 215 часов. Секунды и минуты усекаются, а не
+// округляются, иначе бегущий таймер прыгал бы на минуту вперёд.
+//
+// fmtDuration выше — отдельная функция и остаётся словесной: на ней держатся
+// архив, оценки и экспорт в CSV/XLSX. Подменять её здесь нельзя.
+export function fmtTimer(ms: number, withSeconds: boolean): string {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+  if (!withSeconds) return `${h}:${mm}`;
+  return `${h}:${mm}:${String(totalSec % 60).padStart(2, '0')}`;
+}
+
 // Dedlayn — eto data bez vremeni: zadacha schitaetsya prosrochennoy tol'ko posle
 // 16:00 po Myunhenu toy zhe daty (tot zhe cutoff, chto i u avtopauzy), a ne s polunochi UTC.
 const CUTOFF_HOUR = 16;

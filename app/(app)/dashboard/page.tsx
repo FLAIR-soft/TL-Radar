@@ -134,6 +134,7 @@ export default async function DashboardPage({
       ) : view === 'table' ? (
         <TaskTable
           tasks={filteredActive}
+          pausesByTask={pausesByTask}
           assigneeNamesByTask={assigneeNamesByTask}
           projectNames={projectNames}
           projectColors={projectColors}
@@ -145,6 +146,7 @@ export default async function DashboardPage({
       ) : view === 'calendar' ? (
         <CalendarView
           tasks={filteredActive}
+          pausesByTask={pausesByTask}
           assigneeNamesByTask={assigneeNamesByTask}
           projectNames={projectNames}
           projectColors={projectColors}
