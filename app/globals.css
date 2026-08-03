@@ -440,14 +440,15 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 22px;
+  min-height: 60px;
+  padding: 10px 24px;
   gap: 16px;
   flex-wrap: wrap;
 }
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 28px;
 }
 .topbar-brand {
   display: flex;
@@ -472,37 +473,169 @@ select:focus {
   color: var(--ink);
   white-space: nowrap;
 }
+/* Шапка приложения (design_handoff_tl_radar_redesign, шаг 2) — логотип
+   компактнее, чем в базовых .topbar-brand-*, которые остаются как есть
+   для публичного лендинга (app/page.tsx), не входящего в редизайн. */
+.topbar .topbar-brand-icon {
+  width: 28px;
+  height: 28px;
+}
+.topbar .topbar-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 .tab {
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: var(--radius-sm);
   font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-muted);
+  color: var(--text-2);
   cursor: pointer;
-  border: 1px solid transparent;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .tab.active {
-  background: var(--tint-red-active-bg);
-  color: var(--brand-dark);
-  border-color: var(--tint-red-active-border);
+  font-weight: 600;
+  background: var(--brand-tint);
+  color: var(--brand);
 }
 .tab:hover:not(.active) {
-  background: var(--hover-bg);
+  background: var(--surface-3);
+  color: var(--text);
 }
 .who {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
-.who .name {
-  font-size: var(--fs-sm);
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 150px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.topbar-search:hover {
+  border-color: var(--border-strong);
+  color: var(--text-2);
+}
+.topbar-search svg {
+  flex-shrink: 0;
+}
+.topbar-search span:not(.topbar-search-kbd) {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar-search-kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-4);
+  flex-shrink: 0;
+}
+.topbar .icon-btn {
+  width: 30px;
+  height: 30px;
+  background: var(--surface);
+}
+.topbar .icon-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.topbar .lang-switcher {
+  gap: 0;
+  background: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.topbar .lang-btn {
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: normal;
+  padding: 6px 8px;
+  border-radius: 0;
+}
+.topbar .lang-btn.active {
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: none;
+}
+.topbar .lang-btn:hover:not(.active) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.topbar .theme-toggle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+}
+.topbar .theme-toggle:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.topbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.topbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.topbar-profile-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.topbar-logout {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0 0 0 8px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.topbar-logout:hover {
+  color: var(--ink);
 }
 .lang-switcher {
   display: flex;
@@ -1784,18 +1917,18 @@ p.section-sub {
 }
 .notif-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  border-radius: 999px;
+  top: -1px;
+  right: -1px;
+  width: 7px;
+  height: 7px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
   background: var(--brand);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
+  border: 1.5px solid var(--surface);
+  font-size: 0;
+  color: transparent;
+  overflow: hidden;
 }
 .notif-panel {
   position: absolute;

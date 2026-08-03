@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Radar } from 'lucide-react';
 import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { getInitials } from '@/lib/logic/initials';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
 import { getThemeCookie } from '@/lib/theme/cookie';
@@ -48,12 +49,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <NotificationBell userId={user.id} />
               <ThemeToggle theme={theme} />
               <LanguageSwitcher />
-              <span className="name">{name}</span>
-              <form action={signOut}>
-                <button className="btn btn-ghost" type="submit">
-                  {dict.topbar.logout}
-                </button>
-              </form>
+              <div className="topbar-profile">
+                <span className="topbar-avatar">{getInitials(name)}</span>
+                <span className="topbar-profile-name">{name}</span>
+                <form action={signOut}>
+                  <button className="topbar-logout" type="submit">
+                    {dict.topbar.logout}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
           <main>{children}</main>

@@ -302,6 +302,7 @@ const de = {
   },
   commandPalette: {
     title: 'Befehlspalette',
+    triggerLabel: 'Suchen',
     placeholder: 'Befehl oder Aufgabentitel eingeben…',
     addTaskPrefix: 'Aufgabe hinzufügen: ',
     noResults: 'Nichts gefunden.',
