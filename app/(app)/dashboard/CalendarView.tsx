@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, Label } from '@/lib/supabase/types';
 
 function parseMonth(month?: string): { year: number; month: number } {
   if (month && /^\d{4}-\d{2}$/.test(month)) {
@@ -29,6 +29,7 @@ function pad2(n: number): string {
 // srochnost' po datam, ostal'noye po-prezhnemu vidno v kanbane/tablitse.
 export function CalendarView({
   tasks,
+  pausesByTask,
   assigneeNamesByTask,
   projectNames,
   projectColors,
@@ -37,6 +38,7 @@ export function CalendarView({
   month,
 }: {
   tasks: Task[];
+  pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
   projectColors?: Map<string, string | null>;
@@ -115,6 +117,7 @@ export function CalendarView({
                     <span className="calendar-task-title">{t.title}</span>
                     <TaskDetailPanel
                       task={t}
+                      pauses={pausesByTask.get(t.id) ?? []}
                       assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                       projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                       projectColor={t.project_id ? projectColors?.get(t.project_id) ?? null : null}

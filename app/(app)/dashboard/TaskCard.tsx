@@ -9,6 +9,7 @@ import {
   fmtDate,
   fmtDateTime,
   fmtDuration,
+  fmtTimer,
   isOverdue,
   isWithinWorkHours,
   accumulatedInProgressDuration,
@@ -55,7 +56,11 @@ export function TaskCard({
   const dict = useDictionary();
   const toast = useToast();
   const overdue = isOverdue(task);
-  const now = useNowTick();
+  // Секунды в живом таймере видны только пока задача в работе (этап 2), значит
+  // и секундный тик нужен только там — остальные карточки продолжают
+  // перерисовываться раз в 30 с, как раньше.
+  const inProgress = task.status === 'in_progress';
+  const now = useNowTick(inProgress ? 1000 : 30000);
 
   const nextActions: Partial<Record<TaskStatus, { to: TaskStatus; label: string; variant: 'dark' | 'success' | 'ghost' }[]>> = {
     waiting: [{ to: 'in_progress', label: dict.taskCard.start, variant: 'dark' }],
@@ -186,7 +191,7 @@ export function TaskCard({
             }`}
           >
             <span>{primaryMetric.label}</span>
-            <span className="mono">{fmtDuration(primaryMetric.value, dict.duration)}</span>
+            <span className="mono">{fmtTimer(primaryMetric.value, inProgress)}</span>
           </div>
         )}
         <button
@@ -287,6 +292,7 @@ export function TaskCard({
         )}
         <TaskDetailPanel
           task={task}
+          pauses={pauses}
           assigneeNames={assigneeNames}
           projectName={projectName}
           projectColor={projectColor}

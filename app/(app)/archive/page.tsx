@@ -234,6 +234,7 @@ export default async function ArchivePage({
                 <td>
                   <TaskDetailPanel
                     task={t}
+                    pauses={taskPauses}
                     assigneeNames={assignees}
                     projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                     projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
@@ -264,6 +265,7 @@ export default async function ArchivePage({
               </span>
               <TaskDetailPanel
                 task={t}
+                pauses={taskPauses}
                 assigneeNames={assignees}
                 projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
                 projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
