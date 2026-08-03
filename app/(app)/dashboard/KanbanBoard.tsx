@@ -24,6 +24,11 @@ import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
 
+// С какого размера колонки карточки сворачиваются в компактный вид: десяток
+// задач в одном столбце уже не читается, если каждая занимает полный рост
+// (редизайн v2, этап 4). Разворачивается кнопкой на самой карточке.
+const COMPACT_FROM = 10;
+
 export function KanbanBoard({
   tasks,
   limitByStatus,
@@ -151,6 +156,7 @@ export function KanbanBoard({
                         commentCount={commentCountsByTask.get(t.id) ?? 0}
                         checklistProgress={checklistProgressByTask.get(t.id)}
                         labels={labelsByTask?.get(t.id) ?? []}
+                        dense={items.length >= COMPACT_FROM}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                       />
                     </DraggableTaskCard>

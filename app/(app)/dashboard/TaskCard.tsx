@@ -2,15 +2,28 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Folder, MapPin, CalendarClock, Pencil, Trash2, ChevronDown, MessageSquare, ListChecks, User } from 'lucide-react';
+import {
+  Folder,
+  MapPin,
+  CalendarClock,
+  Pencil,
+  Trash2,
+  ChevronDown,
+  MessageSquare,
+  ListChecks,
+  User,
+  CircleAlert,
+} from 'lucide-react';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
   fmtDate,
+  fmtDateShort,
   fmtDateTime,
   fmtDuration,
   fmtTimer,
   isOverdue,
+  overdueDays,
   isWithinWorkHours,
   accumulatedInProgressDuration,
   currentSessionDuration,
@@ -20,6 +33,7 @@ import {
 } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { getInitials, getAvatarColor } from '@/lib/logic/initials';
+import { plural } from '@/lib/i18n/plural';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
@@ -38,6 +52,7 @@ export function TaskCard({
   commentCount = 0,
   checklistProgress,
   labels = [],
+  dense = false,
   style,
 }: {
   task: Task;
@@ -50,10 +65,13 @@ export function TaskCard({
   commentCount?: number;
   checklistProgress?: { done: number; total: number };
   labels?: Label[];
+  /** Колонка переполнена (см. COMPACT_FROM в KanbanBoard) — карточка сворачивается. */
+  dense?: boolean;
   style?: React.CSSProperties;
 }) {
   const [isPending, startTransition] = useTransition();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [uncollapsed, setUncollapsed] = useState(false);
   const dict = useDictionary();
   const toast = useToast();
   const overdue = isOverdue(task);
@@ -116,17 +134,107 @@ export function TaskCard({
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
   const creatorName = task.created_by ? profileNames.get(task.created_by) : undefined;
 
+  // Режим карточки не выбирается пользователем — он следует из контекста
+  // (редизайн v2, этап 4):
+  //   compact  — колонка переполнена, карточка сжата до заголовка, таймера,
+  //              кто и где; разворачивается в стандартную одной кнопкой;
+  //   expanded — задача на паузе: время и история показываются плиткой,
+  //              а не прячутся под «Details»;
+  //   standard — всё остальное.
+  // Плашка просрочки — не режим, а надстройка: появляется у просроченной
+  // задачи в стандартном и расширенном режимах.
+  const compact = dense && !uncollapsed;
+  const expanded = !compact && task.status === 'paused';
+  const overdueSinceDays = overdue ? overdueDays(task) : null;
+  const showOverdueBanner = overdue && !compact;
+
+  // Полоса слева = приоритет (откат K4, редизайн v2, этап 3): на скрине 03
+  // у карточки «Serverraum Umbau» она оранжевая при приоритете «Hoch».
+  // Пилюля приоритета при этом остаётся в ряду пилюль.
+  const cardStyle: React.CSSProperties = {
+    borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)',
+    ...style,
+  };
+
+  if (compact) {
+    return (
+      <div
+        className={`task-card task-card-compact ${isPending ? 'task-card-pending' : ''} ${
+          overdue ? 'task-card-overdue' : ''
+        }`}
+        style={cardStyle}
+      >
+        <div className="t-compact-head">
+          <span className="t-compact-title">
+            {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+            {task.title}
+          </span>
+          {primaryMetric && (
+            <span className="mono t-compact-timer">{fmtTimer(primaryMetric.value, inProgress)}</span>
+          )}
+        </div>
+        <div className="t-compact-meta">
+          {assigneeNames.length > 0 && (
+            <span className="t-avatars">
+              {assigneeNames.map((n, i) => (
+                <span
+                  key={`${n}-${i}`}
+                  className="t-avatar"
+                  style={{ ['--avatar-color' as string]: getAvatarColor(n) }}
+                  title={n}
+                >
+                  {getInitials(n)}
+                </span>
+              ))}
+            </span>
+          )}
+          {task.location && <span>{task.location}</span>}
+          {task.location && task.deadline && <span className="t-compact-sep">·</span>}
+          {task.deadline && (
+            <span className={`mono ${overdue ? 'overdue-text' : ''}`}>
+              {fmtDateShort(task.deadline, dict.intlLocale)}
+            </span>
+          )}
+          <span className="t-compact-spacer" />
+          {task.priority && (
+            <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
+              {dict.priority[task.priority]}
+            </span>
+          )}
+          <button
+            type="button"
+            className="t-compact-expand"
+            onClick={() => setUncollapsed(true)}
+            data-testid="expand-card"
+          >
+            <ChevronDown size={14} strokeWidth={1.75} />
+            {dict.taskCard.details}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`task-card ${isPending ? 'task-card-pending' : ''} ${overdue ? 'task-card-overdue' : ''}`}
-      // Полоса слева = приоритет (откат K4, редизайн v2, этап 3): на скрине 03
-      // у карточки «Serverraum Umbau» она оранжевая при приоритете «Hoch».
-      // Пилюля приоритета при этом остаётся в ряду пилюль.
-      style={{
-        borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)',
-        ...style,
-      }}
+      className={`task-card ${expanded ? 'task-card-expanded' : ''} ${isPending ? 'task-card-pending' : ''} ${
+        overdue ? 'task-card-overdue' : ''
+      }`}
+      style={cardStyle}
     >
+      {showOverdueBanner && (
+        <div className="t-overdue-banner">
+          <span className="t-overdue-banner-text">
+            <CircleAlert size={14} strokeWidth={2} />
+            {plural(dict.taskCard.overdueSince, overdueSinceDays ?? 0, dict.intlLocale)}
+          </span>
+          {task.deadline && (
+            <span className="mono t-overdue-banner-deadline">
+              {dict.taskCard.deadlineLabel} {fmtDate(task.deadline, dict.intlLocale)}
+            </span>
+          )}
+        </div>
+      )}
       <div className="t-card-header">
         {assigneeNames.length > 0 ? (
           <div className="t-people">
@@ -143,7 +251,8 @@ export function TaskCard({
           <span />
         )}
         <div className="t-card-header-right">
-          {overdue && <span className="overdue-badge">{dict.taskCard.overdue}</span>}
+          {/* Просрочку показывает плашка сверху — дублировать её бейджем
+              в шапке, как раньше, больше не нужно. */}
           <span className="pill pill-with-dot" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
             <span className="pill-dot" />
             {dict.status[task.status]}
@@ -198,6 +307,45 @@ export function TaskCard({
           </span>
         )}
       </div>
+      {expanded ? (
+        /* Расширенный режим (задача на паузе): время и история не прячутся
+           под «Details», а лежат плиткой — по правой колонке скрина 03. */
+        <div className="t-tile">
+          {primaryMetric && (
+            <div className="t-tile-row">
+              <span className="t-tile-label">{primaryMetric.label}</span>
+              <span className={`mono t-tile-value ${overdue ? 't-tile-value-overdue' : ''}`}>
+                {fmtTimer(primaryMetric.value, inProgress)}
+              </span>
+            </div>
+          )}
+          <div className="t-tile-row">
+            <span className="t-tile-label">{dict.taskCard.timeCreated}</span>
+            <span className="mono">{fmtDateTime(task.created_at, dict.intlLocale)}</span>
+          </div>
+          {creatorName && (
+            <div className="t-tile-row">
+              <span className="t-tile-label">{dict.taskCard.createdByPrefix}</span>
+              <span className="t-tile-strong">{creatorName}</span>
+            </div>
+          )}
+          {totalPaused > 0 && (
+            <div className="t-tile-row">
+              <span className="t-tile-label">
+                {dict.taskCard.timeTotalPaused}
+                {pauses.length > 0 && ` · ${plural(dict.taskCard.pauseCount, pauses.length, dict.intlLocale)}`}
+              </span>
+              <span className="mono">{fmtDuration(totalPaused, dict.duration)}</span>
+            </div>
+          )}
+          {pausedByName && (
+            <div className="t-tile-row">
+              <span className="t-tile-label">{dict.taskCard.pausedBy}</span>
+              <span className="t-tile-strong">{pausedByName}</span>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="t-timers">
         {/* Блок таймера по скрину 03: слева подпись и крупное значение,
             справа оценка с процентом, под ними — полоса прогресса оценки.
@@ -271,6 +419,23 @@ export function TaskCard({
           </div>
         )}
       </div>
+      )}
+      {expanded && (commentCount > 0 || (checklistProgress && checklistProgress.total > 0)) && (
+        <div className="t-counters">
+          {commentCount > 0 && (
+            <span title={dict.comments.title}>
+              <MessageSquare size={14} strokeWidth={1.75} />
+              {commentCount}
+            </span>
+          )}
+          {checklistProgress && checklistProgress.total > 0 && (
+            <span title={dict.checklist.title}>
+              <ListChecks size={14} strokeWidth={1.75} />
+              {checklistProgress.done}/{checklistProgress.total}
+            </span>
+          )}
+        </div>
+      )}
       {!withinWorkHours && actions.length > 0 && (
         <div className="t-locked-note">{dict.taskCard.outsideWorkHours}</div>
       )}
@@ -303,13 +468,13 @@ export function TaskCard({
         >
           <Trash2 size={18} strokeWidth={1.75} />
         </button>
-        {checklistProgress && checklistProgress.total > 0 && (
+        {!expanded && checklistProgress && checklistProgress.total > 0 && (
           <span className="comment-count-badge" title={dict.checklist.title}>
             <ListChecks size={14} strokeWidth={1.75} />
             {checklistProgress.done}/{checklistProgress.total}
           </span>
         )}
-        {commentCount > 0 && (
+        {!expanded && commentCount > 0 && (
           <span className="comment-count-badge" title={dict.comments.title}>
             <MessageSquare size={14} strokeWidth={1.75} />
             {commentCount}
@@ -317,6 +482,7 @@ export function TaskCard({
         )}
         <TaskDetailPanel
           task={task}
+          triggerLabel={expanded ? dict.taskCard.details : undefined}
           pauses={pauses}
           assigneeNames={assigneeNames}
           projectName={projectName}

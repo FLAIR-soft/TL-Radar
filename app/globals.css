@@ -1093,6 +1093,168 @@ p.section-sub {
   gap: 8px;
   margin-bottom: 6px;
 }
+
+/* ---------- Режимы карточки (редизайн v2, этап 4) ---------- */
+
+/* Компактный: колонка переполнена. Заголовок с таймером в первой строке,
+   кто/где/когда и приоритет — во второй. Скрин 03, колонка «KOMPAKT». */
+.task-card-compact {
+  padding: 12px 14px;
+  border-left-color: var(--border);
+}
+.t-compact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.t-compact-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-card-compact .t-compact-timer {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.t-compact-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  min-width: 0;
+}
+.t-compact-meta .t-avatar {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+}
+.t-compact-meta .pill {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+.t-compact-sep {
+  color: var(--text-4);
+}
+.t-compact-spacer {
+  flex: 1;
+  min-width: 0;
+}
+.t-compact-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+.t-compact-expand:hover {
+  color: var(--text);
+}
+.t-compact-meta .overdue-text {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Плашка просрочки: во всю ширину карточки поверх её паддинга. */
+.t-overdue-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -16px -16px 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--brand-border);
+  border-radius: calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px) 0 0;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.t-overdue-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.t-overdue-banner .t-overdue-banner-deadline {
+  letter-spacing: normal;
+  font-size: 11px;
+  color: inherit;
+}
+
+/* Расширенный: задача на паузе — время и история плиткой. */
+.t-tile {
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.t-tile-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-xs);
+}
+.t-tile-label {
+  color: var(--text-2);
+}
+.t-tile .t-tile-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+}
+.t-tile .t-tile-value-overdue {
+  color: var(--brand);
+}
+.t-tile .t-tile-strong {
+  font-weight: 700;
+  color: var(--text);
+}
+.t-counters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.t-counters span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.detail-trigger-labelled {
+  flex: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .t-card-header-right {
   display: flex;
   align-items: center;
@@ -1309,32 +1471,32 @@ p.section-sub {
   color: var(--text-3);
   line-height: 1.3;
 }
-.t-timer-value {
+.t-timer-block .t-timer-value {
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -1px;
   line-height: 1.1;
   color: var(--ink);
 }
-.t-timer-percent {
+.t-timer-block .t-timer-percent {
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-2);
 }
-.t-timer-percent-over {
+.t-timer-block .t-timer-percent-over {
   color: var(--brand);
 }
-.t-timer-primary-progress .t-timer-value {
+.t-timer-block.t-timer-primary-progress .t-timer-value {
   color: var(--progress);
 }
-.t-timer-primary-paused .t-timer-value {
+.t-timer-block.t-timer-primary-paused .t-timer-value {
   color: var(--paused);
 }
 /* --paused (#d97706) держится тёмным осознанно ради контраста на белом
    фоне светлой темы — то же затемнение, что уже применяется к тексту
    .pill (см. комментарий выше). В тёмной теме --paused уже светлый
    (#fbbf24) и корректно читается на тёмной карточке без правок. */
-:root[data-theme="light"] .t-timer-primary-paused .t-timer-value {
+:root[data-theme="light"] .t-timer-block.t-timer-primary-paused .t-timer-value {
   color: color-mix(in srgb, var(--paused) 70%, black);
 }
 .t-timers-toggle {
