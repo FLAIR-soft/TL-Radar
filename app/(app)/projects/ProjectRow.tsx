@@ -69,25 +69,32 @@ export function ProjectRow({
             {ProjectIcon && <ProjectIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
             {project.name}
           </span>
-          <div className="project-row-actions">
-            <button
-              className="icon-btn"
-              title={dict.projects.editTitle}
-              disabled={isPending}
-              onClick={() => setEditing(true)}
-            >
-              <Pencil size={16} strokeWidth={1.75} />
-            </button>
-            <button
-              className="icon-btn"
-              title={dict.projects.deleteTitle}
-              disabled={isPending}
-              onClick={handleDelete}
-              data-testid="delete-project"
-            >
-              <Trash2 size={16} strokeWidth={1.75} />
-            </button>
-            <ProjectDetailPanel project={project} ownerName={ownerName} profileNames={profileNames} />
+          <div className="project-row-head-right">
+            {project.priority && (
+              <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[project.priority] }}>
+                {dict.priority[project.priority]}
+              </span>
+            )}
+            <div className="project-row-actions">
+              <button
+                className="icon-btn"
+                title={dict.projects.editTitle}
+                disabled={isPending}
+                onClick={() => setEditing(true)}
+              >
+                <Pencil size={16} strokeWidth={1.75} />
+              </button>
+              <button
+                className="icon-btn"
+                title={dict.projects.deleteTitle}
+                disabled={isPending}
+                onClick={handleDelete}
+                data-testid="delete-project"
+              >
+                <Trash2 size={16} strokeWidth={1.75} />
+              </button>
+              <ProjectDetailPanel project={project} ownerName={ownerName} profileNames={profileNames} />
+            </div>
           </div>
         </div>
         {project.description && <p className="project-row-desc">{project.description}</p>}

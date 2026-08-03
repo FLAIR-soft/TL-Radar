@@ -60,7 +60,7 @@ export function RecurringRuleRow({
   return (
     <div
       ref={rowRef}
-      className={`project-row rule-row ${isPending ? 'task-card-pending' : ''} ${removing ? 'is-removing' : ''}`}
+      className={`project-row rule-row ${rule.active ? '' : 'rule-row-inactive'} ${isPending ? 'task-card-pending' : ''} ${removing ? 'is-removing' : ''}`}
       style={style}
     >
       <div className="project-row-main">
@@ -83,18 +83,22 @@ export function RecurringRuleRow({
           </div>
         </div>
         <div className="t-meta">
-          <span>{frequencyText}</span>
+          <span className="rule-frequency">{frequencyText}</span>
           <span>
-            {dict.recurring.nextRunLabel}: {rule.next_run_at}
+            {dict.recurring.nextRunLabel}: <span className="mono">{rule.next_run_at}</span>
           </span>
-          <label className="checklist-checkbox-label">
+          <label className="switch-label">
             <input
               type="checkbox"
+              className="switch-input"
               checked={rule.active}
               disabled={isPending}
               onChange={handleToggle}
               data-testid="rule-active-toggle"
             />
+            <span className="switch-track">
+              <span className="switch-thumb" />
+            </span>
             {dict.recurring.activeLabel}
           </label>
         </div>
