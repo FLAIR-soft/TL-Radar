@@ -1297,20 +1297,27 @@ p.section-sub {
 .archive-table th {
   text-align: left;
   background: var(--surface-alt);
-  padding: 10px 12px;
-  font-size: var(--fs-xs);
+  padding: 12px 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--ink-muted);
+  letter-spacing: 0.8px;
+  color: var(--text-3);
   border-bottom: 1px solid var(--border);
 }
 .archive-table td {
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
   vertical-align: top;
+  font-size: 12.5px;
+  color: var(--text-2);
 }
 .archive-table td .pill {
   margin-bottom: 4px;
+}
+.ta-right {
+  text-align: right;
 }
 .archive-row {
   animation: fadeSlideIn 0.3s ease both;
@@ -1332,6 +1339,9 @@ p.section-sub {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
 }
 
 /* Ниже 720px архив показывается карточками вместо горизонтального
@@ -1399,10 +1409,17 @@ p.section-sub {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
+.ta-under {
+  color: var(--done);
+}
+.ta-over {
+  color: var(--brand);
+}
 .pause-line {
   font-family: var(--mono);
   font-size: var(--fs-xs);
-  color: var(--paused);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1415,6 +1432,7 @@ p.section-sub {
 }
 .pause-line svg {
   flex-shrink: 0;
+  color: var(--text-4);
 }
 
 /* ---------- Form ---------- */
@@ -1772,8 +1790,8 @@ p.section-sub {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 13px 14px;
-  border-left: 4px solid var(--border);
+  padding: 16px 18px;
+  border-left: 3px solid var(--border);
   box-shadow: var(--shadow-resting);
   overflow: hidden;
   animation: fadeSlideIn 0.3s ease both;
@@ -1797,8 +1815,14 @@ p.section-sub {
   justify-content: space-between;
   gap: 10px;
 }
+.project-row-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .project-row-name {
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--fs-md);
   display: flex;
   align-items: center;
@@ -1815,15 +1839,31 @@ p.section-sub {
 }
 .project-row-desc {
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
-  line-height: 1.5;
-  margin: 6px 0 0;
+  color: var(--text-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+  margin: 9px 0 0;
 }
 .project-row .t-meta {
-  margin-top: 8px;
+  margin-top: 9px;
 }
 .t-meta .project-tag {
   color: var(--ink-muted);
+}
+.rule-row-inactive {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--border) 80%, var(--bg));
+  opacity: 0.72;
+}
+.rule-row-inactive .t-meta {
+  color: var(--text-3);
+}
+.rule-frequency {
+  font-weight: 600;
+  color: var(--ink);
+}
+.rule-row-inactive .rule-frequency {
+  color: var(--text-3);
 }
 
 /* ---------- Assignee multi-select ---------- */
@@ -2739,6 +2779,54 @@ p.section-sub {
 .checklist-item-done {
   color: var(--ink-muted);
   text-decoration: line-through;
+}
+/* ---------- Переключатель «Aktiv» (RecurringRuleRow) ---------- */
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.switch-track {
+  width: 34px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease;
+}
+.switch-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.16s ease;
+}
+.switch-input:checked + .switch-track {
+  background: var(--ink);
+}
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(14px);
+}
+.switch-input:focus-visible + .switch-track {
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.08);
+}
+.switch-input:disabled + .switch-track {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .checklist-row-actions {
   display: flex;

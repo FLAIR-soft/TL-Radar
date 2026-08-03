@@ -136,8 +136,8 @@ export default async function ArchivePage({
               <th>{dict.archive.colStarted}</th>
               <th>{dict.archive.colCompleted}</th>
               <th>{dict.archive.colPauses}</th>
-              <th>{dict.archive.colNetDuration}</th>
-              <th>{dict.archive.colEstimate}</th>
+              <th className="ta-right">{dict.archive.colNetDuration}</th>
+              <th className="ta-right">{dict.archive.colEstimate}</th>
               <th>{dict.archive.colAssignees}</th>
               <th></th>
             </tr>
@@ -145,6 +145,8 @@ export default async function ArchivePage({
           <tbody>
             {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
               const RowIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+              const estimateMs = t.estimated_minutes ? t.estimated_minutes * 60000 : null;
+              const estimateOver = estimateMs !== null && net !== null && net > estimateMs;
               return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                 <td>
@@ -196,8 +198,10 @@ export default async function ArchivePage({
                   )}
                 </td>
                 <td>{pausesCell(taskPauses)}</td>
-                <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
-                <td className="mono">{estimateCell(t, net)}</td>
+                <td className="mono ta-right">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
+                <td className={`mono ta-right ${t.estimated_minutes ? (estimateOver ? 'ta-over' : 'ta-under') : ''}`}>
+                  {estimateCell(t, net)}
+                </td>
                 <td>{assignees.join(', ') || '—'}</td>
                 <td>
                   <TaskDetailPanel
@@ -218,6 +222,8 @@ export default async function ArchivePage({
       <div className="archive-cards">
         {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
           const CardIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+          const estimateMs = t.estimated_minutes ? t.estimated_minutes * 60000 : null;
+          const estimateOver = estimateMs !== null && net !== null && net > estimateMs;
           return (
           <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
             <div className="archive-card-head">
@@ -289,7 +295,9 @@ export default async function ArchivePage({
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colEstimate}</span>
-                <span className="mono">{estimateCell(t, net)}</span>
+                <span className={`mono ${t.estimated_minutes ? (estimateOver ? 'ta-over' : 'ta-under') : ''}`}>
+                  {estimateCell(t, net)}
+                </span>
               </div>
             </div>
             <div className="archive-card-pauses">

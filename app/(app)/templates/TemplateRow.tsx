@@ -61,16 +61,23 @@ export function TemplateRow({
             {TemplateIcon && <TemplateIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
             {template.title}
           </span>
-          <div className="project-row-actions">
-            <button
-              className="icon-btn"
-              title={dict.templates.deleteTitle}
-              disabled={isPending || removing}
-              onClick={handleDelete}
-              data-testid="delete-template"
-            >
-              <Trash2 size={16} strokeWidth={1.75} />
-            </button>
+          <div className="project-row-head-right">
+            {template.priority && (
+              <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[template.priority] }}>
+                {dict.priority[template.priority]}
+              </span>
+            )}
+            <div className="project-row-actions">
+              <button
+                className="icon-btn"
+                title={dict.templates.deleteTitle}
+                disabled={isPending || removing}
+                onClick={handleDelete}
+                data-testid="delete-template"
+              >
+                <Trash2 size={16} strokeWidth={1.75} />
+              </button>
+            </div>
           </div>
         </div>
         {template.description && <p className="project-row-desc">{template.description}</p>}
