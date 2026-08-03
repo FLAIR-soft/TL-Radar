@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { getInitials, getAvatarColor } from '@/lib/logic/initials';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { DeleteUserButton } from './DeleteUserButton';
 import { WipLimitsForm } from './WipLimitsForm';
@@ -32,8 +33,16 @@ export default async function AdminPage() {
       <h3 className="section-title analytics-subsection-title">{dict.admin.usersTitle}</h3>
       <p className="section-sub">{dict.admin.subtitle}</p>
       <div className="admin-list">
-        {(profiles ?? []).map((p) => (
+        {(profiles ?? []).map((p) => {
+          const isSelf = p.id === user.id;
+          return (
           <div key={p.id} className="admin-row">
+            <span
+              className={`admin-avatar ${isSelf ? 'admin-avatar-self' : ''}`}
+              style={isSelf ? undefined : { background: getAvatarColor(p.id) }}
+            >
+              {getInitials(p.name)}
+            </span>
             <div className="admin-row-info">
               <span className="admin-row-name">{p.name}</span>
               <span className="admin-row-username mono">@{p.username}</span>
@@ -43,13 +52,19 @@ export default async function AdminPage() {
               >
                 {p.role === 'admin' ? dict.admin.roleAdmin : dict.admin.roleEditor}
               </span>
+              {isSelf && (
+                <span className="pill" style={{ ['--pill-color' as string]: 'var(--ink-muted)' }}>
+                  {dict.admin.selfLabel}
+                </span>
+              )}
             </div>
             <div className="admin-row-actions">
               <ResetPasswordForm userId={p.id} />
               {p.id !== user.id && <DeleteUserButton userId={p.id} />}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
