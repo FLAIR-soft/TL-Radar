@@ -19,6 +19,7 @@ import {
   waitingDuration,
 } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
+import { getInitials, getAvatarColor } from '@/lib/logic/initials';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
@@ -118,37 +119,51 @@ export function TaskCard({
   return (
     <div
       className={`task-card ${isPending ? 'task-card-pending' : ''} ${overdue ? 'task-card-overdue' : ''}`}
-      // Project color, not priority — priority now has its own visible pill
-      // in the header, so the border is free to carry "which project" at a
-      // glance instead (and stays neutral for project-less tasks).
-      style={{ borderLeftColor: projectColor ?? 'var(--border)', ...style }}
+      // Полоса слева = приоритет (откат K4, редизайн v2, этап 3): на скрине 03
+      // у карточки «Serverraum Umbau» она оранжевая при приоритете «Hoch».
+      // Пилюля приоритета при этом остаётся в ряду пилюль.
+      style={{
+        borderLeftColor: task.priority ? PRIORITY_COLOR[task.priority] : 'var(--border)',
+        ...style,
+      }}
     >
       <div className="t-card-header">
         {assigneeNames.length > 0 ? (
-          <div className="t-assignee">{assigneeNames.join(', ')}</div>
+          <div className="t-people">
+            <span className="t-avatars">
+              {assigneeNames.map((n, i) => (
+                <span key={`${n}-${i}`} className="t-avatar" style={{ ['--avatar-color' as string]: getAvatarColor(n) }}>
+                  {getInitials(n)}
+                </span>
+              ))}
+            </span>
+            <span className="t-assignee">{assigneeNames.join(', ')}</span>
+          </div>
         ) : (
           <span />
         )}
         <div className="t-card-header-right">
           {overdue && <span className="overdue-badge">{dict.taskCard.overdue}</span>}
-          {task.priority && (
-            <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
-              {dict.priority[task.priority]}
-            </span>
-          )}
-          <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+          <span className="pill pill-with-dot" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+            <span className="pill-dot" />
             {dict.status[task.status]}
           </span>
         </div>
       </div>
       <div className="t-title">
-        {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+        {TaskIcon && <TaskIcon size={18} strokeWidth={1.75} className="t-title-icon" />}
         {task.title}
       </div>
-      {labels.length > 0 && (
+      {(task.priority || labels.length > 0) && (
         <div className="t-labels">
+          {task.priority && (
+            <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
+              {dict.priority[task.priority]}
+            </span>
+          )}
           {labels.map((l) => (
             <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+              <span className="pill-dot" />
               {l.name}
             </span>
           ))}
@@ -184,14 +199,40 @@ export function TaskCard({
         )}
       </div>
       <div className="t-timers">
+        {/* Блок таймера по скрину 03: слева подпись и крупное значение,
+            справа оценка с процентом, под ними — полоса прогресса оценки.
+            Раньше оценка и полоса были спрятаны под «Details». */}
         {primaryMetric && (
           <div
-            className={`t-timer-row t-timer-live t-timer-primary ${
+            /* t-timer-primary сохранён: на него смотрит e2e (golden-path). */
+            className={`t-timer-block t-timer-primary t-timer-live ${
               task.status === 'in_progress' ? 't-timer-primary-progress' : task.status === 'paused' ? 't-timer-primary-paused' : ''
             }`}
           >
-            <span>{primaryMetric.label}</span>
-            <span className="mono">{fmtTimer(primaryMetric.value, inProgress)}</span>
+            <div className="t-timer-main">
+              <span className="t-timer-label">{primaryMetric.label}</span>
+              <span className="mono t-timer-value">{fmtTimer(primaryMetric.value, inProgress)}</span>
+            </div>
+            {estimateMs !== null && (
+              <div className="t-timer-estimate">
+                <span className="t-timer-label">
+                  {dict.taskCard.estimate} {fmtDuration(estimateMs, dict.duration)}
+                </span>
+                {estimatePercent !== null && (
+                  <span className={`mono t-timer-percent ${estimateOver ? 't-timer-percent-over' : ''}`}>
+                    {Math.round(estimatePercent)} %
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {estimateMs !== null && estimatePercent !== null && (
+          <div className="t-estimate-bar">
+            <div
+              className={`t-estimate-fill ${estimateOver ? 't-estimate-over' : ''}`}
+              style={{ width: `${Math.min(100, estimatePercent)}%` }}
+            />
           </div>
         )}
         <button
@@ -225,22 +266,6 @@ export function TaskCard({
               <div className="t-timer-row">
                 <span>{dict.taskCard.pausedBy}</span>
                 <span className="mono">{pausedByName}</span>
-              </div>
-            )}
-            {estimateMs !== null && total !== null && (
-              <div className="t-estimate">
-                <div className="t-timer-row">
-                  <span>{dict.taskCard.estimate}</span>
-                  <span className="mono">
-                    {fmtDuration(total, dict.duration)} / {fmtDuration(estimateMs, dict.duration)}
-                  </span>
-                </div>
-                <div className="t-estimate-bar">
-                  <div
-                    className={`t-estimate-fill ${estimateOver ? 't-estimate-over' : ''}`}
-                    style={{ width: `${Math.min(100, estimatePercent ?? 0)}%` }}
-                  />
-                </div>
               </div>
             )}
           </div>
