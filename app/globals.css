@@ -30,7 +30,8 @@
   --shadow-soft: rgba(0, 0, 0, 0.06);
   --shadow-card: rgba(24, 24, 27, 0.08);
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sans: var(--font-archivo), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
 
   /* Border-radius (Этап 6 редизайна) — единая шкала вместо разброса
      6/8/9/10/12/14px. Круги (50%) и pill-форма (--radius-full) — свои
@@ -55,6 +56,49 @@
   --fs-lg: 20px; /* заголовки секций (h2.section-title) */
   --fs-xl: 24px; /* заголовок экрана входа */
   --fs-2xl: 32px; /* крупные заголовки (лендинг) */
+
+  /* ---------- Редизайн: токены (design_handoff_tl_radar_redesign, этап 1)
+     Новые имена для последующих этапов миграции (шапка, борд, списки,
+     аналитика/admin, тёмная тема) — существующие переменные выше остаются
+     источником истины для уже реализованных компонентов и не заменяются
+     здесь, чтобы этот этап не менял поведение/цвета ничего, кроме шрифта
+     и табличных цифр. */
+  --font-ui: var(--sans);
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  --brand-tint: #fff7f7;
+  --brand-border: #fecaca;
+  --brand-ink: #c2323c;
+
+  --surface-2: #fafafa;
+  --surface-3: #f4f4f5;
+  --border-soft: #f2f2f4;
+  --border-strong: #d4d4d8;
+
+  --text: #18181b;
+  --text-2: #55606e;
+  --text-3: #8b909b;
+  --text-4: #a0a4ae;
+
+  --in-progress: #2563eb;
+  --waiting-tint: #f4f4f5;
+  --in-progress-tint: #eff6ff;
+  --paused-tint: #fffbeb;
+  --done-tint: #f0fdf4;
+
+  --prio-none: #e4e4e7;
+  --prio-low: #94a3b8;
+  --prio-medium: #8b5cf6;
+  --prio-high: #f59e0b;
+  --prio-urgent: #e20617;
+
+  --radius-xs: 6px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 12px 24px -8px rgba(24, 24, 27, 0.08);
+  --shadow-3: 0 2px 4px rgba(0, 0, 0, 0.06), 0 14px 28px -12px rgba(24, 24, 27, 0.16);
+  --shadow-brand: 0 1px 2px rgba(226, 6, 23, 0.3), 0 8px 16px -8px rgba(226, 6, 23, 0.5);
+  --focus-ring: 0 0 0 3px rgba(24, 24, 27, 0.08);
 }
 
 :root[data-theme="dark"] {
@@ -88,6 +132,28 @@
   --skeleton-b: #2c2c31;
   --shadow-soft: rgba(0, 0, 0, 0.4);
   --shadow-card: rgba(0, 0, 0, 0.5);
+
+  /* ---------- Редизайн: токены (см. комментарий в :root выше) ---------- */
+  --brand-tint: rgba(255, 59, 78, 0.12);
+  --brand-border: rgba(255, 59, 78, 0.35);
+  --brand-ink: #ff8a95;
+
+  --surface-2: #19191c;
+  --surface-3: #202024;
+  --border-soft: #202024;
+  --border-strong: #2e2e33;
+
+  --text: #f4f4f5;
+  --text-2: #9a9aa2;
+  --text-3: #6f6f78;
+  --text-4: #5a5a63;
+
+  --in-progress: #60a5fa;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 18px 36px -12px rgba(0, 0, 0, 0.6);
+  --focus-ring: 0 0 0 3px rgba(244, 244, 245, 0.12);
 }
 * {
   box-sizing: border-box;
@@ -1145,6 +1211,7 @@ p.section-sub {
 }
 .mono {
   font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
