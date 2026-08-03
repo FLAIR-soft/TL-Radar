@@ -119,12 +119,14 @@ export function CommandPalette({ role }: { role: UserRole }) {
     <>
       <button
         type="button"
-        className="icon-btn cmdk-trigger"
+        className="topbar-search"
         title="Cmd/Ctrl+K"
         onClick={() => setOpen(true)}
         data-testid="command-palette-trigger"
       >
-        <Search size={17} strokeWidth={1.75} />
+        <Search size={14} strokeWidth={1.75} />
+        <span>{dict.commandPalette.triggerLabel}</span>
+        <span className="topbar-search-kbd">⌘K</span>
       </button>
       {phase !== 'closed' &&
         createPortal(
