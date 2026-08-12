@@ -11,8 +11,13 @@ export type EmbeddedTaskRelations = {
   task_labels: { label_id: string }[];
   // task_comments(count) — PostgREST-агрегат, всегда один элемент [{ count }].
   task_comments?: { count: number }[];
-  task_checklist_items?: { done: boolean }[];
+  // На дашборде выбираются с заголовками (для превью чек-листа на карточке),
+  // в архиве embed'а нет вовсе — отсюда необязательные поля.
+  task_checklist_items?: { id?: string; title?: string; done: boolean; position?: number }[];
+  task_watchers?: { count: number }[];
 };
+
+export type ChecklistPreviewItem = { id: string; title: string; done: boolean };
 
 export type TaskRelationMaps = {
   pausesByTask: Map<string, TaskPause[]>;
@@ -21,6 +26,8 @@ export type TaskRelationMaps = {
   assigneeIdsByTask: Map<string, string[]>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
+  checklistItemsByTask: Map<string, ChecklistPreviewItem[]>;
+  watcherCountsByTask: Map<string, number>;
   labelIdsByTask: Map<string, string[]>;
   labelsByTask: Map<string, Label[]>;
 };
@@ -38,6 +45,8 @@ export function buildTaskRelationMaps(
   const assigneeIdsByTask = new Map<string, string[]>();
   const commentCountsByTask = new Map<string, number>();
   const checklistProgressByTask = new Map<string, { done: number; total: number }>();
+  const checklistItemsByTask = new Map<string, ChecklistPreviewItem[]>();
+  const watcherCountsByTask = new Map<string, number>();
   const labelIdsByTask = new Map<string, string[]>();
   const labelsByTask = new Map<string, Label[]>();
 
@@ -59,6 +68,16 @@ export function buildTaskRelationMaps(
     if (t.task_checklist_items) {
       const done = t.task_checklist_items.filter((c) => c.done).length;
       checklistProgressByTask.set(t.id, { done, total: t.task_checklist_items.length });
+      checklistItemsByTask.set(
+        t.id,
+        t.task_checklist_items
+          .filter((c): c is { id: string; title: string; done: boolean; position?: number } => !!c.id && !!c.title)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((c) => ({ id: c.id, title: c.title, done: c.done }))
+      );
+    }
+    if (t.task_watchers) {
+      watcherCountsByTask.set(t.id, t.task_watchers[0]?.count ?? 0);
     }
 
     const labelIds = t.task_labels.map((l) => l.label_id);
@@ -76,6 +95,8 @@ export function buildTaskRelationMaps(
     assigneeIdsByTask,
     commentCountsByTask,
     checklistProgressByTask,
+    checklistItemsByTask,
+    watcherCountsByTask,
     labelIdsByTask,
     labelsByTask,
   };
