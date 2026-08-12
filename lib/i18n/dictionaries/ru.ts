@@ -128,6 +128,9 @@ const ru = {
     colNetDuration: 'Чистое время',
     colEstimate: 'Факт / Оценка',
     colAssignees: 'Исполнители',
+    summary: '{n} из {total} завершённых задач',
+    noProject: '— без проекта —',
+    nextPage: 'Дальше',
     lateBy: 'Просрочено на',
   },
   status: {

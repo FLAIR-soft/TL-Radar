@@ -58,6 +58,23 @@ export function fmtDateShort(iso: string | null, intlLocale: string): string {
   });
 }
 
+// Только время, без даты: колонки «Gestartet» и «Abgeschlossen» архива —
+// день там и так виден в «Erfasst» (скрин 08).
+export function fmtTime(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString(intlLocale, {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// «24.07. 07:48» — колонка «Erfasst» архива: короткая дата и время, без года.
+export function fmtDateTimeCompact(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return `${fmtDateShort(iso, intlLocale)} ${fmtTime(iso, intlLocale)}`;
+}
+
 export function fmtDuration(ms: number, units: { hourShort: string; minuteShort: string }): string {
   if (ms < 0) ms = 0;
   const totalMin = Math.round(ms / 60000);

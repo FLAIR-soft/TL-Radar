@@ -39,6 +39,9 @@ export function TaskFilterBar({
   // drops the stale one instead of letting it win a race and flicker the URL
   // back to an old filter value.
   function navigate(params: URLSearchParams) {
+    // Любая смена фильтра сбрасывает пагинацию архива на первую страницу:
+    // иначе можно остаться на пятой странице выборки, где страниц две.
+    params.delete('page');
     const qs = params.toString();
     startTransition(() => {
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
