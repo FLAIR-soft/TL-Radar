@@ -20,7 +20,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
-import type { ChecklistPreviewItem } from '@/lib/logic/task-relations';
+import type { ChecklistPreviewItem, LastComment } from '@/lib/logic/task-relations';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
@@ -43,6 +43,7 @@ export function KanbanBoard({
   checklistProgressByTask,
   checklistItemsByTask,
   watcherCountsByTask,
+  lastCommentByTask,
   labelsByTask,
 }: {
   tasks: Task[];
@@ -57,6 +58,7 @@ export function KanbanBoard({
   checklistProgressByTask: Map<string, { done: number; total: number }>;
   checklistItemsByTask?: Map<string, ChecklistPreviewItem[]>;
   watcherCountsByTask?: Map<string, number>;
+  lastCommentByTask?: Map<string, LastComment>;
   labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
@@ -164,6 +166,7 @@ export function KanbanBoard({
                         checklistProgress={checklistProgressByTask.get(t.id)}
                         checklistItems={checklistItemsByTask?.get(t.id) ?? []}
                         watcherCount={watcherCountsByTask?.get(t.id) ?? 0}
+                        lastComment={lastCommentByTask?.get(t.id) ?? null}
                         labels={labelsByTask?.get(t.id) ?? []}
                         dense={items.length >= COMPACT_FROM}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}

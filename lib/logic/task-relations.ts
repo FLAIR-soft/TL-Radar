@@ -9,8 +9,10 @@ export type EmbeddedTaskRelations = {
   task_pauses: TaskPause[];
   task_assignees: { assignee_id: string }[];
   task_labels: { label_id: string }[];
-  // task_comments(count) — PostgREST-агрегат, всегда один элемент [{ count }].
-  task_comments?: { count: number }[];
+  // Дашборд выбирает комментарии строками (нужен текст последнего для превью
+  // на карточке), другие страницы — агрегатом task_comments(count). Считаем
+  // оба варианта, чтобы карты собирались одинаково.
+  task_comments?: { count?: number; id?: string; body?: string; author_id?: string | null; created_at?: string }[];
   // На дашборде выбираются с заголовками (для превью чек-листа на карточке),
   // в архиве embed'а нет вовсе — отсюда необязательные поля.
   task_checklist_items?: { id?: string; title?: string; done: boolean; position?: number }[];
@@ -18,6 +20,7 @@ export type EmbeddedTaskRelations = {
 };
 
 export type ChecklistPreviewItem = { id: string; title: string; done: boolean };
+export type LastComment = { id: string; body: string; authorId: string | null; createdAt: string };
 
 export type TaskRelationMaps = {
   pausesByTask: Map<string, TaskPause[]>;
@@ -28,6 +31,7 @@ export type TaskRelationMaps = {
   checklistProgressByTask: Map<string, { done: number; total: number }>;
   checklistItemsByTask: Map<string, ChecklistPreviewItem[]>;
   watcherCountsByTask: Map<string, number>;
+  lastCommentByTask: Map<string, LastComment>;
   labelIdsByTask: Map<string, string[]>;
   labelsByTask: Map<string, Label[]>;
 };
@@ -47,6 +51,7 @@ export function buildTaskRelationMaps(
   const checklistProgressByTask = new Map<string, { done: number; total: number }>();
   const checklistItemsByTask = new Map<string, ChecklistPreviewItem[]>();
   const watcherCountsByTask = new Map<string, number>();
+  const lastCommentByTask = new Map<string, LastComment>();
   const labelIdsByTask = new Map<string, string[]>();
   const labelsByTask = new Map<string, Label[]>();
 
@@ -63,7 +68,19 @@ export function buildTaskRelationMaps(
     );
 
     if (t.task_comments) {
-      commentCountsByTask.set(t.id, t.task_comments[0]?.count ?? 0);
+      const rows = t.task_comments;
+      commentCountsByTask.set(t.id, rows[0]?.count ?? rows.length);
+      const newest = rows
+        .filter((c): c is { id: string; body: string; author_id: string | null; created_at: string } => !!c.id && !!c.created_at)
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+      if (newest) {
+        lastCommentByTask.set(t.id, {
+          id: newest.id,
+          body: newest.body,
+          authorId: newest.author_id ?? null,
+          createdAt: newest.created_at,
+        });
+      }
     }
     if (t.task_checklist_items) {
       const done = t.task_checklist_items.filter((c) => c.done).length;
@@ -97,6 +114,7 @@ export function buildTaskRelationMaps(
     checklistProgressByTask,
     checklistItemsByTask,
     watcherCountsByTask,
+    lastCommentByTask,
     labelIdsByTask,
     labelsByTask,
   };

@@ -17,7 +17,7 @@ const TASKS_SELECT = `
   *,
   task_pauses(*),
   task_assignees(assignee_id),
-  task_comments(count),
+  task_comments(id, body, author_id, created_at),
   task_checklist_items(id, title, done, position),
   task_watchers(count),
   task_labels(label_id)
@@ -78,6 +78,7 @@ export default async function DashboardPage({
     checklistProgressByTask,
     checklistItemsByTask,
     watcherCountsByTask,
+    lastCommentByTask,
     labelIdsByTask,
     labelsByTask,
   } = buildTaskRelationMaps(active, profileNames, labelById);
@@ -171,6 +172,7 @@ export default async function DashboardPage({
           checklistProgressByTask={checklistProgressByTask}
           checklistItemsByTask={checklistItemsByTask}
           watcherCountsByTask={watcherCountsByTask}
+          lastCommentByTask={lastCommentByTask}
           labelsByTask={labelsByTask}
         />
       )}

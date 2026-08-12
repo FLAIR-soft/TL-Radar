@@ -16,12 +16,14 @@ import {
   Check,
   Eye,
 } from 'lucide-react';
-import type { ChecklistPreviewItem } from '@/lib/logic/task-relations';
+import type { ChecklistPreviewItem, LastComment } from '@/lib/logic/task-relations';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
   fmtDate,
   fmtDateShort,
+  deadlineDayOffset,
+  DEADLINE_HOUR_LABEL,
   fmtDateTime,
   fmtDuration,
   fmtTimer,
@@ -59,6 +61,7 @@ export function TaskCard({
   checklistProgress,
   checklistItems = [],
   watcherCount = 0,
+  lastComment = null,
   labels = [],
   dense = false,
   style,
@@ -75,6 +78,8 @@ export function TaskCard({
   /** Первые пункты чек-листа для превью на карточке (этап 5). */
   checklistItems?: ChecklistPreviewItem[];
   watcherCount?: number;
+  /** Последний комментарий для превью на карточке (этап 5, D6). */
+  lastComment?: LastComment | null;
   labels?: Label[];
   /** Колонка переполнена (см. COMPACT_FROM в KanbanBoard) — карточка сворачивается. */
   dense?: boolean;
@@ -144,6 +149,8 @@ export function TaskCard({
 
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
   const creatorName = task.created_by ? profileNames.get(task.created_by) : undefined;
+  const lastCommentAuthor =
+    (lastComment?.authorId ? profileNames.get(lastComment.authorId) : undefined) ?? dict.activityLog.unknownUser;
 
   // Режим карточки не выбирается пользователем — он следует из контекста
   // (редизайн v2, этап 4):
@@ -157,6 +164,17 @@ export function TaskCard({
   const compact = dense && !uncollapsed;
   const expanded = !compact && task.status === 'paused';
   const overdueSinceDays = overdue ? overdueDays(task) : null;
+
+  // Дедлайн сегодня или завтра подписывается словом и часом отсечки
+  // («Heute, 16:00» на скрине 03), остальные — обычной датой.
+  const deadlineOffset = task.deadline ? deadlineDayOffset(task.deadline) : null;
+  const deadlineLabel = !task.deadline
+    ? ''
+    : deadlineOffset === 0
+      ? `${dict.taskCard.today}, ${DEADLINE_HOUR_LABEL}`
+      : deadlineOffset === 1
+        ? `${dict.taskCard.tomorrow}, ${DEADLINE_HOUR_LABEL}`
+        : fmtDate(task.deadline, dict.intlLocale);
   const showOverdueBanner = overdue && !compact;
 
   // Полоса слева = приоритет (откат K4, редизайн v2, этап 3): на скрине 03
@@ -313,7 +331,7 @@ export function TaskCard({
         {task.deadline && (
           <span className={overdue ? 'overdue' : ''}>
             <CalendarClock size={14} strokeWidth={1.75} />
-            {fmtDate(task.deadline, dict.intlLocale)}
+            {deadlineLabel}
             {overdue ? ` · ${dict.taskCard.overdue}` : ''}
           </span>
         )}
@@ -455,6 +473,25 @@ export function TaskCard({
               {item.title}
             </div>
           ))}
+        </div>
+      )}
+      {lastComment && !expanded && (
+        /* Превью последнего комментария (скрин 03): аватар, текст в одну-две
+           строки и моно-подпись «кто · когда · сколько всего». */
+        <div className="t-comment-preview">
+          <span
+            className="comment-avatar"
+            style={{ ['--avatar-color' as string]: getAvatarColor(lastComment.authorId ?? '') }}
+          >
+            {getInitials(lastCommentAuthor)}
+          </span>
+          <div className="t-comment-preview-main">
+            <div className="t-comment-preview-body">{lastComment.body}</div>
+            <div className="mono t-comment-preview-meta">
+              {lastCommentAuthor} · {fmtDateTime(lastComment.createdAt, dict.intlLocale)}
+              {commentCount > 1 && ` · ${plural(dict.taskCard.commentsCount, commentCount, dict.intlLocale)}`}
+            </div>
+          </div>
         </div>
       )}
       {expanded && (commentCount > 0 || watcherCount > 0 || (checklistProgress && checklistProgress.total > 0)) && (

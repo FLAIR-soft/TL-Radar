@@ -111,6 +111,21 @@ export function isOverdue(task: Task): boolean {
   return now.hour >= CUTOFF_HOUR;
 }
 
+// Час отсечки рабочего дня как подпись: дедлайн истекает в 16:00 по Мюнхену,
+// и на карточке он показывается вместе с этим часом («Heute, 16:00», скрин 03).
+export const DEADLINE_HOUR_LABEL = `${CUTOFF_HOUR}:00`;
+
+// 0 — дедлайн сегодня, 1 — завтра, иначе null: только для этих двух дней
+// карточка показывает относительную подпись вместо даты.
+export function deadlineDayOffset(deadline: string): 0 | 1 | null {
+  const [year, month, day] = deadline.split('-').map(Number);
+  const now = berlinDateParts(new Date());
+  const diff = Math.round(
+    (Date.UTC(year, month - 1, day) - Date.UTC(now.year, now.month - 1, now.day)) / 86400000
+  );
+  return diff === 0 ? 0 : diff === 1 ? 1 : null;
+}
+
 // Сколько полных суток прошло с дедлайна — для плашки «Überfällig seit N Tagen»
 // на карточке (редизайн v2, этап 4). Считается по календарным датам Мюнхена,
 // тем же ключом год*10000+месяц*100+день, что и isOverdue, поэтому переход
