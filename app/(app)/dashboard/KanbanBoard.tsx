@@ -20,6 +20,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
+import type { ChecklistPreviewItem } from '@/lib/logic/task-relations';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
@@ -40,6 +41,8 @@ export function KanbanBoard({
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
+  checklistItemsByTask,
+  watcherCountsByTask,
   labelsByTask,
 }: {
   tasks: Task[];
@@ -52,6 +55,8 @@ export function KanbanBoard({
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
+  checklistItemsByTask?: Map<string, ChecklistPreviewItem[]>;
+  watcherCountsByTask?: Map<string, number>;
   labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
@@ -132,8 +137,10 @@ export function KanbanBoard({
             <KanbanColumn key={s} status={s} isValidTarget={isValidTarget} isDragging={!!activeTask}>
               <div className="col-head">
                 <span
-                  className={`signal ${s === 'in_progress' ? 'pulsing' : ''}`}
-                  style={{ background: STATUS_COLOR[s] }}
+                  // Ореол у точки активного статуса — box-shadow цветом самого
+                  // статуса (скрин 05), поэтому цвет уходит и в переменную.
+                  className={`signal ${s === 'in_progress' ? 'signal-active' : ''}`}
+                  style={{ background: STATUS_COLOR[s], ['--signal-color' as string]: STATUS_COLOR[s] }}
                 ></span>
                 {dict.status[s]}{' '}
                 <span className={`col-count ${atLimit ? 'col-count-limit' : ''}`}>
@@ -155,6 +162,8 @@ export function KanbanBoard({
                         profileNames={profileNames}
                         commentCount={commentCountsByTask.get(t.id) ?? 0}
                         checklistProgress={checklistProgressByTask.get(t.id)}
+                        checklistItems={checklistItemsByTask?.get(t.id) ?? []}
+                        watcherCount={watcherCountsByTask?.get(t.id) ?? 0}
                         labels={labelsByTask?.get(t.id) ?? []}
                         dense={items.length >= COMPACT_FROM}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
@@ -162,7 +171,7 @@ export function KanbanBoard({
                     </DraggableTaskCard>
                   ))
                 ) : (
-                  <div className="empty-note">{dict.dashboard.empty}</div>
+                  <div className="col-empty">{dict.dashboard.empty}</div>
                 )}
               </div>
             </KanbanColumn>

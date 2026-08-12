@@ -13,7 +13,10 @@ import {
   ListChecks,
   User,
   CircleAlert,
+  Check,
+  Eye,
 } from 'lucide-react';
+import type { ChecklistPreviewItem } from '@/lib/logic/task-relations';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 import {
   STATUS_COLOR,
@@ -41,6 +44,9 @@ import { useNowTick } from '@/lib/hooks/useNowTick';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
 
+// Сколько пунктов чек-листа показывать на карточке до открытия панели.
+const CHECKLIST_PREVIEW = 2;
+
 export function TaskCard({
   task,
   pauses,
@@ -51,6 +57,8 @@ export function TaskCard({
   profileNames,
   commentCount = 0,
   checklistProgress,
+  checklistItems = [],
+  watcherCount = 0,
   labels = [],
   dense = false,
   style,
@@ -64,6 +72,9 @@ export function TaskCard({
   profileNames: Map<string, string>;
   commentCount?: number;
   checklistProgress?: { done: number; total: number };
+  /** Первые пункты чек-листа для превью на карточке (этап 5). */
+  checklistItems?: ChecklistPreviewItem[];
+  watcherCount?: number;
   labels?: Label[];
   /** Колонка переполнена (см. COMPACT_FROM в KanbanBoard) — карточка сворачивается. */
   dense?: boolean;
@@ -420,7 +431,33 @@ export function TaskCard({
         )}
       </div>
       )}
-      {expanded && (commentCount > 0 || (checklistProgress && checklistProgress.total > 0)) && (
+      {checklistProgress && checklistProgress.total > 0 && (
+        /* Превью чек-листа на карточке (скрин 03): прогресс и первые пункты. */
+        <div className="t-checklist">
+          <div className="t-checklist-head">
+            <span className="t-checklist-title">
+              <ListChecks size={14} strokeWidth={1.75} />
+              {dict.checklist.title}
+            </span>
+            <span className="mono">
+              {checklistProgress.done}/{checklistProgress.total}
+            </span>
+          </div>
+          <div className="t-checklist-bar">
+            <div
+              className="t-checklist-fill"
+              style={{ width: `${(checklistProgress.done / checklistProgress.total) * 100}%` }}
+            />
+          </div>
+          {checklistItems.slice(0, CHECKLIST_PREVIEW).map((item) => (
+            <div key={item.id} className={`t-checklist-item ${item.done ? 'is-done' : ''}`}>
+              <span className="t-checklist-mark">{item.done && <Check size={12} strokeWidth={2.5} />}</span>
+              {item.title}
+            </div>
+          ))}
+        </div>
+      )}
+      {expanded && (commentCount > 0 || watcherCount > 0 || (checklistProgress && checklistProgress.total > 0)) && (
         <div className="t-counters">
           {commentCount > 0 && (
             <span title={dict.comments.title}>
@@ -432,6 +469,12 @@ export function TaskCard({
             <span title={dict.checklist.title}>
               <ListChecks size={14} strokeWidth={1.75} />
               {checklistProgress.done}/{checklistProgress.total}
+            </span>
+          )}
+          {watcherCount > 0 && (
+            <span title={dict.watchers.watch}>
+              <Eye size={14} strokeWidth={1.75} />
+              {watcherCount}
             </span>
           )}
         </div>

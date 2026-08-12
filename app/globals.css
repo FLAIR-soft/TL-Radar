@@ -981,6 +981,12 @@ p.section-sub {
   border-radius: 50%;
   flex-shrink: 0;
 }
+/* Точка активного статуса — с ореолом цветом самого статуса (скрин 05).
+   Раньше здесь была анимация pulse с зашитым синим rgba; цвет теперь
+   приходит переменной и совпадает со статусом в обеих темах. */
+.signal-active {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal-color) 16%, transparent);
+}
 .signal.pulsing {
   animation: pulse 1.6s infinite;
 }
@@ -1235,6 +1241,84 @@ p.section-sub {
 .t-tile .t-tile-strong {
   font-weight: 700;
   color: var(--text);
+}
+/* Превью чек-листа на карточке (редизайн v2, этап 5, скрин 03). */
+.t-checklist {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.t-checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.t-checklist-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.t-checklist-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.t-checklist-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--done);
+  transition: width 0.3s ease;
+}
+.t-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  padding: 2px 0;
+}
+.t-checklist-mark {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.t-checklist-item.is-done {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+.t-checklist-item.is-done .t-checklist-mark {
+  border-color: transparent;
+  color: var(--done);
+  text-decoration: none;
+}
+/* Пустая колонка — пунктирная плашка с подсказкой по центру. */
+.col-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 96px;
+  padding: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
 .t-counters {
   display: flex;
