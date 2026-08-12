@@ -11,11 +11,17 @@ export function SlideOver({
   open,
   onClose,
   title,
+  headerActions,
+  subheader,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Кнопки слева от крестика (наблюдать, сохранить как шаблон). */
+  headerActions?: React.ReactNode;
+  /** Ряд под заголовком — например, пилюли статуса и приоритета. */
+  subheader?: React.ReactNode;
   children: React.ReactNode;
 }) {
   // Portal to document.body: ancestors that have any animation/transform
@@ -55,12 +61,18 @@ export function SlideOver({
         aria-labelledby={titleId}
       >
         <div className="slideover-header">
-          <h3 className="slideover-title" id={titleId}>
-            {title}
-          </h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close" data-testid="slideover-close">
-            <X size={18} strokeWidth={1.75} />
-          </button>
+          <div className="slideover-header-main">
+            <h3 className="slideover-title" id={titleId}>
+              {title}
+            </h3>
+            {subheader}
+          </div>
+          <div className="slideover-header-actions">
+            {headerActions}
+            <button className="icon-btn" onClick={onClose} aria-label="Close" data-testid="slideover-close">
+              <X size={18} strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
         <div className="slideover-body">{children}</div>
       </div>
