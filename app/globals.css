@@ -3418,14 +3418,17 @@ p.section-sub {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  /* Токен, а не #fff: в паре с тёмным треком ниже он инвертируется вместе
+     с темой — в светлой белый бегунок на чёрном, в тёмной тёмный на светлом. */
+  background: var(--surface);
   transition: transform 0.16s ease;
 }
 .switch-input:checked + .switch-track {
-  /* Не var(--ink)/--text: в тёмной теме они светлые, а бегунок белый —
-     контраст «включено» пропадал бы. --brand не меняет направление между
-     темами и уже используется как акцент (accent-color чекбоксов). */
-  background: var(--brand);
+  /* Чёрный включённый тумблер по скрину 04. Раньше был --brand из-за
+     белого бегунка: на светлом треке тёмной темы он пропадал. Теперь
+     бегунок — var(--surface) и инвертируется вместе с треком, так что
+     контраст держится в обеих темах без отдельного dark-override. */
+  background: var(--ink);
 }
 .switch-input:checked + .switch-track .switch-thumb {
   transform: translateX(14px);
@@ -3786,4 +3789,81 @@ p.section-sub {
 .toast-close:hover {
   background: var(--hover-bg);
   color: var(--ink);
+}
+
+
+/* ---------- Проекты и шаблоны (редизайн v2, этап 7) ---------- */
+
+/* Пилюля со счётчиком: число задач в проекте, пунктов в шаблоне. */
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* Приоритет в строке проекта и шаблона — обычным регистром, как на
+   скринах 02 и 04 (в отличие от статусных пилюль). */
+.project-row-head-right .pill {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+/* «— keine Priorität —», «— nicht zugewiesen —» — приглушённые заглушки. */
+.row-placeholder {
+  color: var(--text-4);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+/* Эйбрау формы редактирования: «✎ PROJEKT BEARBEITEN». */
+.form-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+.project-form {
+  box-shadow: var(--shadow-3);
+}
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.btn-text:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--hover-bg);
+}
+/* Шаблоны и повторяющиеся правила — две колонки (скрин 04). */
+.templates-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .templates-layout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .row3 {
+    grid-template-columns: 1fr;
+  }
 }

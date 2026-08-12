@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { Trash2, Repeat } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { fmtDateTime } from '@/lib/logic/tasks';
 import { toggleRecurringRule, deleteRecurringRule } from './rules-actions';
 import type { RecurringRule } from '@/lib/supabase/types';
 
@@ -85,7 +86,8 @@ export function RecurringRuleRow({
         <div className="t-meta">
           <span className="rule-frequency">{frequencyText}</span>
           <span>
-            {dict.recurring.nextRunLabel}: <span className="mono">{rule.next_run_at}</span>
+            {dict.recurring.nextRunLabel}:{' '}
+            <span className="mono">{fmtDateTime(rule.next_run_at, dict.intlLocale)}</span>
           </span>
           <label className="switch-label">
             <input
