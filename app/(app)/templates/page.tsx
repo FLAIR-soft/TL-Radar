@@ -26,13 +26,14 @@ export default async function TemplatesPage() {
   const templateOptions = list.map((t) => ({ id: t.id, title: t.title }));
 
   return (
-    <div className="page-fade">
-      <div className="page-header">
-        <div>
-          <h2 className="section-title">{dict.templates.title}</h2>
-          <p className="section-sub">{dict.templates.subtitle}</p>
+    <div className="page-fade templates-layout">
+      <section>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.templates.title}</h2>
+            <p className="section-sub">{dict.templates.subtitle}</p>
+          </div>
         </div>
-      </div>
       {list.length ? (
         <div className="project-list">
           {list.map((t, i) => (
@@ -47,13 +48,15 @@ export default async function TemplatesPage() {
       ) : (
         <EmptyState icon={LayoutTemplate} title={dict.templates.empty} />
       )}
-
-      <div className="page-header">
-        <div>
-          <h2 className="section-title">{dict.recurring.title}</h2>
+      </section>
+      <section>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.recurring.title}</h2>
+            <p className="section-sub">{dict.recurring.subtitle}</p>
+          </div>
+          {list.length > 0 && <CreateRecurringRulePanel templates={templateOptions} />}
         </div>
-        {list.length > 0 && <CreateRecurringRulePanel templates={templateOptions} />}
-      </div>
       {list.length === 0 ? (
         <p className="section-sub">{dict.recurring.noTemplatesHint}</p>
       ) : ruleList.length ? (
@@ -70,6 +73,7 @@ export default async function TemplatesPage() {
       ) : (
         <EmptyState icon={LayoutTemplate} title={dict.recurring.empty} />
       )}
+      </section>
     </div>
   );
 }

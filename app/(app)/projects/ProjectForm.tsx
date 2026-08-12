@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
+import { Pencil } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { IconPicker } from '@/components/IconPicker';
 import { PrioritySelect } from '@/components/PrioritySelect';
@@ -45,15 +46,18 @@ export function ProjectForm({
 
   return (
     <form ref={formRef} className="form-card project-form" action={formAction}>
+      {editing && (
+        <div className="form-eyebrow">
+          <Pencil size={11} strokeWidth={2} />
+          {dict.projects.editEyebrow}
+        </div>
+      )}
       {state.error && <div className="error-note">{state.error}</div>}
-      <div className="field">
-        <label>{dict.projects.nameLabel}</label>
-        <div className="title-with-icon">
-          <IconPicker name="icon" defaultValue={editing?.icon ?? null} />
+      <div className="row2">
+        <div className="field">
+          <label>{dict.projects.nameLabel}</label>
           <input type="text" name="name" defaultValue={editing?.name} placeholder={dict.projects.namePlaceholder} required />
         </div>
-      </div>
-      <div className="row2">
         <div className="field">
           <label>{dict.projects.locationLabel}</label>
           <input
@@ -63,6 +67,16 @@ export function ProjectForm({
             placeholder={dict.projects.locationPlaceholder}
           />
         </div>
+      </div>
+      <div className="field">
+        <label>{dict.projects.descriptionLabel}</label>
+        <textarea
+          name="description"
+          defaultValue={editing?.description}
+          placeholder={dict.projects.descriptionPlaceholder}
+        />
+      </div>
+      <div className="row3">
         <div className="field">
           <label>{dict.projects.ownerLabel}</label>
           <select name="ownerId" defaultValue={editing?.ownerId ?? ''}>
@@ -74,30 +88,26 @@ export function ProjectForm({
             ))}
           </select>
         </div>
-      </div>
-      <div className="field">
-        <label>{dict.priority.label}</label>
-        <PrioritySelect name="priority" defaultValue={editing?.priority ?? null} />
+        <div className="field">
+          <label>{dict.priority.label}</label>
+          <PrioritySelect name="priority" defaultValue={editing?.priority ?? null} />
+        </div>
+        <div className="field">
+          <label>{dict.projects.iconLabel}</label>
+          <IconPicker name="icon" defaultValue={editing?.icon ?? null} />
+        </div>
       </div>
       <div className="field">
         <label>{dict.projects.colorLabel}</label>
         <ColorPicker name="color" defaultValue={editing?.color ?? null} />
       </div>
-      <div className="field">
-        <label>{dict.projects.descriptionLabel}</label>
-        <textarea
-          name="description"
-          defaultValue={editing?.description}
-          placeholder={dict.projects.descriptionPlaceholder}
-        />
-      </div>
       <div className="form-actions">
-        <button className="btn btn-primary" disabled={pending} type="submit">
+        <button className="btn btn-dark" disabled={pending} type="submit">
           {pending && <span className="btn-spinner" />}
           {editing ? dict.projects.saveButton : dict.projects.addButton}
         </button>
         {editing && (
-          <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={pending}>
+          <button type="button" className="btn btn-text" onClick={onCancel} disabled={pending}>
             {dict.projects.cancel}
           </button>
         )}

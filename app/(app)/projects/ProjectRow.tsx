@@ -6,6 +6,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import type { Project } from '@/lib/supabase/types';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
+import { plural } from '@/lib/i18n/plural';
 import { deleteProject, editProject } from './actions';
 import { ProjectForm } from './ProjectForm';
 import { ProjectDetailPanel } from './ProjectDetailPanel';
@@ -13,11 +14,13 @@ import { ProjectDetailPanel } from './ProjectDetailPanel';
 export function ProjectRow({
   project,
   ownerName,
+  taskCount = 0,
   profiles,
   style,
 }: {
   project: Project;
   ownerName: string | null;
+  taskCount?: number;
   profiles: { id: string; name: string }[];
   style?: React.CSSProperties;
 }) {
@@ -70,11 +73,14 @@ export function ProjectRow({
             {project.name}
           </span>
           <div className="project-row-head-right">
-            {project.priority && (
+            {project.priority ? (
               <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[project.priority] }}>
                 {dict.priority[project.priority]}
               </span>
+            ) : (
+              <span className="row-placeholder">{dict.projects.noPriority}</span>
             )}
+            <span className="mono count-pill">{plural(dict.projects.taskCount, taskCount, dict.intlLocale)}</span>
             <div className="project-row-actions">
               <button
                 className="icon-btn"
@@ -98,22 +104,18 @@ export function ProjectRow({
           </div>
         </div>
         {project.description && <p className="project-row-desc">{project.description}</p>}
-        {(project.location || ownerName) && (
-          <div className="t-meta">
-            {project.location && (
-              <span>
-                <MapPin size={14} strokeWidth={1.75} />
-                {project.location}
-              </span>
-            )}
-            {ownerName && (
-              <span>
-                <User size={14} strokeWidth={1.75} />
-                {ownerName}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="t-meta">
+          {project.location && (
+            <span>
+              <MapPin size={14} strokeWidth={1.75} />
+              {project.location}
+            </span>
+          )}
+          <span className={ownerName ? '' : 'row-placeholder'}>
+            <User size={14} strokeWidth={1.75} />
+            {ownerName ?? dict.projects.noOwner}
+          </span>
+        </div>
       </div>
     </div>
   );

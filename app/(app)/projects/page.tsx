@@ -13,10 +13,19 @@ export default async function ProjectsPage() {
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: projects }, { data: profiles }] = await Promise.all([
+  // Число задач в проекте (D2 в PLAN.md) — одним запросом на все проекты,
+  // а не по запросу на каждый: тянем только project_id неудалённых задач
+  // и считаем на месте.
+  const [{ data: projects }, { data: profiles }, { data: taskProjectIds }] = await Promise.all([
     supabase.from('projects').select('*').is('deleted_at', null).order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, name').order('name'),
+    supabase.from('tasks').select('project_id').is('deleted_at', null),
   ]);
+
+  const taskCounts = new Map<string, number>();
+  for (const row of taskProjectIds ?? []) {
+    if (row.project_id) taskCounts.set(row.project_id, (taskCounts.get(row.project_id) ?? 0) + 1);
+  }
 
   const list = projects ?? [];
   const profileList = profiles ?? [];
@@ -38,6 +47,7 @@ export default async function ProjectsPage() {
               key={p.id}
               project={p}
               ownerName={p.owner_id ? profileNames.get(p.owner_id) ?? null : null}
+              taskCount={taskCounts.get(p.id) ?? 0}
               profiles={profileList}
               style={{ animationDelay: `${i * 30}ms` }}
             />

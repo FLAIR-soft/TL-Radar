@@ -5,6 +5,7 @@ import { Trash2, Folder, MapPin, ListChecks } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
+import { plural } from '@/lib/i18n/plural';
 import { deleteTemplate } from './actions';
 import type { TaskTemplate } from '@/lib/supabase/types';
 
@@ -98,7 +99,7 @@ export function TemplateRow({
             {checklistCount > 0 && (
               <span>
                 <ListChecks size={14} strokeWidth={1.75} />
-                {checklistCount}
+                {plural(dict.templates.checklistPoints, checklistCount, dict.intlLocale)}
               </span>
             )}
           </div>
