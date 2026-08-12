@@ -3867,3 +3867,85 @@ p.section-sub {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------- Архив: строки и пагинация (редизайн v2, этап 8) ---------- */
+
+/* Вторая строка ячейки задачи: статус, метки и исполнители моно (скрин 08). */
+.archive-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.archive-assignees {
+  font-size: 11px;
+  color: var(--text-2);
+}
+/* Даты, длительности и заголовки колонок не переносятся: «24.07. 07:48»
+   и «3 Std 05 Min» на скрине 08 в одну строку. */
+.archive-table th,
+.archive-table td.mono {
+  white-space: nowrap;
+}
+.archive-table .count-pill {
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+}
+.archive-table .overdue-badge {
+  display: inline-block;
+  margin-top: 3px;
+  white-space: normal;
+  font-size: 10px;
+  line-height: 1.25;
+}
+.archive-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.archive-summary {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.pagination-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.pagination-page:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.pagination-page.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  font-weight: 700;
+}
+.pagination-gap {
+  color: var(--text-4);
+  font-family: var(--mono);
+  font-size: 12px;
+}

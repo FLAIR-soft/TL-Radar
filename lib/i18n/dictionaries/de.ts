@@ -130,6 +130,9 @@ const de = {
     colNetDuration: 'Nettozeit',
     colEstimate: 'Ist / Schätzung',
     colAssignees: 'Zuständige',
+    summary: '{n} von {total} abgeschlossenen Aufgaben',
+    noProject: '— kein Projekt —',
+    nextPage: 'Weiter',
     lateBy: 'Verspätet um',
   },
   status: {

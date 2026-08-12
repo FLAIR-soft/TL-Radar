@@ -1,9 +1,10 @@
 import { Suspense } from 'react';
-import { Pause, Play, Archive as ArchiveIcon, SearchX } from 'lucide-react';
+import Link from 'next/link';
+import { Pause, Play, Archive as ArchiveIcon, SearchX, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
+import { fmtDateTime, fmtDateTimeCompact, fmtTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
 import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
@@ -19,12 +20,35 @@ import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
 function toQueryString(params: SearchParamsRecord): string {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value === undefined) continue;
+    if (value === undefined || key === 'page') continue;
     if (Array.isArray(value)) for (const v of value) qs.append(key, v);
     else qs.append(key, value);
   }
   return qs.toString();
 }
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// Номера страниц: все подряд, пока их немного, иначе первая, последняя и
+// окно вокруг текущей — чтобы строка не расползалась на сотнях страниц.
+function pageWindow(current: number, count: number): (number | 'gap')[] {
+  if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);
+  const pages = new Set([1, count, current, current - 1, current + 1]);
+  const sorted = [...pages].filter((n) => n >= 1 && n <= count).sort((a, b) => a - b);
+  const out: (number | 'gap')[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push('gap');
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+// Размер страницы архива. Без фильтров страница и счётчик считаются в базе
+// через range() + count: 'exact'; с фильтрами — в памяти, см. комментарий
+// у filtersActive ниже.
+const PAGE_SIZE = 25;
 
 const TASKS_SELECT = `
   *,
@@ -48,19 +72,35 @@ export default async function ArchivePage({
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: taskRows }, { data: profiles }, { data: projects }, { data: labels }] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select(TASKS_SELECT)
-      .eq('status', 'done')
-      .is('deleted_at', null)
-      .is('task_assignees.removed_at', null)
-      .order('created_at', { ascending: false })
-      .order('paused_at', { ascending: true, referencedTable: 'task_pauses' }),
-    supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
-    supabase.from('labels').select('*').is('deleted_at', null).order('name'),
-  ]);
+  const filtersActive = hasActiveFilters(filters);
+  const page = Math.max(1, Number(firstValue(rawSearchParams.page)) || 1);
+
+  // Часть фильтров (исполнители, метки) живёт в связанных таблицах, а поиск —
+  // по двум колонкам сразу, поэтому одним запросом с range() они не выражаются
+  // без inner-join'ов, которые заодно обрезали бы список исполнителей в строке.
+  // Компромисс: без фильтров страницу и общее число берёт база (там список и
+  // бывает длинным), с фильтрами задачи грузятся целиком и режутся в памяти —
+  // так счётчик и номера страниц не врут ни в одном из случаев.
+  const tasksQuery = supabase
+    .from('tasks')
+    .select(TASKS_SELECT, { count: 'exact' })
+    .eq('status', 'done')
+    .is('deleted_at', null)
+    .is('task_assignees.removed_at', null)
+    .order('created_at', { ascending: false })
+    .order('paused_at', { ascending: true, referencedTable: 'task_pauses' });
+
+  if (!filtersActive) {
+    tasksQuery.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  }
+
+  const [{ data: taskRows, count: totalCount }, { data: profiles }, { data: projects }, { data: labels }] =
+    await Promise.all([
+      tasksQuery,
+      supabase.from('profiles').select('id, name').order('name'),
+      supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
+      supabase.from('labels').select('*').is('deleted_at', null).order('name'),
+    ]);
 
   const done = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
   const profileList = profiles ?? [];
@@ -91,12 +131,26 @@ export default async function ArchivePage({
     );
   }
 
-  const filtersActive = hasActiveFilters(filters);
   const filteredDone = filtersActive
     ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
-  const rows = filteredDone.map((t) => {
+  const total = filtersActive ? filteredDone.length : totalCount ?? done.length;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageDone = filtersActive
+    ? filteredDone.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : filteredDone;
+
+  function pageHref(target: number): string {
+    const qs = new URLSearchParams(exportQuery);
+    if (target <= 1) qs.delete('page');
+    else qs.set('page', String(target));
+    const query = qs.toString();
+    return query ? `/archive?${query}` : '/archive';
+  }
+
+  const rows = pageDone.map((t) => {
     const taskPauses = pausesByTask.get(t.id) ?? [];
     return {
       t,
@@ -113,10 +167,10 @@ export default async function ArchivePage({
       taskPauses.map((p) => (
         <div className="pause-line" key={p.id}>
           <Pause size={12} strokeWidth={1.75} />
-          {fmtDateTime(p.paused_at, dict.intlLocale)}
+          {fmtTime(p.paused_at, dict.intlLocale)}
           <span>→</span>
           <Play size={12} strokeWidth={1.75} />
-          {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
+          {p.resumed_at ? fmtTime(p.resumed_at, dict.intlLocale) : '—'}
         </div>
       ))
     ) : (
@@ -166,7 +220,6 @@ export default async function ArchivePage({
               <th>{dict.archive.colPauses}</th>
               <th className="ta-right">{dict.archive.colNetDuration}</th>
               <th className="ta-right">{dict.archive.colEstimate}</th>
-              <th>{dict.archive.colAssignees}</th>
               <th></th>
             </tr>
           </thead>
@@ -178,44 +231,34 @@ export default async function ArchivePage({
               return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                 <td>
-                  <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
-                    {dict.status.done}
-                  </span>
-                  <br />
                   <strong className="archive-card-title">
                     {RowIcon && <RowIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
                     {t.title}
                   </strong>
-                  {labels.length > 0 && (
-                    <div className="t-labels">
-                      {labels.map((l) => (
-                        <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
-                          {l.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div className="archive-task-meta">
+                    <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
+                      {dict.status.done}
+                    </span>
+                    {labels.map((l) => (
+                      <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+                        {l.name}
+                      </span>
+                    ))}
+                    {assignees.length > 0 && <span className="mono archive-assignees">{assignees.join(', ')}</span>}
+                  </div>
                 </td>
                 <td>
                   {t.project_id && projectNames.get(t.project_id) ? (
-                    <span className="table-project-cell">
-                      {projectColors.get(t.project_id) && (
-                        <span
-                          className="project-color-dot"
-                          style={{ background: projectColors.get(t.project_id) ?? undefined }}
-                        />
-                      )}
-                      {projectNames.get(t.project_id)}
-                    </span>
+                    <span className="count-pill">{projectNames.get(t.project_id)}</span>
                   ) : (
-                    '—'
+                    <span className="row-placeholder">{dict.archive.noProject}</span>
                   )}
                 </td>
                 <td>{t.location || '—'}</td>
-                <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
-                <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtDateTimeCompact(t.created_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtTime(t.started_at, dict.intlLocale)}</td>
                 <td className="mono">
-                  {fmtDateTime(t.completed_at, dict.intlLocale)}
+                  {fmtTime(t.completed_at, dict.intlLocale)}
                   {lateMs !== null && (
                     <>
                       <br />
@@ -230,7 +273,6 @@ export default async function ArchivePage({
                 <td className={`mono ta-right ${t.estimated_minutes ? (estimateOver ? 'ta-over' : 'ta-under') : ''}`}>
                   {estimateCell(t, net)}
                 </td>
-                <td>{assignees.join(', ') || '—'}</td>
                 <td>
                   <TaskDetailPanel
                     task={t}
@@ -337,6 +379,39 @@ export default async function ArchivePage({
           </div>
           );
         })}
+      </div>
+
+      <div className="archive-footer">
+        <span className="archive-summary">
+          {dict.archive.summary
+            .replace('{n}', String(rows.length))
+            .replace('{total}', String(total))}
+        </span>
+        {pageCount > 1 && (
+          <nav className="pagination" aria-label={dict.archive.title}>
+            {pageWindow(currentPage, pageCount).map((p, i) =>
+              p === 'gap' ? (
+                <span key={`gap-${i}`} className="pagination-gap">
+                  …
+                </span>
+              ) : (
+                <Link
+                  key={p}
+                  href={pageHref(p)}
+                  className={`pagination-page ${p === currentPage ? 'is-active' : ''}`}
+                  aria-current={p === currentPage ? 'page' : undefined}
+                >
+                  {p}
+                </Link>
+              )
+            )}
+            {currentPage < pageCount && (
+              <Link href={pageHref(currentPage + 1)} className="pagination-page" aria-label={dict.archive.nextPage}>
+                <ChevronRight size={14} strokeWidth={2} />
+              </Link>
+            )}
+          </nav>
+        )}
       </div>
         </>
       )}

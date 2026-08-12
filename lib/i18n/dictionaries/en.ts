@@ -130,6 +130,9 @@ const en = {
     colNetDuration: 'Net time',
     colEstimate: 'Actual / Estimate',
     colAssignees: 'Assignees',
+    summary: '{n} of {total} completed tasks',
+    noProject: '— no project —',
+    nextPage: 'Next',
     lateBy: 'Late by',
   },
   status: {
