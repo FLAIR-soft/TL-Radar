@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { getInitials, getAvatarColor } from '@/lib/logic/initials';
 import { useToast } from './ToastProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { splitMentionSegments, type MentionableProfile } from '@/lib/logic/mentions';
@@ -172,6 +173,14 @@ export function CommentList({
             key={c.id}
             style={{ animationDelay: `${i * 25}ms` }}
           >
+            {/* Аватар слева, текст в бабле, моно-подпись под ним (скрин 05). */}
+            <span
+              className="comment-avatar"
+              style={{ ['--avatar-color' as string]: getAvatarColor(c.author_id ?? '') }}
+            >
+              {getInitials(resolveName(c.author_id))}
+            </span>
+            <div className="comment-main">
             <div className="comment-body">
               {splitMentionSegments(c.body).map((seg, i) => {
                 const name = seg.mentionUsername ? usernameToName.get(seg.mentionUsername) : null;
@@ -200,6 +209,7 @@ export function CommentList({
                   <Trash2 size={14} strokeWidth={1.75} />
                 </button>
               )}
+            </div>
             </div>
           </div>
         ))

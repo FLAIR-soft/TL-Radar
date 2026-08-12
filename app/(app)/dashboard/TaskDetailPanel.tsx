@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { History, Folder, MapPin, CalendarClock, BookmarkPlus, Eye, EyeOff } from 'lucide-react';
+import { History, Folder, MapPin, CalendarClock, BookmarkPlus, Eye, EyeOff, User } from 'lucide-react';
 import { SlideOver } from '@/components/SlideOver';
 import { ActivityLogList } from '@/components/ActivityLogList';
 import { CommentList } from '@/components/CommentList';
@@ -17,6 +17,7 @@ import {
   fmtDate,
   fmtDuration,
   fmtTimer,
+  isOverdue,
   waitingDuration,
   currentSessionDuration,
   currentPauseDuration,
@@ -90,6 +91,7 @@ export function TaskDetailPanel({
   // открытой панели задачи в работе; у закрытой интервал заведомо больше
   // времени её жизни, так что лишних перерисовок это не добавляет.
   const inProgress = task.status === 'in_progress';
+  const overdue = isOverdue(task);
   const now = useNowTick(open ? (inProgress ? 1000 : 30000) : 3600000);
   const liveMetric =
     waitingDuration(task, now) !== null
@@ -133,18 +135,12 @@ export function TaskDetailPanel({
         <History size={triggerLabel ? 16 : 18} strokeWidth={1.75} />
         {triggerLabel}
       </button>
-      <SlideOver open={open} onClose={() => setOpen(false)} title={task.title}>
-        <div className="detail-section">
-          <div className="detail-pills">
-            {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
-            <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
-              {dict.status[task.status]}
-            </span>
-            {task.priority && (
-              <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
-                {dict.priority[task.priority]}
-              </span>
-            )}
+      <SlideOver
+        open={open}
+        onClose={() => setOpen(false)}
+        title={task.title}
+        headerActions={
+          <>
             <button
               type="button"
               className={`icon-btn detail-save-template-btn ${watching ? 'watch-active' : ''}`}
@@ -165,8 +161,50 @@ export function TaskDetailPanel({
             >
               <BookmarkPlus size={16} strokeWidth={1.75} />
             </button>
+          </>
+        }
+        subheader={
+          <div className="detail-pills">
+            {TaskIcon && <TaskIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
+            <span className="pill" style={{ ['--pill-color' as string]: STATUS_COLOR[task.status] }}>
+              {dict.status[task.status]}
+            </span>
+            {task.priority && (
+              <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
+                {dict.priority[task.priority]}
+              </span>
+            )}
+            {overdue && (
+              <span className="pill detail-pill-overdue" style={{ ['--pill-color' as string]: 'var(--brand)' }}>
+                {dict.taskCard.overdue}
+              </span>
+            )}
           </div>
+        }
+      >
+        {/* Строки «AUFGABE #412» со скрина здесь нет намеренно: числового
+            номера задачи в базе не существует (D1 в PLAN.md), а обрезанный
+            UUID номером не является. */}
+        <div className="detail-section">
           {task.description && <p className="detail-desc">{task.description}</p>}
+          <div className="detail-tiles">
+            {liveMetric && (
+              <div className="detail-tile">
+                <span className="detail-tile-label">{liveMetric.label}</span>
+                <span className={`mono detail-tile-value ${overdue ? 'detail-tile-value-overdue' : ''}`}>
+                  {fmtTimer(liveMetric.value, inProgress)}
+                </span>
+              </div>
+            )}
+            {task.estimated_minutes !== null && (
+              <div className="detail-tile">
+                <span className="detail-tile-label">{dict.taskCard.estimate}</span>
+                <span className="mono detail-tile-value">
+                  {fmtDuration(task.estimated_minutes * 60000, dict.duration)}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="t-meta detail-meta">
             {projectName && (
               <span className="project-tag">
@@ -182,28 +220,38 @@ export function TaskDetailPanel({
               </span>
             )}
             {task.deadline && (
-              <span>
+              <span className={overdue ? 'detail-meta-overdue' : ''}>
                 <CalendarClock size={14} strokeWidth={1.75} />
                 {fmtDate(task.deadline, dict.intlLocale)}
               </span>
             )}
+            {assigneeNames.length > 0 && (
+              <span>
+                <User size={14} strokeWidth={1.75} />
+                {assigneeNames.join(', ')}
+              </span>
+            )}
           </div>
-          {assigneeNames.length > 0 && <div className="t-assignee">{assigneeNames.join(', ')}</div>}
-          {liveMetric && (
-            <div className="detail-row">
-              <span>{liveMetric.label}</span>
-              <span className="mono">{fmtTimer(liveMetric.value, inProgress)}</span>
-            </div>
-          )}
-          {task.estimated_minutes !== null && (
-            <div className="detail-row">
-              <span>{dict.taskCard.estimate}</span>
-              <span className="mono">{fmtDuration(task.estimated_minutes * 60000, dict.duration)}</span>
-            </div>
-          )}
         </div>
         <div className="detail-log">
-          <h4 className="detail-log-title">{dict.checklist.title}</h4>
+          <h4 className="detail-log-title">
+            {dict.checklist.title}
+            {checklist && checklist.length > 0 && (
+              <>
+                <span className="mono detail-log-count">
+                  {checklist.filter((c) => c.done).length}/{checklist.length}
+                </span>
+                <span className="detail-progress">
+                  <span
+                    className="detail-progress-fill"
+                    style={{
+                      width: `${(checklist.filter((c) => c.done).length / checklist.length) * 100}%`,
+                    }}
+                  />
+                </span>
+              </>
+            )}
+          </h4>
           {checklist === null ? (
             <div className="empty-note loading-row">
               <span className="loading-spinner" />
