@@ -4161,3 +4161,163 @@ p.section-sub {
   border-color: var(--brand-border);
   background: var(--brand-tint);
 }
+
+
+/* ---------- Форма «Neue Aufgabe» (редизайн v2, этап 10) ---------- */
+
+.task-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.task-form-main .field + .field {
+  margin-top: 16px;
+}
+.task-form-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-form-side .form-card {
+  padding: 16px 18px;
+  max-width: none;
+}
+.task-form-side .field + .field {
+  margin-top: 14px;
+}
+.task-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.task-form-actions .btn-primary {
+  width: 100%;
+  justify-content: center;
+}
+.task-form-secondary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.task-form-secondary .btn {
+  flex: 1;
+  justify-content: center;
+}
+/* Подпись под полем: подсказка про иконку и предупреждение о дате в прошлом. */
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+.field-hint-warning {
+  color: var(--brand);
+}
+/* Выбор шаблона в шапке страницы. */
+.template-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+/* Приоритет четырьмя сегментными кнопками вместо селекта (скрин 07). */
+.priority-segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.priority-segment {
+  padding: 7px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.priority-segment:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.priority-segment.is-active {
+  border-color: var(--segment-color);
+  color: var(--segment-color);
+  background: color-mix(in srgb, var(--segment-color) 12%, transparent);
+}
+/* Оценка: значение по-человечески справа от поля и пресеты под ним. */
+.estimate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.estimate-row input {
+  flex: 1;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.estimate-readable {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.estimate-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.estimate-preset {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.estimate-preset:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.estimate-preset.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+/* Поле с иконкой слева (Ort, Frist). */
+.input-with-icon {
+  position: relative;
+  display: block;
+}
+.input-with-icon svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+.input-with-icon input {
+  padding-left: 34px;
+}
+@media (max-width: 900px) {
+  .task-form-layout {
+    grid-template-columns: 1fr;
+  }
+}
