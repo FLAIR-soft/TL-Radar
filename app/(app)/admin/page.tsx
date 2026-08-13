@@ -69,7 +69,7 @@ export default async function AdminPage() {
           <div key={p.id} className="admin-row">
             <span
               className={`admin-avatar ${isSelf ? 'admin-avatar-self' : ''}`}
-              style={isSelf ? undefined : { background: getAvatarColor(p.id) }}
+              style={isSelf ? undefined : { ['--avatar-color' as string]: getAvatarColor(p.id) }}
             >
               {getInitials(p.name)}
             </span>
