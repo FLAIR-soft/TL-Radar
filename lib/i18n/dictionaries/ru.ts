@@ -249,6 +249,7 @@ const ru = {
     useTemplate: 'Из шаблона',
     noTemplate: '— без шаблона —',
     errors: {
+      missingTitle: 'Сначала введите название задачи.',
       taskNotFound: 'Задача не найдена.',
     },
   },

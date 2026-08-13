@@ -251,6 +251,7 @@ const de = {
     useTemplate: 'Aus Vorlage',
     noTemplate: '— keine Vorlage —',
     errors: {
+      missingTitle: 'Bitte zuerst einen Aufgabentitel eingeben.',
       taskNotFound: 'Aufgabe nicht gefunden.',
     },
   },

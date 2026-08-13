@@ -7,7 +7,7 @@ import { CalendarClock, CircleAlert, MapPin } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { fmtDuration } from '@/lib/logic/tasks';
-import { createTemplateFromTask } from '@/app/(app)/templates/actions';
+import { createTemplateFromTask, createTemplateFromFields } from '@/app/(app)/templates/actions';
 import { AssigneeSelect } from './AssigneeSelect';
 import { LabelSelect } from './LabelSelect';
 import { IconPicker } from '@/components/IconPicker';
@@ -79,10 +79,15 @@ export function TaskForm({
     return minutes === WORKDAY_MINUTES ? dict.taskForm.presetDay : fmtDuration(minutes * 60000, dict.duration);
   }
 
-  function handleSaveAsTemplate() {
-    if (!editingTaskId) return;
+  // У существующей задачи шаблон снимается с неё целиком (вместе с чек-листом),
+  // у ещё не сохранённой — собирается из полей формы.
+  function handleSaveAsTemplate(e: React.MouseEvent<HTMLButtonElement>) {
+    const form = e.currentTarget.form;
     startSaveTemplate(() => {
-      createTemplateFromTask(editingTaskId).then((result) => {
+      const promise = editingTaskId
+        ? createTemplateFromTask(editingTaskId)
+        : createTemplateFromFields(new FormData(form!));
+      promise.then((result) => {
         if (result?.error) toast.error(result.error);
         else toast.success(dict.templates.savedConfirm);
       });
@@ -235,22 +240,20 @@ export function TaskForm({
               {pending && <span className="btn-spinner" />}
               {isEditingExisting ? dict.taskForm.submitEdit : dict.taskForm.submitNew}
             </button>
-            {isEditingExisting && (
-              <div className="task-form-secondary">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  disabled={isSavingTemplate}
-                  onClick={handleSaveAsTemplate}
-                  data-testid="save-as-template-form"
-                >
-                  {dict.templates.saveAsTemplate}
-                </button>
-                <Link href="/dashboard" className="btn btn-text">
-                  {dict.taskForm.cancel}
-                </Link>
-              </div>
-            )}
+            <div className="task-form-secondary">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={isSavingTemplate}
+                onClick={handleSaveAsTemplate}
+                data-testid="save-as-template-form"
+              >
+                {dict.templates.saveAsTemplate}
+              </button>
+              <Link href="/dashboard" className="btn btn-text">
+                {dict.taskForm.cancel}
+              </Link>
+            </div>
           </div>
         </div>
       </form>
