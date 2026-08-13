@@ -165,7 +165,7 @@ export type TaskLabel = {
   added_by: string | null;
 };
 
-export type WipStatus = 'waiting' | 'in_progress' | 'paused';
+export type WipStatus = 'waiting' | 'in_progress' | 'paused' | 'done';
 
 export type WipLimit = {
   status: WipStatus;

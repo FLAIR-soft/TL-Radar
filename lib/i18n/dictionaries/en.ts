@@ -251,6 +251,7 @@ const en = {
     useTemplate: 'From template',
     noTemplate: '— no template —',
     errors: {
+      missingTitle: 'Enter a task title first.',
       taskNotFound: 'Task not found.',
     },
   },
