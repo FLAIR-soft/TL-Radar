@@ -100,12 +100,12 @@ export function computePersonStats(params: {
   }));
 }
 
-// Kazhdyy chelovek nachinayet period so 100% svobodnoy yomkosti; kazhdyy
-// otrabotannyy chas otkusyvayet ot neyo protsent, proportsional'nyy dole
-// dostupnogo rabochego vremeni. Mozhet uyti v minus, yesli otrabotano bol'she
-// dostupnogo (pereработка) — eto namerenno: velichina pereработki dolzhna
-// byt' vidna, a ne skryvat'sya za "0%".
-export function remainingCapacityPercent(workedMs: number, availableMs: number): number {
-  if (availableMs <= 0) return 100;
-  return 100 - (workedMs / availableMs) * 100;
+// Доля отработанного от доступного рабочего времени. Прямая шкала: 90 % —
+// это «отработано 90 % доступного времени» (откат K3, редизайн v2, этап 9).
+// Раньше та же величина показывалась инвертированной, как «% свободной
+// ёмкости». Может превысить 100 % при переработке — это намеренно, величина
+// переработки должна быть видна, а не упираться в потолок.
+export function workedPercent(workedMs: number, availableMs: number): number {
+  if (availableMs <= 0) return 0;
+  return (workedMs / availableMs) * 100;
 }

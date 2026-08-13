@@ -276,6 +276,7 @@ const de = {
     title: 'WIP-Limits',
     subtitle: 'Maximale Anzahl Aufgaben gleichzeitig in jeder Kanban-Spalte. Leer heißt kein Limit.',
     noLimit: 'kein Limit',
+    fullWarning: '«{status}» ist aktuell voll — {n} von {limit} Aufgaben.',
     save: 'Speichern',
     saved: 'Limit gespeichert.',
     errors: {
@@ -343,6 +344,12 @@ const de = {
     title: 'Admin',
     usersTitle: 'Benutzer',
     subtitle: 'Passwort zurücksetzen oder Benutzer löschen.',
+    accountsCount: {
+      one: '{n} Konto',
+      few: '{n} Konten',
+      many: '{n} Konten',
+      other: '{n} Konten',
+    },
     roleEditor: 'Editor',
     roleAdmin: 'Admin',
     selfLabel: 'Sie',
@@ -390,13 +397,17 @@ const de = {
   },
   analytics: {
     title: 'Analytik',
-    subtitle: 'Freie Kapazität pro Person: Wie viel der verfügbaren Arbeitszeit (07:30–16:00) noch nicht durch Aufgaben belegt ist.',
+    subtitle:
+      'Zeit auf Aufgaben pro Person im Vergleich zur verfügbaren Arbeitszeit (07:30–16:00).',
     empty: 'Noch keine registrierten Benutzer.',
     workedLabel: 'Gearbeitet',
     availableLabel: 'Verfügbar',
     colPerson: 'Person',
     colWorked: 'Gearbeitet',
-    colPercent: '% frei',
+    colPercent: '% der verfügbaren Zeit',
+    workedEyebrow: 'Gearbeitet · % der verfügbaren Zeit',
+    availableInRange: 'Verfügbar im Zeitraum',
+    estimateAccuracyColDistribution: 'Verteilung um die Schätzung',
     periodLabels: {
       7: '7 Tage',
       30: '30 Tage',

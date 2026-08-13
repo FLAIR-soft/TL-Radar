@@ -118,13 +118,21 @@ export default async function AnalyticsPage({
         <>
           <AnalyticsStats stats={stats} availableMs={availableMs} />
 
-          <h3 className="section-title analytics-subsection-title">{dict.analytics.cumulativeFlowTitle}</h3>
-          <p className="section-sub">{dict.analytics.cumulativeFlowSubtitle}</p>
-          <CumulativeFlowChart data={cumulativeFlow} dict={dict} />
+          {/* Заголовки блоков переехали внутрь карточек: на скрине 01 у
+              каждого блока своя карточка с заголовком и легендой в шапке. */}
+          <CumulativeFlowChart
+            data={cumulativeFlow}
+            dict={dict}
+            title={dict.analytics.cumulativeFlowTitle}
+            subtitle={dict.analytics.cumulativeFlowSubtitle}
+          />
 
-          <h3 className="section-title analytics-subsection-title">{dict.analytics.estimateAccuracyTitle}</h3>
-          <p className="section-sub">{dict.analytics.estimateAccuracySubtitle}</p>
-          <EstimateAccuracyTable stats={estimateAccuracy} dict={dict} />
+          <EstimateAccuracyTable
+            stats={estimateAccuracy}
+            dict={dict}
+            title={dict.analytics.estimateAccuracyTitle}
+            subtitle={dict.analytics.estimateAccuracySubtitle}
+          />
         </>
       )}
     </div>

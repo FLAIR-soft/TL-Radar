@@ -20,12 +20,18 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
     paused: byStatus.get('paused')?.toString() ?? '',
   });
 
-  function handleSave(status: WipStatus) {
-    const raw = values[status].trim();
-    const limit = raw ? Number(raw) : null;
+  // Одна кнопка на весь ряд (скрин 06): сохраняем все статусы разом, каждый
+  // своим вызовом того же серверного экшена — сам экшен не менялся.
+  function handleSaveAll() {
     startTransition(() => {
-      updateWipLimit(status, limit).then((result) => {
-        if (result?.error) toast.error(result.error);
+      Promise.all(
+        STATUSES.map((status) => {
+          const raw = values[status].trim();
+          return updateWipLimit(status, raw ? Number(raw) : null);
+        })
+      ).then((results) => {
+        const failed = results.find((r) => r?.error);
+        if (failed?.error) toast.error(failed.error);
         else toast.success(dict.wipLimits.saved);
       });
     });
@@ -34,7 +40,7 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
   return (
     <div className="wip-limits-form">
       {STATUSES.map((status) => (
-        <div className="wip-limit-row" key={status}>
+        <div className="wip-limit-field" key={status}>
           <span className="wip-limit-label">
             <span className="status-dot" style={{ background: STATUS_COLOR[status] }} />
             {dict.status[status]}
@@ -48,17 +54,17 @@ export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
             placeholder={dict.wipLimits.noLimit}
             data-testid={`wip-limit-input-${status}`}
           />
-          <button
-            type="button"
-            className="btn btn-dark"
-            disabled={isPending}
-            onClick={() => handleSave(status)}
-            data-testid={`wip-limit-save-${status}`}
-          >
-            {dict.wipLimits.save}
-          </button>
         </div>
       ))}
+      <button
+        type="button"
+        className="btn btn-dark wip-limits-save"
+        disabled={isPending}
+        onClick={handleSaveAll}
+        data-testid="wip-limit-save"
+      >
+        {dict.wipLimits.save}
+      </button>
     </div>
   );
 }
