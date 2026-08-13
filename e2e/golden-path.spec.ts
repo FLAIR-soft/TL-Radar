@@ -754,14 +754,16 @@ test.describe('golden path', () => {
 
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
-    await expect(page.locator('.cfd-svg')).toBeVisible();
+    // График переписан со SVG-областей на div-колонки (редизайн v2, этап 9),
+    // а точность оценок получила собственную разметку вместо таблицы архива.
+    await expect(page.locator('.cfd-columns')).toBeVisible();
     await expect(page.locator('.cfd-legend-item')).toHaveCount(4);
 
     if (!withinWorkHours) return; // outside work hours: no completed task to assert on below
 
-    const row = page.locator('.archive-table .archive-row', { hasText: owner.fullName });
+    const row = page.locator('.ea-row', { hasText: owner.fullName });
     await expect(row).toBeVisible();
-    await expect(row.locator('.pill')).toBeVisible();
+    await expect(row.locator('.ea-value')).toBeVisible();
   });
 
   test('archive and analytics export CSV and XLSX with the task data', async ({ page }) => {

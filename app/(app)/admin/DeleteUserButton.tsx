@@ -23,7 +23,7 @@ export function DeleteUserButton({ userId }: { userId: string }) {
   return (
     <div className="admin-row-delete">
       <button
-        className="icon-btn"
+        className="icon-btn icon-btn-danger"
         type="button"
         title={dict.admin.deleteTitle}
         disabled={isPending}

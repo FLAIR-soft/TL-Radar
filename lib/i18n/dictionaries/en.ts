@@ -276,6 +276,7 @@ const en = {
     title: 'WIP limits',
     subtitle: 'Maximum tasks at once in each kanban column. Empty means no limit.',
     noLimit: 'no limit',
+    fullWarning: '“{status}” is currently full — {n} of {limit} tasks.',
     save: 'Save',
     saved: 'Limit saved.',
     errors: {
@@ -343,6 +344,12 @@ const en = {
     title: 'Admin',
     usersTitle: 'Users',
     subtitle: 'Reset a password or delete a user.',
+    accountsCount: {
+      one: '{n} account',
+      few: '{n} accounts',
+      many: '{n} accounts',
+      other: '{n} accounts',
+    },
     roleEditor: 'editor',
     roleAdmin: 'admin',
     selfLabel: 'You',
@@ -390,13 +397,17 @@ const en = {
   },
   analytics: {
     title: 'Analytics',
-    subtitle: 'Free capacity per person: how much of the available working time (07:30–16:00) is not yet taken up by tasks.',
+    subtitle:
+      'Time on tasks per person compared to available working hours (07:30–16:00).',
     empty: 'No registered users yet.',
     workedLabel: 'Worked',
     availableLabel: 'Available',
     colPerson: 'Person',
     colWorked: 'Worked',
-    colPercent: '% free',
+    colPercent: '% of available time',
+    workedEyebrow: 'Worked · % of available time',
+    availableInRange: 'Available in range',
+    estimateAccuracyColDistribution: 'Spread around the estimate',
     periodLabels: {
       7: '7 days',
       30: '30 days',
