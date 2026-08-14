@@ -1879,7 +1879,11 @@ p.section-sub {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  /* Время паузы — единая строка. С переносом (и особенно в англоязычном
+     формате «03:20 PM») ячейка разваливалась на пять строк и раздувала
+     высоту всей таблицы. */
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 /* Светлая тема: --paused (#d97706) на --surface даёт 3.19:1, ниже AA.
    Тёмная тема уже проходит (10.5:1) — правим только светлую. */
@@ -2189,7 +2193,9 @@ p.section-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 640px;
+  /* Раньше было 640px, из-за чего поле пароля и кнопка переносились на
+     вторую строку. На скрине 06 строка пользователя одна: аватар и имя
+     слева, сброс пароля и удаление справа. */
 }
 .admin-row {
   background: var(--surface);
@@ -2238,6 +2244,10 @@ p.section-sub {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  /* Занимает место сразу за аватаром, иначе space-between отбрасывал имя
+     к центру, а действия переносились на вторую строку. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .admin-row-name {
   font-weight: 700;
@@ -2250,8 +2260,10 @@ p.section-sub {
 .admin-row-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 .admin-reset-form {
   display: flex;
@@ -3902,6 +3914,10 @@ p.section-sub {
   white-space: normal;
   font-size: 10px;
   line-height: 1.25;
+  /* Без минимальной ширины в узкой колонке пилюля сжималась в кружок
+     и текст в ней ломался по буквам. */
+  min-width: 104px;
+  text-align: center;
 }
 .archive-footer {
   display: flex;

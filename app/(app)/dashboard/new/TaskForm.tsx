@@ -76,7 +76,11 @@ export function TaskForm({
   const estimateReadable = estimateMinutes > 0 ? fmtDuration(estimateMinutes * 60000, dict.duration) : null;
 
   function presetLabel(minutes: number): string {
-    return minutes === WORKDAY_MINUTES ? dict.taskForm.presetDay : fmtDuration(minutes * 60000, dict.duration);
+    if (minutes === WORKDAY_MINUTES) return dict.taskForm.presetDay;
+    // Целые часы — без хвоста «0 Min»: на скрине 07 пресеты подписаны
+    // «1 Std» и «3 Std», а fmtDuration всегда дописывает минуты.
+    if (minutes % 60 === 0) return `${minutes / 60} ${dict.duration.hourShort}`;
+    return fmtDuration(minutes * 60000, dict.duration);
   }
 
   // У существующей задачи шаблон снимается с неё целиком (вместе с чек-листом),
