@@ -1,4 +1,4 @@
-import { STATUS_COLOR } from '@/lib/logic/tasks';
+import { STATUS_COLOR, fmtDateShort } from '@/lib/logic/tasks';
 import type { DailyStatusCounts } from '@/lib/logic/cumulative-flow';
 import type { TaskStatus } from '@/lib/supabase/types';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
@@ -55,7 +55,9 @@ export function CumulativeFlowChart({
                   />
                 ))}
               </div>
-              <span className="cfd-date mono">{d.date}</span>
+              {/* d.date — ISO «2026-08-07»; под графиком нужна короткая
+                  локальная дата, как на скрине 01. */}
+              <span className="cfd-date mono">{fmtDateShort(d.date, dict.intlLocale)}</span>
             </div>
           );
         })}
