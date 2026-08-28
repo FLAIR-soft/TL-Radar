@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Archivo } from "next/font/google";
 import { getThemeCookie } from "@/lib/theme/cookie";
 import "./globals.css";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-archivo",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "TL-Radar",
@@ -30,7 +38,7 @@ export default async function RootLayout({
   const theme = await getThemeCookie();
 
   return (
-    <html lang="de" data-theme={theme}>
+    <html lang="de" data-theme={theme} className={archivo.variable}>
       <body>{children}</body>
     </html>
   );

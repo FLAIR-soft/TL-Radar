@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser } from '@/lib/supabase/request-cache';
 import { createTask, editTaskFields } from '../actions';
 import { TaskForm } from './TaskForm';
 
@@ -11,13 +12,11 @@ export default async function NewTaskPage({
   const { edit, template: templateId } = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   const [{ data: profiles }, { data: activeProjects }, { data: templateList }, { data: labelList }] = await Promise.all([
     supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+    supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
     supabase.from('task_templates').select('id, title').is('deleted_at', null).order('title'),
     supabase.from('labels').select('*').is('deleted_at', null).order('name'),
   ]);
@@ -82,6 +81,7 @@ export default async function NewTaskPage({
   return (
     <TaskForm
       action={editTaskFields.bind(null, task.id)}
+      editingTaskId={task.id}
       editing={{
         title: task.title,
         description: task.description ?? '',

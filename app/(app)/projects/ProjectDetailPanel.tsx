@@ -42,8 +42,9 @@ export function ProjectDetailPanel({
       </button>
       <SlideOver open={open} onClose={() => setOpen(false)} title={project.name}>
         <div className="detail-section">
-          {(ProjectIcon || project.priority) && (
+          {(ProjectIcon || project.priority || project.color) && (
             <div className="detail-pills">
+              {project.color && <span className="project-color-dot" style={{ background: project.color }} />}
               {ProjectIcon && <ProjectIcon size={16} strokeWidth={1.75} className="t-title-icon" />}
               {project.priority && (
                 <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[project.priority] }}>

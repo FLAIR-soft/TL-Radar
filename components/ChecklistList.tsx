@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import {
   addChecklistItem,
   toggleChecklistItem,
@@ -10,6 +11,11 @@ import {
   moveChecklistItem,
 } from '@/app/(app)/dashboard/checklist-actions';
 import type { TaskChecklistItem } from '@/lib/supabase/types';
+
+// Matches the .checklist-row max-height/opacity/padding transition duration
+// in globals.css — the row stays in the DOM this long after delete so the
+// collapse animation can play, instead of just vanishing.
+const EXIT_MS = 240;
 
 export function ChecklistList({
   taskId,
@@ -21,8 +27,10 @@ export function ChecklistList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState('');
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,7 +41,7 @@ export function ChecklistList({
     startTransition(() => {
       addChecklistItem(taskId, formData).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         setTitle('');
@@ -48,10 +56,28 @@ export function ChecklistList({
     });
   }
 
-  function handleDelete(id: string) {
+  function handleDelete(id: string, rowEl: HTMLElement | null) {
     if (!confirm(dict.checklist.deleteConfirm)) return;
+
+    if (rowEl) {
+      rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
+      void rowEl.offsetHeight; // force reflow so the browser has a starting height to transition from
+      requestAnimationFrame(() => {
+        rowEl.style.maxHeight = '0px';
+      });
+    }
+    setRemovingIds((prev) => new Set(prev).add(id));
+
+    const settle = new Promise<void>((resolve) => setTimeout(resolve, EXIT_MS));
     startTransition(() => {
-      deleteChecklistItem(id).then(() => onChange());
+      Promise.all([deleteChecklistItem(id), settle]).then(() => {
+        setRemovingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        onChange();
+      });
     });
   }
 
@@ -67,7 +93,11 @@ export function ChecklistList({
         <div className="empty-note">{dict.checklist.empty}</div>
       ) : (
         items.map((item, i) => (
-          <div className="checklist-row" key={item.id}>
+          <div
+            className={`checklist-row ${removingIds.has(item.id) ? 'is-removing' : ''}`}
+            key={item.id}
+            style={{ animationDelay: `${i * 25}ms` }}
+          >
             <label className="checklist-checkbox-label">
               <input
                 type="checkbox"
@@ -104,7 +134,7 @@ export function ChecklistList({
                 className="icon-btn checklist-move-btn"
                 title={dict.checklist.deleteTitle}
                 disabled={isPending}
-                onClick={() => handleDelete(item.id)}
+                onClick={(e) => handleDelete(item.id, e.currentTarget.closest<HTMLElement>('.checklist-row'))}
                 data-testid="checklist-delete"
               >
                 <Trash2 size={14} strokeWidth={1.75} />
@@ -125,10 +155,11 @@ export function ChecklistList({
         />
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary checklist-add-btn"
           disabled={isPending || !title.trim()}
           data-testid="checklist-submit"
         >
+          <Plus size={16} strokeWidth={2} />
           {dict.checklist.addButton}
         </button>
       </form>

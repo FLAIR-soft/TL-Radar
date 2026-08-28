@@ -1,133 +1,163 @@
 import { Suspense } from 'react';
-import { Pause, Play, Archive as ArchiveIcon, SearchX } from 'lucide-react';
+import Link from 'next/link';
+import { Pause, Play, Archive as ArchiveIcon, SearchX, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
+import { fmtDateTime, fmtDateTimeCompact, fmtTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
+import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { TaskPause } from '@/lib/supabase/types';
+import type { Task, TaskPause } from '@/lib/supabase/types';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
+import { ExportButtons } from '@/components/ExportButtons';
 import { TaskDetailPanel } from '@/app/(app)/dashboard/TaskDetailPanel';
+
+// The export links have to carry the current filters, and since the buttons
+// now live in the page header instead of inside TaskFilterBar, the query
+// string is rebuilt here from the same searchParams the page already reads.
+function toQueryString(params: SearchParamsRecord): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || key === 'page') continue;
+    if (Array.isArray(value)) for (const v of value) qs.append(key, v);
+    else qs.append(key, value);
+  }
+  return qs.toString();
+}
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// Номера страниц: все подряд, пока их немного, иначе первая, последняя и
+// окно вокруг текущей — чтобы строка не расползалась на сотнях страниц.
+function pageWindow(current: number, count: number): (number | 'gap')[] {
+  if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);
+  const pages = new Set([1, count, current, current - 1, current + 1]);
+  const sorted = [...pages].filter((n) => n >= 1 && n <= count).sort((a, b) => a - b);
+  const out: (number | 'gap')[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) out.push('gap');
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+// Размер страницы архива. Без фильтров страница и счётчик считаются в базе
+// через range() + count: 'exact'; с фильтрами — в памяти, см. комментарий
+// у filtersActive ниже.
+const PAGE_SIZE = 25;
+
+const TASKS_SELECT = `
+  *,
+  task_pauses(*),
+  task_assignees(assignee_id),
+  task_labels(label_id)
+`;
 
 export default async function ArchivePage({
   searchParams,
 }: {
   searchParams: Promise<SearchParamsRecord>;
 }) {
-  const filters = parseTaskFilters(await searchParams);
+  const rawSearchParams = await searchParams;
+  const filters = parseTaskFilters(rawSearchParams);
+  const exportQuery = toQueryString(rawSearchParams);
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('locale')
-    .eq('id', user!.id)
-    .single();
+  const user = await getCachedUser();
+  const profile = await getCachedProfile(user!.id);
 
   const dict = getDictionary(profile?.locale ?? 'de');
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }, { data: labels }] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select('*')
-      .eq('status', 'done')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
-    supabase.from('labels').select('*').is('deleted_at', null).order('name'),
-  ]);
+  const filtersActive = hasActiveFilters(filters);
+  const page = Math.max(1, Number(firstValue(rawSearchParams.page)) || 1);
 
-  const done = tasks ?? [];
+  // Часть фильтров (исполнители, метки) живёт в связанных таблицах, а поиск —
+  // по двум колонкам сразу, поэтому одним запросом с range() они не выражаются
+  // без inner-join'ов, которые заодно обрезали бы список исполнителей в строке.
+  // Компромисс: без фильтров страницу и общее число берёт база (там список и
+  // бывает длинным), с фильтрами задачи грузятся целиком и режутся в памяти —
+  // так счётчик и номера страниц не врут ни в одном из случаев.
+  const tasksQuery = supabase
+    .from('tasks')
+    .select(TASKS_SELECT, { count: 'exact' })
+    .eq('status', 'done')
+    .is('deleted_at', null)
+    .is('task_assignees.removed_at', null)
+    .order('created_at', { ascending: false })
+    .order('paused_at', { ascending: true, referencedTable: 'task_pauses' });
+
+  if (!filtersActive) {
+    tasksQuery.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+  }
+
+  const [{ data: taskRows, count: totalCount }, { data: profiles }, { data: projects }, { data: labels }] =
+    await Promise.all([
+      tasksQuery,
+      supabase.from('profiles').select('id, name').order('name'),
+      supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
+      supabase.from('labels').select('*').is('deleted_at', null).order('name'),
+    ]);
+
+  const done = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
   const profileList = profiles ?? [];
   const projectList = projects ?? [];
   const labelList = labels ?? [];
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
+  const projectColors = new Map(projectList.map((p) => [p.id, p.color]));
   const labelById = new Map(labelList.map((l) => [l.id, l]));
 
-  let pauses: TaskPause[] = [];
-  const assigneeNamesByTask = new Map<string, string[]>();
-  const assigneeIdsByTask = new Map<string, string[]>();
-  const labelIdsByTask = new Map<string, string[]>();
-  if (done.length) {
-    const [{ data: pauseData }, { data: assigneeData }, { data: labelData }] = await Promise.all([
-      supabase
-        .from('task_pauses')
-        .select('*')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        )
-        .order('paused_at', { ascending: true }),
-      supabase
-        .from('task_assignees')
-        .select('task_id, assignee_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        )
-        .is('removed_at', null),
-      supabase
-        .from('task_labels')
-        .select('task_id, label_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        ),
-    ]);
-    pauses = pauseData ?? [];
-    for (const a of assigneeData ?? []) {
-      const names = assigneeNamesByTask.get(a.task_id) ?? [];
-      const name = profileNames.get(a.assignee_id);
-      if (name) names.push(name);
-      assigneeNamesByTask.set(a.task_id, names);
-
-      const ids = assigneeIdsByTask.get(a.task_id) ?? [];
-      ids.push(a.assignee_id);
-      assigneeIdsByTask.set(a.task_id, ids);
-    }
-    for (const l of labelData ?? []) {
-      const ids = labelIdsByTask.get(l.task_id) ?? [];
-      ids.push(l.label_id);
-      labelIdsByTask.set(l.task_id, ids);
-    }
-  }
-
-  const pausesByTask = new Map<string, TaskPause[]>();
-  for (const p of pauses) {
-    const list = pausesByTask.get(p.task_id) ?? [];
-    list.push(p);
-    pausesByTask.set(p.task_id, list);
-  }
+  const { pausesByTask, assigneeNamesByTask, assigneeIdsByTask, labelIdsByTask, labelsByTask } = buildTaskRelationMaps(
+    done,
+    profileNames,
+    labelById
+  );
 
   if (!done.length) {
     return (
       <div className="page-fade">
-        <h2 className="section-title">{dict.archive.title}</h2>
-        <p className="section-sub">{dict.archive.subtitle}</p>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.archive.title}</h2>
+            <p className="section-sub">{dict.archive.subtitle}</p>
+          </div>
+        </div>
         <EmptyState icon={ArchiveIcon} title={dict.archive.empty} subtitle={dict.archive.emptyTitle} />
       </div>
     );
   }
 
-  const filtersActive = hasActiveFilters(filters);
   const filteredDone = filtersActive
     ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
-  const rows = filteredDone.map((t) => {
+  const total = filtersActive ? filteredDone.length : totalCount ?? done.length;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageDone = filtersActive
+    ? filteredDone.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : filteredDone;
+
+  function pageHref(target: number): string {
+    const qs = new URLSearchParams(exportQuery);
+    if (target <= 1) qs.delete('page');
+    else qs.set('page', String(target));
+    const query = qs.toString();
+    return query ? `/archive?${query}` : '/archive';
+  }
+
+  const rows = pageDone.map((t) => {
     const taskPauses = pausesByTask.get(t.id) ?? [];
     return {
       t,
       taskPauses,
       net: netDuration(t, taskPauses),
       assignees: assigneeNamesByTask.get(t.id) ?? [],
-      labels: (labelIdsByTask.get(t.id) ?? []).map((id) => labelById.get(id)).filter((l): l is NonNullable<typeof l> => !!l),
+      labels: labelsByTask.get(t.id) ?? [],
       lateMs: completedLateBy(t),
     };
   });
@@ -137,10 +167,10 @@ export default async function ArchivePage({
       taskPauses.map((p) => (
         <div className="pause-line" key={p.id}>
           <Pause size={12} strokeWidth={1.75} />
-          {fmtDateTime(p.paused_at, dict.intlLocale)}
+          {fmtTime(p.paused_at, dict.intlLocale)}
           <span>→</span>
           <Play size={12} strokeWidth={1.75} />
-          {p.resumed_at ? fmtDateTime(p.resumed_at, dict.intlLocale) : '—'}
+          {p.resumed_at ? fmtTime(p.resumed_at, dict.intlLocale) : '—'}
         </div>
       ))
     ) : (
@@ -154,10 +184,18 @@ export default async function ArchivePage({
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.archive.title}</h2>
-      <p className="section-sub">{dict.archive.subtitle}</p>
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.archive.title}</h2>
+          <p className="section-sub">{dict.archive.subtitle}</p>
+        </div>
+        <ExportButtons
+          csvHref={`/api/export/archive?format=csv&${exportQuery}`}
+          xlsxHref={`/api/export/archive?format=xlsx&${exportQuery}`}
+        />
+      </div>
       <Suspense fallback={null}>
-        <TaskFilterBar profiles={profileList} projects={projectList} labels={labelList} showExport />
+        <TaskFilterBar profiles={profileList} projects={projectList} labels={labelList} />
       </Suspense>
       {filtersActive && rows.length === 0 ? (
         <EmptyState
@@ -180,47 +218,47 @@ export default async function ArchivePage({
               <th>{dict.archive.colStarted}</th>
               <th>{dict.archive.colCompleted}</th>
               <th>{dict.archive.colPauses}</th>
-              <th>{dict.archive.colNetDuration}</th>
-              <th>{dict.archive.colEstimate}</th>
+              <th className="ta-right">{dict.archive.colNetDuration}</th>
+              <th className="ta-right">{dict.archive.colEstimate}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
               const RowIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+              const estimateMs = t.estimated_minutes ? t.estimated_minutes * 60000 : null;
+              const estimateOver = estimateMs !== null && net !== null && net > estimateMs;
               return (
               <tr key={t.id} className="archive-row" style={{ animationDelay: `${i * 30}ms` }}>
                 <td>
-                  <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
-                    {dict.status.done}
-                  </span>
-                  <br />
                   <strong className="archive-card-title">
                     {RowIcon && <RowIcon size={14} strokeWidth={1.75} className="t-title-icon" />}
                     {t.title}
                   </strong>
-                  {labels.length > 0 && (
-                    <div className="t-labels">
-                      {labels.map((l) => (
-                        <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
-                          {l.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {assignees.length > 0 && (
-                    <>
-                      <br />
-                      <span className="mono">{assignees.join(', ')}</span>
-                    </>
+                  <div className="archive-task-meta">
+                    <span className="pill" style={{ ['--pill-color' as string]: 'var(--done)' }}>
+                      {dict.status.done}
+                    </span>
+                    {labels.map((l) => (
+                      <span key={l.id} className="pill label-pill" style={{ ['--pill-color' as string]: l.color }}>
+                        {l.name}
+                      </span>
+                    ))}
+                    {assignees.length > 0 && <span className="mono archive-assignees">{assignees.join(', ')}</span>}
+                  </div>
+                </td>
+                <td>
+                  {t.project_id && projectNames.get(t.project_id) ? (
+                    <span className="count-pill">{projectNames.get(t.project_id)}</span>
+                  ) : (
+                    <span className="row-placeholder">{dict.archive.noProject}</span>
                   )}
                 </td>
-                <td>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</td>
                 <td>{t.location || '—'}</td>
-                <td className="mono">{fmtDateTime(t.created_at, dict.intlLocale)}</td>
-                <td className="mono">{fmtDateTime(t.started_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtDateTimeCompact(t.created_at, dict.intlLocale)}</td>
+                <td className="mono">{fmtTime(t.started_at, dict.intlLocale)}</td>
                 <td className="mono">
-                  {fmtDateTime(t.completed_at, dict.intlLocale)}
+                  {fmtTime(t.completed_at, dict.intlLocale)}
                   {lateMs !== null && (
                     <>
                       <br />
@@ -231,13 +269,17 @@ export default async function ArchivePage({
                   )}
                 </td>
                 <td>{pausesCell(taskPauses)}</td>
-                <td className="mono">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
-                <td className="mono">{estimateCell(t, net)}</td>
+                <td className="mono ta-right">{net !== null ? fmtDuration(net, dict.duration) : '—'}</td>
+                <td className={`mono ta-right ${t.estimated_minutes ? (estimateOver ? 'ta-over' : 'ta-under') : ''}`}>
+                  {estimateCell(t, net)}
+                </td>
                 <td>
                   <TaskDetailPanel
                     task={t}
+                    pauses={taskPauses}
                     assigneeNames={assignees}
                     projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                    projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
                     profileNames={profileNames}
                   />
                 </td>
@@ -251,6 +293,8 @@ export default async function ArchivePage({
       <div className="archive-cards">
         {rows.map(({ t, taskPauses, net, assignees, labels, lateMs }, i) => {
           const CardIcon = isIconName(t.icon) ? ICON_MAP[t.icon] : undefined;
+          const estimateMs = t.estimated_minutes ? t.estimated_minutes * 60000 : null;
+          const estimateOver = estimateMs !== null && net !== null && net > estimateMs;
           return (
           <div className="archive-card" key={t.id} style={{ animationDelay: `${i * 30}ms` }}>
             <div className="archive-card-head">
@@ -263,8 +307,10 @@ export default async function ArchivePage({
               </span>
               <TaskDetailPanel
                 task={t}
+                pauses={taskPauses}
                 assigneeNames={assignees}
                 projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                projectColor={t.project_id ? projectColors.get(t.project_id) ?? null : null}
                 profileNames={profileNames}
               />
             </div>
@@ -277,11 +323,22 @@ export default async function ArchivePage({
                 ))}
               </div>
             )}
-            {assignees.length > 0 && <div className="mono archive-card-assignees">{assignees.join(', ')}</div>}
             <div className="archive-card-grid">
               <div>
+                <span className="archive-card-label">{dict.archive.colAssignees}</span>
+                <span>{assignees.join(', ') || '—'}</span>
+              </div>
+              <div>
                 <span className="archive-card-label">{dict.archive.colProject}</span>
-                <span>{t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}</span>
+                <span className="table-project-cell">
+                  {t.project_id && projectColors.get(t.project_id) && (
+                    <span
+                      className="project-color-dot"
+                      style={{ background: projectColors.get(t.project_id) ?? undefined }}
+                    />
+                  )}
+                  {t.project_id ? projectNames.get(t.project_id) ?? '—' : '—'}
+                </span>
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colLocation}</span>
@@ -310,7 +367,9 @@ export default async function ArchivePage({
               </div>
               <div>
                 <span className="archive-card-label">{dict.archive.colEstimate}</span>
-                <span className="mono">{estimateCell(t, net)}</span>
+                <span className={`mono ${t.estimated_minutes ? (estimateOver ? 'ta-over' : 'ta-under') : ''}`}>
+                  {estimateCell(t, net)}
+                </span>
               </div>
             </div>
             <div className="archive-card-pauses">
@@ -320,6 +379,39 @@ export default async function ArchivePage({
           </div>
           );
         })}
+      </div>
+
+      <div className="archive-footer">
+        <span className="archive-summary">
+          {dict.archive.summary
+            .replace('{n}', String(rows.length))
+            .replace('{total}', String(total))}
+        </span>
+        {pageCount > 1 && (
+          <nav className="pagination" aria-label={dict.archive.title}>
+            {pageWindow(currentPage, pageCount).map((p, i) =>
+              p === 'gap' ? (
+                <span key={`gap-${i}`} className="pagination-gap">
+                  …
+                </span>
+              ) : (
+                <Link
+                  key={p}
+                  href={pageHref(p)}
+                  className={`pagination-page ${p === currentPage ? 'is-active' : ''}`}
+                  aria-current={p === currentPage ? 'page' : undefined}
+                >
+                  {p}
+                </Link>
+              )
+            )}
+            {currentPage < pageCount && (
+              <Link href={pageHref(currentPage + 1)} className="pagination-page" aria-label={dict.archive.nextPage}>
+                <ChevronRight size={14} strokeWidth={2} />
+              </Link>
+            )}
+          </nav>
+        )}
       </div>
         </>
       )}

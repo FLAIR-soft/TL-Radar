@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DndContext,
+  DragOverlay,
   useDraggable,
   useDroppable,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -13,11 +17,18 @@ import {
 } from '@dnd-kit/core';
 import { STATUS_COLOR, compareByDeadlineUrgency, isValidKanbanTransition } from '@/lib/logic/tasks';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
+import type { ChecklistPreviewItem, LastComment } from '@/lib/logic/task-relations';
 import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
+
+// С какого размера колонки карточки сворачиваются в компактный вид: десяток
+// задач в одном столбце уже не читается, если каждая занимает полный рост
+// (редизайн v2, этап 4). Разворачивается кнопкой на самой карточке.
+const COMPACT_FROM = 10;
 
 export function KanbanBoard({
   tasks,
@@ -25,10 +36,14 @@ export function KanbanBoard({
   pausesByTask,
   assigneeNamesByTask,
   projectNames,
+  projectColors,
   pausedByNameByTask,
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
+  checklistItemsByTask,
+  watcherCountsByTask,
+  lastCommentByTask,
   labelsByTask,
 }: {
   tasks: Task[];
@@ -36,20 +51,38 @@ export function KanbanBoard({
   pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
+  projectColors?: Map<string, string | null>;
   pausedByNameByTask: Map<string, string | null>;
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
+  checklistItemsByTask?: Map<string, ChecklistPreviewItem[]>;
+  watcherCountsByTask?: Map<string, number>;
+  lastCommentByTask?: Map<string, LastComment>;
   labelsByTask?: Map<string, Label[]>;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [, startTransition] = useTransition();
   // Optimistic status overrides, keyed by task id — cleared implicitly once
   // revalidatePath() (inside setStatus) refreshes `tasks` with the confirmed
   // value from the server, or explicitly on a rejected transition (rollback).
   const [overrides, setOverrides] = useState<Record<string, TaskStatus>>({});
+  // Task ids with a setStatus() call in flight — dragging the same card again
+  // before the server confirms/rejects would race the optimistic override.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  // MouseSensor (not PointerSensor) + TouchSensor kept deliberately separate:
+  // PointerSensor's onPointerDown activator also fires for touch input, so
+  // pairing it with TouchSensor would race the mouse's 5px activation
+  // against the touch long-press delay and win, breaking column scroll on
+  // touch. MouseSensor only reacts to real mousedown, so the two never
+  // compete for the same gesture.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor)
+  );
 
   function statusOf(task: Task): TaskStatus {
     return overrides[task.id] ?? task.status;
@@ -74,15 +107,21 @@ export function KanbanBoard({
     if (currentStatus === newStatus || !isValidKanbanTransition(currentStatus, newStatus)) return;
 
     setOverrides((prev) => ({ ...prev, [taskId]: newStatus }));
+    setPendingIds((prev) => new Set(prev).add(taskId));
     startTransition(() => {
       setStatus(taskId, newStatus).then((result) => {
+        setPendingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(taskId);
+          return next;
+        });
         if (result?.error) {
           setOverrides((prev) => {
             const next = { ...prev };
             delete next[taskId];
             return next;
           });
-          alert(result.error);
+          toast.error(result.error);
         }
       });
     });
@@ -100,8 +139,10 @@ export function KanbanBoard({
             <KanbanColumn key={s} status={s} isValidTarget={isValidTarget} isDragging={!!activeTask}>
               <div className="col-head">
                 <span
-                  className={`signal ${s === 'in_progress' ? 'pulsing' : ''}`}
-                  style={{ background: STATUS_COLOR[s] }}
+                  // Ореол у точки активного статуса — box-shadow цветом самого
+                  // статуса (скрин 05), поэтому цвет уходит и в переменную.
+                  className={`signal ${s === 'in_progress' ? 'signal-active' : ''}`}
+                  style={{ background: STATUS_COLOR[s], ['--signal-color' as string]: STATUS_COLOR[s] }}
                 ></span>
                 {dict.status[s]}{' '}
                 <span className={`col-count ${atLimit ? 'col-count-limit' : ''}`}>
@@ -112,29 +153,73 @@ export function KanbanBoard({
               <div className="card-stack">
                 {items.length ? (
                   items.map((t, i) => (
-                    <DraggableTaskCard key={t.id} task={t}>
+                    <DraggableTaskCard key={t.id} task={t} disabled={pendingIds.has(t.id)}>
                       <TaskCard
                         task={t}
                         pauses={pausesByTask.get(t.id) ?? []}
                         assigneeNames={assigneeNamesByTask.get(t.id) ?? []}
                         projectName={t.project_id ? projectNames.get(t.project_id) ?? null : null}
+                        projectColor={t.project_id ? projectColors?.get(t.project_id) ?? null : null}
                         pausedByName={pausedByNameByTask.get(t.id) ?? null}
                         profileNames={profileNames}
                         commentCount={commentCountsByTask.get(t.id) ?? 0}
                         checklistProgress={checklistProgressByTask.get(t.id)}
+                        checklistItems={checklistItemsByTask?.get(t.id) ?? []}
+                        watcherCount={watcherCountsByTask?.get(t.id) ?? 0}
+                        lastComment={lastCommentByTask?.get(t.id) ?? null}
                         labels={labelsByTask?.get(t.id) ?? []}
+                        dense={items.length >= COMPACT_FROM}
                         style={{ animationDelay: `${(colIndex * 3 + i) * 40}ms` }}
                       />
                     </DraggableTaskCard>
                   ))
                 ) : (
-                  <div className="empty-note">{dict.dashboard.empty}</div>
+                  <div className="col-empty">{dict.dashboard.empty}</div>
                 )}
               </div>
             </KanbanColumn>
           );
         })}
       </div>
+      {
+        // dnd-kit's DragOverlay renders `position: fixed` inline in the
+        // React tree (this version has no `container` prop to portal it
+        // itself), so it inherits whatever containing block its DOM
+        // ancestors create. .page-fade (wrapping every page) plays an
+        // entrance animation with `animation-fill-mode: both`, which keeps
+        // its final `transform: translateY(0)` as a live computed value
+        // forever after — and *any* non-`none` transform on an ancestor,
+        // including a no-op translateY(0), turns it into the containing
+        // block for fixed-position descendants instead of the viewport.
+        // That's what was throwing the overlay off from the cursor by a
+        // fixed amount (the page wrapper's own offset). Portaling straight
+        // to document.body sidesteps it entirely — same fix already used
+        // for SlideOver. `document` is only unavailable during SSR, where
+        // activeTask is always null anyway, so nothing is lost by skipping
+        // the portal there.
+        typeof document !== 'undefined' &&
+          createPortal(
+            <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
+              {activeTask ? (
+                <div className="task-card-overlay">
+                  <TaskCard
+                    task={activeTask}
+                    pauses={pausesByTask.get(activeTask.id) ?? []}
+                    assigneeNames={assigneeNamesByTask.get(activeTask.id) ?? []}
+                    projectName={activeTask.project_id ? projectNames.get(activeTask.project_id) ?? null : null}
+                    projectColor={activeTask.project_id ? projectColors?.get(activeTask.project_id) ?? null : null}
+                    pausedByName={pausedByNameByTask.get(activeTask.id) ?? null}
+                    profileNames={profileNames}
+                    commentCount={commentCountsByTask.get(activeTask.id) ?? 0}
+                    checklistProgress={checklistProgressByTask.get(activeTask.id)}
+                    labels={labelsByTask?.get(activeTask.id) ?? []}
+                  />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body
+          )
+      }
     </DndContext>
   );
 }
@@ -161,24 +246,43 @@ function KanbanColumn({
   );
 }
 
-function DraggableTaskCard({ task, children }: { task: Task; children: React.ReactNode }) {
-  // Only the pointer listeners are spread, not dnd-kit's `attributes`
-  // (role="button", tabIndex) — the card already contains real buttons and
-  // links, and declaring the whole wrapper as a nested "button" would be
-  // invalid a11y for no gain, since only PointerSensor is wired up here
-  // (no keyboard-drag support to make that role meaningful). The existing
-  // status buttons remain the accessible/keyboard path, per design.
-  const { listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
-  // useDraggable only reports the offset — applying it as a transform is on us.
-  const style: React.CSSProperties | undefined = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+function DraggableTaskCard({
+  task,
+  disabled,
+  children,
+}: {
+  task: Task;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  // `attributes` (role="button", tabIndex, aria-*) are spread now that
+  // KeyboardSensor makes keyboard dragging real — the card does still nest
+  // real buttons/links, which isn't strictly valid nested-interactive-content
+  // markup, but it's the same tradeoff every kanban UI with keyboard drag
+  // makes (Trello, Linear, GitHub Projects): the wrapper is Tab-reachable,
+  // its own buttons stay reachable right after it in DOM order.
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id, disabled });
+  // No transform here: DragOverlay renders the moving clone, so the source
+  // slot just sits still and fades (task-card-dragging) instead of tracking
+  // the pointer itself.
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      {...attributes}
       {...listeners}
-      className={`draggable-task ${isDragging ? 'task-card-dragging' : ''}`}
+      onKeyDown={(e) => {
+        // dnd-kit's own onKeyDown (from `listeners`) doesn't check that the
+        // keydown actually originated on this node — React's synthetic
+        // events bubble along the component tree, not the DOM tree, so a
+        // keystroke in a portaled descendant (TaskDetailPanel's SlideOver,
+        // e.g. the comment textarea) still reaches here and gets
+        // (mis)treated as a Space/Enter drag-start attempt, swallowing the
+        // keystroke before the input ever sees it. Only forward events that
+        // genuinely originated on the card itself.
+        if (e.target !== e.currentTarget) return;
+        listeners?.onKeyDown?.(e);
+      }}
+      className={`draggable-task ${isDragging ? 'task-card-dragging' : ''} ${disabled ? 'draggable-task-disabled' : ''}`}
     >
       {children}
     </div>

@@ -19,34 +19,27 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const full = searchParams.get('full') === '1';
 
-  const { count } = await supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('recipient_id', user.id)
-    .is('read_at', null);
+  // get_my_notifications() (0031) otdayot notifications + task title/status
+  // odnim zaprosom cherez server-side LEFT JOIN — u task_id namerenno net FK
+  // (0020, polimorfnaya ssylka), poetomu obychnyy PostgREST-embed zdes' ne
+  // vyrazim. count i polnyy spisok nezavisimy drug ot druga — odna volna
+  // cherez Promise.all vmesto posledovatel'nykh await.
+  const [{ count }, { data: rows }] = await Promise.all([
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', user.id).is('read_at', null),
+    full ? supabase.rpc('get_my_notifications', { p_limit: LIST_LIMIT }) : Promise.resolve({ data: null }),
+  ]);
 
-  if (!full) {
-    return NextResponse.json({ count: count ?? 0, items: [] });
-  }
-
-  const { data: notifications } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('recipient_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(LIST_LIMIT);
-
-  let items: NotificationView[] = [];
-  if (notifications?.length) {
-    const taskIds = [...new Set(notifications.map((n) => n.task_id))];
-    const { data: tasks } = await supabase.from('tasks').select('id, title, status').in('id', taskIds);
-    const taskById = new Map((tasks ?? []).map((t) => [t.id, t]));
-    items = notifications.map((n) => ({
-      ...n,
-      taskTitle: taskById.get(n.task_id)?.title ?? null,
-      taskStatus: taskById.get(n.task_id)?.status ?? null,
-    }));
-  }
+  const items: NotificationView[] = (rows ?? []).map((n) => ({
+    id: n.id,
+    recipient_id: n.recipient_id,
+    type: n.type,
+    task_id: n.task_id,
+    payload: n.payload,
+    read_at: n.read_at,
+    created_at: n.created_at,
+    taskTitle: n.task_title,
+    taskStatus: n.task_status,
+  }));
 
   return NextResponse.json({ count: count ?? 0, items });
 }

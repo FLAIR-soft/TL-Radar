@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { register, signIn, uniqueName } from './helpers';
+import { register, signIn, uniqueName, goToNewTaskFromTaskManager } from './helpers';
 
 test.describe('golden path', () => {
   test('register, create project, create task with project + multiple assignees + estimate, edit it', async ({
@@ -28,8 +28,7 @@ test.describe('golden path', () => {
     await expect(page.locator('.project-row', { hasText: projectName })).toBeVisible();
 
     const taskTitle = 'E2E Task ' + Math.random().toString(36).slice(2, 8);
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.fill('input[name=title]', taskTitle);
     await page.click('.assignee-select-trigger');
     await page.click(`.assignee-option:has-text("${helper.fullName}")`);
@@ -120,6 +119,11 @@ test.describe('golden path', () => {
     await page.waitForURL('**/dashboard');
 
     const card = page.locator('.task-card', { hasText: taskTitle });
+    // The redirect back to /dashboard lands before the newly-created task's
+    // card has necessarily rendered — .count() below doesn't auto-wait like
+    // .click()/expect(...).toBeVisible() do, so an un-awaited card would
+    // silently read as "neither state" instead of catching up.
+    await expect(card).toBeVisible();
     const startButton = card.locator('button', { hasText: 'Starten' });
     const lockedNote = card.locator('.t-locked-note');
 
@@ -166,8 +170,7 @@ test.describe('golden path', () => {
     await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
 
     const taskTitle = 'E2E Log Task ' + Math.random().toString(36).slice(2, 8);
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
@@ -213,7 +216,9 @@ test.describe('golden path', () => {
 
     const overdueCard = page.locator('.task-card', { hasText: overdueTitle });
     await expect(overdueCard).toHaveClass(/task-card-overdue/);
-    await expect(overdueCard.locator('.overdue-badge')).toBeVisible();
+    // Просрочка отмечается плашкой сверху карточки (редизайн v2, этап 4);
+    // в компактном режиме её место занимает бейдж в шапке.
+    await expect(overdueCard.locator('.t-overdue-banner')).toBeVisible();
 
     const futureCard = page.locator('.task-card', { hasText: futureTitle });
     await expect(futureCard).not.toHaveClass(/task-card-overdue/);
@@ -301,12 +306,6 @@ test.describe('golden path', () => {
     const card = waitingCol.locator('.draggable-task', { hasText: title });
     await card.waitFor();
 
-    let dialogMessage: string | null = null;
-    page.on('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
-
     const cardBox = await card.boundingBox();
     const targetBox = await inProgressCol.boundingBox();
     if (!cardBox || !targetBox) throw new Error('could not measure drag source/target');
@@ -339,7 +338,7 @@ test.describe('golden path', () => {
     const rolledBack = await backInWaiting.count();
     expect(succeeded + rolledBack).toBe(1);
     if (rolledBack) {
-      expect(dialogMessage).toBeTruthy();
+      await expect(page.locator('[data-testid=toast]')).toBeVisible();
     } else {
       await expect(landedInProgress.locator('.t-timer-primary')).toBeVisible();
     }
@@ -556,13 +555,8 @@ test.describe('golden path', () => {
       await expect(page.locator('.checklist-row', { hasText: item })).toBeVisible();
     }
 
-    let dialogMessage = '';
-    page.once('dialog', async (dialog) => {
-      dialogMessage = dialog.message();
-      await dialog.accept();
-    });
     await page.click('[data-testid=save-as-template]');
-    await expect.poll(() => dialogMessage).toContain('Vorlage gespeichert');
+    await expect(page.locator('[data-testid=toast]', { hasText: 'Vorlage gespeichert' })).toBeVisible();
     await page.click('[data-testid=slideover-close]');
 
     await page.click('text=Vorlagen');
@@ -572,8 +566,7 @@ test.describe('golden path', () => {
     await expect(templateRow).toContainText('2');
 
     // Create a new task from the template and verify prefill + "add", not "edit".
-    await page.click('text=Neue Aufgabe');
-    await page.waitForURL('**/dashboard/new');
+    await goToNewTaskFromTaskManager(page);
     await page.selectOption('.field:has(label:text-is("Aus Vorlage")) select', { label: title });
     await page.waitForURL('**/dashboard/new?template=*');
 
@@ -616,9 +609,8 @@ test.describe('golden path', () => {
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
     await card.locator('[data-testid=view-task-log]').click();
-    page.once('dialog', (dialog) => dialog.accept());
     await page.click('[data-testid=save-as-template]');
-    await page.waitForTimeout(300);
+    await expect(page.locator('[data-testid=toast]')).toBeVisible();
     await page.click('[data-testid=slideover-close]');
 
     await page.click('text=Vorlagen');
@@ -762,14 +754,16 @@ test.describe('golden path', () => {
 
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
-    await expect(page.locator('.cfd-svg')).toBeVisible();
+    // График переписан со SVG-областей на div-колонки (редизайн v2, этап 9),
+    // а точность оценок получила собственную разметку вместо таблицы архива.
+    await expect(page.locator('.cfd-columns')).toBeVisible();
     await expect(page.locator('.cfd-legend-item')).toHaveCount(4);
 
     if (!withinWorkHours) return; // outside work hours: no completed task to assert on below
 
-    const row = page.locator('.archive-table .archive-row', { hasText: owner.fullName });
+    const row = page.locator('.ea-row', { hasText: owner.fullName });
     await expect(row).toBeVisible();
-    await expect(row.locator('.pill')).toBeVisible();
+    await expect(row.locator('.ea-value')).toBeVisible();
   });
 
   test('archive and analytics export CSV and XLSX with the task data', async ({ page }) => {
@@ -798,6 +792,8 @@ test.describe('golden path', () => {
     if (!withinWorkHours) return; // outside work hours: task never reaches archive, nothing to export below
 
     await page.goto('/archive');
+    // CSV and XLSX are two always-visible buttons in the page header again
+    // (redesign v2, stage 1 — K2), so there is no menu to open first.
     const csvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
     const xlsxHref = await page.locator('[data-testid=export-xlsx]').getAttribute('href');
 

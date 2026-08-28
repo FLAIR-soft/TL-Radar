@@ -37,7 +37,7 @@ export async function getChecklistItems(taskId: string): Promise<TaskChecklistIt
 
 export async function addChecklistItem(taskId: string, formData: FormData): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
   const { supabase, userId, dict } = auth;
 
   const title = String(formData.get('title') || '').trim();
@@ -74,7 +74,7 @@ export async function addChecklistItem(taskId: string, formData: FormData): Prom
 // eto prosto update polya done, nikakoy dopolnitel'noy logiki.
 export async function toggleChecklistItem(id: string, done: boolean): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
 
   await auth.supabase.from('task_checklist_items').update({ done }).eq('id', id);
 
@@ -85,7 +85,7 @@ export async function toggleChecklistItem(id: string, done: boolean): Promise<{ 
 
 export async function deleteChecklistItem(id: string): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
 
   await auth.supabase
     .from('task_checklist_items')
@@ -101,7 +101,7 @@ export async function deleteChecklistItem(id: string): Promise<{ error?: string 
 // mestami s sosedom v nuzhnuyu storonu.
 export async function moveChecklistItem(taskId: string, id: string, direction: 'up' | 'down'): Promise<{ error?: string }> {
   const auth = await requireAuth();
-  if (!auth) return { error: 'unauthorized' };
+  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
   const { supabase } = auth;
 
   const { data: items } = await supabase

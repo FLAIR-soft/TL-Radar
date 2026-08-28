@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search, X, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2, Download } from 'lucide-react';
+import { Search, ChevronDown, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { LabelFilterSelect } from './LabelFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
@@ -15,16 +16,15 @@ export function TaskFilterBar({
   labels = [],
   savedViews = [],
   view = 'kanban',
-  showExport = false,
 }: {
   profiles: { id: string; name: string }[];
-  projects: { id: string; name: string }[];
+  projects: { id: string; name: string; color?: string | null }[];
   labels?: Label[];
   savedViews?: { id: string; name: string; filters: { qs: string } }[];
   view?: 'kanban' | 'table' | 'calendar';
-  showExport?: boolean;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,6 +39,9 @@ export function TaskFilterBar({
   // drops the stale one instead of letting it win a race and flicker the URL
   // back to an old filter value.
   function navigate(params: URLSearchParams) {
+    // Любая смена фильтра сбрасывает пагинацию архива на первую страницу:
+    // иначе можно остаться на пятой странице выборки, где страниц две.
+    params.delete('page');
     const qs = params.toString();
     startTransition(() => {
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -108,7 +111,7 @@ export function TaskFilterBar({
     if (name === null) return;
     startTransition(() => {
       saveView(name, searchParams.toString()).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
       });
     });
   }
@@ -132,6 +135,18 @@ export function TaskFilterBar({
           placeholder={dict.filters.searchPlaceholder}
         />
       </div>
+      <span className="filter-chip">
+        <select value={projectId} onChange={(e) => updateParam('project', e.target.value || null)}>
+          <option value="">{dict.filters.allProjects}</option>
+          <option value="none">{dict.filters.noProject}</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id} style={p.color ? { color: p.color } : undefined}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown size={13} strokeWidth={1.75} />
+      </span>
       <AssigneeFilterSelect
         assignees={profiles}
         value={assigneeIds}
@@ -146,30 +161,26 @@ export function TaskFilterBar({
           placeholder={dict.labels.filterPlaceholder}
         />
       )}
-      <select value={projectId} onChange={(e) => updateParam('project', e.target.value || null)}>
-        <option value="">{dict.filters.allProjects}</option>
-        <option value="none">{dict.filters.noProject}</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-      <select value={priority} onChange={(e) => updateParam('priority', e.target.value || null)}>
-        <option value="">{dict.filters.allPriorities}</option>
-        <option value="low">{dict.priority.low}</option>
-        <option value="medium">{dict.priority.medium}</option>
-        <option value="high">{dict.priority.high}</option>
-        <option value="urgent">{dict.priority.urgent}</option>
-      </select>
-      <select value={deadline} onChange={(e) => updateParam('deadline', e.target.value || null)}>
-        <option value="">{dict.filters.anyDeadline}</option>
-        <option value="has">{dict.filters.hasDeadline}</option>
-        <option value="overdue">{dict.filters.overdueOnly}</option>
-      </select>
+      <span className="filter-chip">
+        <select value={priority} onChange={(e) => updateParam('priority', e.target.value || null)}>
+          <option value="">{dict.filters.allPriorities}</option>
+          <option value="low">{dict.priority.low}</option>
+          <option value="medium">{dict.priority.medium}</option>
+          <option value="high">{dict.priority.high}</option>
+          <option value="urgent">{dict.priority.urgent}</option>
+        </select>
+        <ChevronDown size={13} strokeWidth={1.75} />
+      </span>
+      <span className="filter-chip">
+        <select value={deadline} onChange={(e) => updateParam('deadline', e.target.value || null)}>
+          <option value="">{dict.filters.anyDeadline}</option>
+          <option value="has">{dict.filters.hasDeadline}</option>
+          <option value="overdue">{dict.filters.overdueOnly}</option>
+        </select>
+        <ChevronDown size={13} strokeWidth={1.75} />
+      </span>
       {hasActiveFilters && (
         <button type="button" className="filter-reset" onClick={reset} data-testid="reset-filters">
-          <X size={14} strokeWidth={2} />
           {dict.filters.reset}
         </button>
       )}
@@ -204,22 +215,25 @@ export function TaskFilterBar({
       </div>
       <div className="saved-views">
         <Bookmark size={14} strokeWidth={1.75} />
-        <select
-          value={selectedViewId}
-          onChange={(e) => {
-            setSelectedViewId(e.target.value);
-            const savedView = savedViews.find((v) => v.id === e.target.value);
-            if (savedView) applyView(savedView.filters.qs);
-          }}
-          data-testid="saved-views-select"
-        >
-          <option value="">{dict.savedViews.placeholder}</option>
-          {savedViews.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
-        </select>
+        <span className="filter-chip saved-views-chip">
+          <select
+            value={selectedViewId}
+            onChange={(e) => {
+              setSelectedViewId(e.target.value);
+              const savedView = savedViews.find((v) => v.id === e.target.value);
+              if (savedView) applyView(savedView.filters.qs);
+            }}
+            data-testid="saved-views-select"
+          >
+            <option value="">{dict.savedViews.placeholder}</option>
+            {savedViews.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={13} strokeWidth={1.75} />
+        </span>
         {selectedViewId && (
           <button
             type="button"
@@ -235,26 +249,6 @@ export function TaskFilterBar({
           <Plus size={16} strokeWidth={1.75} />
         </button>
       </div>
-      {showExport && (
-        <div className="export-links">
-          <a
-            className="export-link"
-            href={`/api/export/archive?format=csv&${searchParams.toString()}`}
-            data-testid="export-csv"
-          >
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.csv}
-          </a>
-          <a
-            className="export-link"
-            href={`/api/export/archive?format=xlsx&${searchParams.toString()}`}
-            data-testid="export-xlsx"
-          >
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.xlsx}
-          </a>
-        </div>
-      )}
     </div>
   );
 }

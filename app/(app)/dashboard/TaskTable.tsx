@@ -4,12 +4,13 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ArrowUp, ArrowDown, Pencil, Trash2, ListChecks, MessageSquare } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from '@/components/ToastProvider';
 import { STATUS_COLOR, isOverdue, fmtDate, isWithinWorkHours } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, TaskStatus, Priority, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Priority, Label } from '@/lib/supabase/types';
 
 type SortKey = 'title' | 'status' | 'project' | 'priority' | 'deadline' | 'estimate';
 
@@ -17,16 +18,20 @@ const PRIORITY_ORDER: Record<Priority, number> = { low: 0, medium: 1, high: 2, u
 
 export function TaskTable({
   tasks,
+  pausesByTask,
   assigneeNamesByTask,
   projectNames,
+  projectColors,
   profileNames,
   commentCountsByTask,
   checklistProgressByTask,
   labelsByTask,
 }: {
   tasks: Task[];
+  pausesByTask: Map<string, TaskPause[]>;
   assigneeNamesByTask: Map<string, string[]>;
   projectNames: Map<string, string>;
+  projectColors?: Map<string, string | null>;
   profileNames: Map<string, string>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
@@ -109,8 +114,10 @@ export function TaskTable({
             <TaskTableRow
               key={task.id}
               task={task}
+              pauses={pausesByTask.get(task.id) ?? []}
               assigneeNames={assigneeNamesByTask.get(task.id) ?? []}
               projectName={task.project_id ? (projectNames.get(task.project_id) ?? null) : null}
+              projectColor={task.project_id ? (projectColors?.get(task.project_id) ?? null) : null}
               profileNames={profileNames}
               commentCount={commentCountsByTask.get(task.id) ?? 0}
               checklistProgress={checklistProgressByTask.get(task.id)}
@@ -126,8 +133,10 @@ export function TaskTable({
 
 function TaskTableRow({
   task,
+  pauses,
   assigneeNames,
   projectName,
+  projectColor,
   profileNames,
   commentCount,
   checklistProgress,
@@ -135,8 +144,10 @@ function TaskTableRow({
   style,
 }: {
   task: Task;
+  pauses: TaskPause[];
   assigneeNames: string[];
   projectName: string | null;
+  projectColor?: string | null;
   profileNames: Map<string, string>;
   commentCount: number;
   checklistProgress?: { done: number; total: number };
@@ -144,6 +155,7 @@ function TaskTableRow({
   style?: React.CSSProperties;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const overdue = isOverdue(task);
   const withinWorkHours = isWithinWorkHours();
@@ -164,7 +176,7 @@ function TaskTableRow({
   function handleStatus(to: TaskStatus) {
     startTransition(() => {
       setStatus(task.id, to).then((result) => {
-        if (result?.error) alert(result.error);
+        if (result?.error) toast.error(result.error);
       });
     });
   }
@@ -200,7 +212,16 @@ function TaskTableRow({
           {dict.status[task.status]}
         </span>
       </td>
-      <td>{projectName ?? '—'}</td>
+      <td>
+        {projectName ? (
+          <span className="table-project-cell">
+            {projectColor && <span className="project-color-dot" style={{ background: projectColor }} />}
+            {projectName}
+          </span>
+        ) : (
+          '—'
+        )}
+      </td>
       <td>
         {task.priority ? (
           <span className="pill" style={{ ['--pill-color' as string]: PRIORITY_COLOR[task.priority] }}>
@@ -260,7 +281,14 @@ function TaskTableRow({
               {commentCount}
             </span>
           )}
-          <TaskDetailPanel task={task} assigneeNames={assigneeNames} projectName={projectName} profileNames={profileNames} />
+          <TaskDetailPanel
+            task={task}
+            pauses={pauses}
+            assigneeNames={assigneeNames}
+            projectName={projectName}
+            projectColor={projectColor}
+            profileNames={profileNames}
+          />
         </div>
       </td>
     </tr>

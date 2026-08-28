@@ -42,6 +42,7 @@ export type Project = {
   deleted_at: string | null;
   icon: string | null;
   priority: Priority | null;
+  color: string | null;
 };
 
 export type TaskPause = {
@@ -164,7 +165,7 @@ export type TaskLabel = {
   added_by: string | null;
 };
 
-export type WipStatus = 'waiting' | 'in_progress' | 'paused';
+export type WipStatus = 'waiting' | 'in_progress' | 'paused' | 'done';
 
 export type WipLimit = {
   status: WipStatus;
@@ -295,6 +296,21 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_my_notifications: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: string;
+          recipient_id: string;
+          type: NotificationType;
+          task_id: string;
+          payload: Record<string, unknown> | null;
+          read_at: string | null;
+          created_at: string;
+          task_title: string | null;
+          task_status: TaskStatus | null;
+        }[];
+      };
+    };
   };
 }

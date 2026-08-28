@@ -1,5 +1,5 @@
 import type { Task, Priority } from '@/lib/supabase/types';
-import { isOverdue } from './tasks';
+import { isOverdue, completedLateBy } from './tasks';
 
 export type DeadlineFilter = 'any' | 'has' | 'overdue';
 
@@ -96,7 +96,14 @@ export function matchesTaskFilters(
   if (filters.priority && task.priority !== filters.priority) return false;
 
   if (filters.deadline === 'has' && !task.deadline) return false;
-  if (filters.deadline === 'overdue' && !isOverdue(task)) return false;
+  if (filters.deadline === 'overdue') {
+    // Для активных задач «просрочено» — это дедлайн позади (isOverdue), но она
+    // возвращает false для завершённых, из-за чего в архиве этот фильтр всегда
+    // давал пустой список. У завершённой задачи тот же смысл несёт факт сдачи
+    // после дедлайна.
+    const late = task.status === 'done' ? completedLateBy(task) !== null : isOverdue(task);
+    if (!late) return false;
+  }
 
   return true;
 }

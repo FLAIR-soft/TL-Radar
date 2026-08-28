@@ -47,12 +47,57 @@ export function fmtDate(iso: string | null, intlLocale: string): string {
   });
 }
 
+// Короткая дата для компактной карточки (скрин 03: «04.08.») — без года,
+// формат задаёт локаль, поэтому отдельных строк в словарях не нужно.
+export function fmtDateShort(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString(intlLocale, {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
+// Только время, без даты: колонки «Gestartet» и «Abgeschlossen» архива —
+// день там и так виден в «Erfasst» (скрин 08).
+export function fmtTime(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString(intlLocale, {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// «24.07. 07:48» — колонка «Erfasst» архива: короткая дата и время, без года.
+export function fmtDateTimeCompact(iso: string | null, intlLocale: string): string {
+  if (!iso) return '—';
+  return `${fmtDateShort(iso, intlLocale)} ${fmtTime(iso, intlLocale)}`;
+}
+
 export function fmtDuration(ms: number, units: { hourShort: string; minuteShort: string }): string {
   if (ms < 0) ms = 0;
   const totalMin = Math.round(ms / 60000);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
   return (h > 0 ? h + units.hourShort + ' ' : '') + m + units.minuteShort;
+}
+
+// Живой таймер на карточке и в панели задачи (редизайн v2, этап 2):
+// «Ч:ММ:СС» пока задача в работе и «Ч:ММ» в ожидании/на паузе — эталоны
+// screens/03 (1:24:08) и screens/05 (215:46). Часы не ограничены двумя
+// знаками: 215:46 — это 215 часов. Секунды и минуты усекаются, а не
+// округляются, иначе бегущий таймер прыгал бы на минуту вперёд.
+//
+// fmtDuration выше — отдельная функция и остаётся словесной: на ней держатся
+// архив, оценки и экспорт в CSV/XLSX. Подменять её здесь нельзя.
+export function fmtTimer(ms: number, withSeconds: boolean): string {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+  if (!withSeconds) return `${h}:${mm}`;
+  return `${h}:${mm}:${String(totalSec % 60).padStart(2, '0')}`;
 }
 
 // Dedlayn — eto data bez vremeni: zadacha schitaetsya prosrochennoy tol'ko posle
@@ -81,6 +126,36 @@ export function isOverdue(task: Task): boolean {
   if (todayKey > deadlineKey) return true;
   if (todayKey < deadlineKey) return false;
   return now.hour >= CUTOFF_HOUR;
+}
+
+// Час отсечки рабочего дня как подпись: дедлайн истекает в 16:00 по Мюнхену,
+// и на карточке он показывается вместе с этим часом («Heute, 16:00», скрин 03).
+export const DEADLINE_HOUR_LABEL = `${CUTOFF_HOUR}:00`;
+
+// 0 — дедлайн сегодня, 1 — завтра, иначе null: только для этих двух дней
+// карточка показывает относительную подпись вместо даты.
+export function deadlineDayOffset(deadline: string): 0 | 1 | null {
+  const [year, month, day] = deadline.split('-').map(Number);
+  const now = berlinDateParts(new Date());
+  const diff = Math.round(
+    (Date.UTC(year, month - 1, day) - Date.UTC(now.year, now.month - 1, now.day)) / 86400000
+  );
+  return diff === 0 ? 0 : diff === 1 ? 1 : null;
+}
+
+// Сколько полных суток прошло с дедлайна — для плашки «Überfällig seit N Tagen»
+// на карточке (редизайн v2, этап 4). Считается по календарным датам Мюнхена,
+// тем же ключом год*10000+месяц*100+день, что и isOverdue, поэтому переход
+// через 16:00 в день дедлайна даёт 0 дней, а не «полдня».
+export function overdueDays(task: Task): number | null {
+  if (!isOverdue(task) || !task.deadline) return null;
+
+  const [year, month, day] = task.deadline.split('-').map(Number);
+  const now = berlinDateParts(new Date());
+
+  const deadlineUtc = Date.UTC(year, month - 1, day);
+  const todayUtc = Date.UTC(now.year, now.month - 1, now.day);
+  return Math.max(0, Math.round((todayUtc - deadlineUtc) / 86400000));
 }
 
 // Deadline "istekaet" v 16:00 po Myunhenu v svoyu datu (tot zhe cutoff, chto i u

@@ -1,5 +1,6 @@
 import { LayoutTemplate } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { EmptyState } from '@/components/EmptyState';
 import { TemplateRow } from './TemplateRow';
@@ -8,11 +9,8 @@ import { CreateRecurringRulePanel } from './CreateRecurringRulePanel';
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user!.id).single();
+  const user = await getCachedUser();
+  const profile = await getCachedProfile(user!.id);
   const dict = getDictionary(profile?.locale ?? 'de');
 
   const [{ data: templates }, { data: projects }, { data: rules }] = await Promise.all([
@@ -28,9 +26,14 @@ export default async function TemplatesPage() {
   const templateOptions = list.map((t) => ({ id: t.id, title: t.title }));
 
   return (
-    <div className="page-fade">
-      <h2 className="section-title">{dict.templates.title}</h2>
-      <p className="section-sub">{dict.templates.subtitle}</p>
+    <div className="page-fade templates-layout">
+      <section>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.templates.title}</h2>
+            <p className="section-sub">{dict.templates.subtitle}</p>
+          </div>
+        </div>
       {list.length ? (
         <div className="project-list">
           {list.map((t, i) => (
@@ -45,13 +48,15 @@ export default async function TemplatesPage() {
       ) : (
         <EmptyState icon={LayoutTemplate} title={dict.templates.empty} />
       )}
-
-      <div className="page-header">
-        <div>
-          <h2 className="section-title">{dict.recurring.title}</h2>
+      </section>
+      <section>
+        <div className="page-header">
+          <div>
+            <h2 className="section-title">{dict.recurring.title}</h2>
+            <p className="section-sub">{dict.recurring.subtitle}</p>
+          </div>
+          {list.length > 0 && <CreateRecurringRulePanel templates={templateOptions} />}
         </div>
-        {list.length > 0 && <CreateRecurringRulePanel templates={templateOptions} />}
-      </div>
       {list.length === 0 ? (
         <p className="section-sub">{dict.recurring.noTemplatesHint}</p>
       ) : ruleList.length ? (
@@ -68,6 +73,7 @@ export default async function TemplatesPage() {
       ) : (
         <EmptyState icon={LayoutTemplate} title={dict.recurring.empty} />
       )}
+      </section>
     </div>
   );
 }

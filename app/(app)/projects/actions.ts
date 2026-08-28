@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
+import { LABEL_COLORS } from '@/lib/logic/label-colors';
 import type { Priority } from '@/lib/supabase/types';
 
 async function requireAuth() {
@@ -38,6 +39,7 @@ function readProjectFields(formData: FormData) {
   const ownerId = String(formData.get('ownerId') || '').trim();
   const icon = String(formData.get('icon') || '').trim();
   const priorityRaw = String(formData.get('priority') || '').trim();
+  const colorRaw = String(formData.get('color') || '').trim();
   return {
     name,
     description: description || null,
@@ -45,6 +47,7 @@ function readProjectFields(formData: FormData) {
     owner_id: ownerId || null,
     icon: icon || null,
     priority: ((PRIORITIES as string[]).includes(priorityRaw) ? priorityRaw : null) as Priority | null,
+    color: (LABEL_COLORS as readonly string[]).includes(colorRaw) ? colorRaw : null,
   };
 }
 

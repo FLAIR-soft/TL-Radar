@@ -59,6 +59,39 @@ export async function createTemplateFromTask(taskId: string): Promise<{ error?: 
   return {};
 }
 
+// Сохранение шаблона прямо из формы «Neue Aufgabe» (скрин 07): задачи ещё
+// нет, поэтому поля берутся из самой формы. Те же имена полей, что и у
+// создания задачи, — форма одна.
+export async function createTemplateFromFields(formData: FormData): Promise<{ error?: string }> {
+  const { supabase, userId, dict } = await requireAuth();
+
+  const title = String(formData.get('title') ?? '').trim();
+  if (!title) return { error: dict.templates.errors.missingTitle };
+
+  const estimatedRaw = String(formData.get('estimatedMinutes') ?? '').trim();
+  const estimated = estimatedRaw ? Number(estimatedRaw) : null;
+
+  const priorityRaw = String(formData.get('priority') ?? '');
+  const priority = (['low', 'medium', 'high', 'urgent'] as const).find((p) => p === priorityRaw) ?? null;
+
+  const { error } = await supabase.from('task_templates').insert({
+    title,
+    description: String(formData.get('description') ?? '').trim() || null,
+    location: String(formData.get('location') ?? '').trim() || null,
+    estimated_minutes: estimated !== null && Number.isFinite(estimated) && estimated > 0 ? estimated : null,
+    priority,
+    icon: String(formData.get('icon') ?? '') || null,
+    project_id: String(formData.get('projectId') ?? '') || null,
+    checklist: null,
+    created_by: userId,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/templates');
+  return {};
+}
+
 export async function deleteTemplate(id: string): Promise<void> {
   const { supabase } = await requireAuth();
 

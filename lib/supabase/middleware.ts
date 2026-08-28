@@ -23,19 +23,21 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Asymmetric JWT signing keys (ES256) are enabled on the project, so
+  // getClaims() verifies the token locally via WebCrypto instead of
+  // round-tripping to the Auth server on every request.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims ?? null;
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
 
-  if (!user && !isAuthRoute) {
+  if (!claims && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (claims && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

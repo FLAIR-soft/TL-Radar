@@ -1,10 +1,17 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { Trash2, Repeat } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { fmtDateTime } from '@/lib/logic/tasks';
 import { toggleRecurringRule, deleteRecurringRule } from './rules-actions';
 import type { RecurringRule } from '@/lib/supabase/types';
+
+// Matches the .project-row max-height/opacity/padding transition duration
+// in globals.css — the row stays on screen this long after delete so the
+// collapse animation can play, instead of just popping out of the list the
+// instant revalidatePath() refreshes it.
+const EXIT_MS = 240;
 
 export function RecurringRuleRow({
   rule,
@@ -17,6 +24,8 @@ export function RecurringRuleRow({
 }) {
   const dict = useDictionary();
   const [isPending, startTransition] = useTransition();
+  const [removing, setRemoving] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   function handleToggle() {
     startTransition(() => {
@@ -26,8 +35,19 @@ export function RecurringRuleRow({
 
   function handleDelete() {
     if (!confirm(dict.recurring.deleteConfirm)) return;
+    const rowEl = rowRef.current;
+    if (rowEl) {
+      rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
+      void rowEl.offsetHeight; // force reflow so the browser has a starting height to transition from
+      requestAnimationFrame(() => {
+        rowEl.style.maxHeight = '0px';
+      });
+    }
+    setRemoving(true);
     startTransition(() => {
-      deleteRecurringRule(rule.id);
+      setTimeout(() => {
+        deleteRecurringRule(rule.id);
+      }, EXIT_MS);
     });
   }
 
@@ -39,7 +59,11 @@ export function RecurringRuleRow({
   }
 
   return (
-    <div className={`project-row rule-row ${isPending ? 'task-card-pending' : ''}`} style={style}>
+    <div
+      ref={rowRef}
+      className={`project-row rule-row ${rule.active ? '' : 'rule-row-inactive'} ${isPending ? 'task-card-pending' : ''} ${removing ? 'is-removing' : ''}`}
+      style={style}
+    >
       <div className="project-row-main">
         <div className="project-row-head">
           <span className="project-row-name">
@@ -51,7 +75,7 @@ export function RecurringRuleRow({
               type="button"
               className="icon-btn"
               title={dict.templates.deleteTitle}
-              disabled={isPending}
+              disabled={isPending || removing}
               onClick={handleDelete}
               data-testid="delete-rule"
             >
@@ -60,18 +84,23 @@ export function RecurringRuleRow({
           </div>
         </div>
         <div className="t-meta">
-          <span>{frequencyText}</span>
+          <span className="rule-frequency">{frequencyText}</span>
           <span>
-            {dict.recurring.nextRunLabel}: {rule.next_run_at}
+            {dict.recurring.nextRunLabel}:{' '}
+            <span className="mono">{fmtDateTime(rule.next_run_at, dict.intlLocale)}</span>
           </span>
-          <label className="checklist-checkbox-label">
+          <label className="switch-label">
             <input
               type="checkbox"
+              className="switch-input"
               checked={rule.active}
               disabled={isPending}
               onChange={handleToggle}
               data-testid="rule-active-toggle"
             />
+            <span className="switch-track">
+              <span className="switch-thumb" />
+            </span>
             {dict.recurring.activeLabel}
           </label>
         </div>

@@ -21,11 +21,21 @@ export function TopTabs({ role }: { role: UserRole }) {
 
   return (
     <div className="tabs">
-      {tabs.map((t) => (
-        <Link key={t.href} href={t.href} className={`tab ${pathname === t.href ? 'active' : ''}`}>
-          {t.label}
-        </Link>
-      ))}
+      {tabs.map((t) => {
+        // /dashboard/new has its own tab again (redesign v2, stage 1 — K1),
+        // so it owns the active state there and /dashboard must not also
+        // light up on that path. The button on Task-Manager stays as a
+        // second way in.
+        const active =
+          t.href === '/dashboard'
+            ? pathname === t.href
+            : pathname === t.href || pathname.startsWith(`${t.href}/`);
+        return (
+          <Link key={t.href} href={t.href} className={`tab ${active ? 'active' : ''}`}>
+            {t.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }

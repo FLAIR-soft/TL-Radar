@@ -38,7 +38,7 @@ export function ResetPasswordForm({ userId }: { userId: string }) {
         required
         minLength={6}
       />
-      <button className="btn btn-ghost" type="submit" disabled={isPending}>
+      <button className={`btn ${password ? 'btn-dark' : 'btn-ghost'}`} type="submit" disabled={isPending}>
         {isPending && <span className="btn-spinner" />}
         {dict.admin.resetButton}
       </button>

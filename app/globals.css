@@ -30,7 +30,8 @@
   --shadow-soft: rgba(0, 0, 0, 0.06);
   --shadow-card: rgba(24, 24, 27, 0.08);
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sans: var(--font-archivo), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
 
   /* Border-radius (Этап 6 редизайна) — единая шкала вместо разброса
      6/8/9/10/12/14px. Круги (50%) и pill-форма (--radius-full) — свои
@@ -55,6 +56,49 @@
   --fs-lg: 20px; /* заголовки секций (h2.section-title) */
   --fs-xl: 24px; /* заголовок экрана входа */
   --fs-2xl: 32px; /* крупные заголовки (лендинг) */
+
+  /* ---------- Редизайн: токены (design_handoff_tl_radar_redesign, этап 1)
+     Новые имена для последующих этапов миграции (шапка, борд, списки,
+     аналитика/admin, тёмная тема) — существующие переменные выше остаются
+     источником истины для уже реализованных компонентов и не заменяются
+     здесь, чтобы этот этап не менял поведение/цвета ничего, кроме шрифта
+     и табличных цифр. */
+  --font-ui: var(--sans);
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  --brand-tint: #fff7f7;
+  --brand-border: #fecaca;
+  --brand-ink: #c2323c;
+
+  --surface-2: #fafafa;
+  --surface-3: #f4f4f5;
+  --border-soft: #f2f2f4;
+  --border-strong: #d4d4d8;
+
+  --text: #18181b;
+  --text-2: #55606e;
+  --text-3: #8b909b;
+  --text-4: #a0a4ae;
+
+  --in-progress: #2563eb;
+  --waiting-tint: #f4f4f5;
+  --in-progress-tint: #eff6ff;
+  --paused-tint: #fffbeb;
+  --done-tint: #f0fdf4;
+
+  --prio-none: #e4e4e7;
+  --prio-low: #94a3b8;
+  --prio-medium: #8b5cf6;
+  --prio-high: #f59e0b;
+  --prio-urgent: #e20617;
+
+  --radius-xs: 6px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 12px 24px -8px rgba(24, 24, 27, 0.08);
+  --shadow-3: 0 2px 4px rgba(0, 0, 0, 0.06), 0 14px 28px -12px rgba(24, 24, 27, 0.16);
+  --shadow-brand: 0 1px 2px rgba(226, 6, 23, 0.3), 0 8px 16px -8px rgba(226, 6, 23, 0.5);
+  --focus-ring: 0 0 0 3px rgba(24, 24, 27, 0.08);
 }
 
 :root[data-theme="dark"] {
@@ -88,6 +132,31 @@
   --skeleton-b: #2c2c31;
   --shadow-soft: rgba(0, 0, 0, 0.4);
   --shadow-card: rgba(0, 0, 0, 0.5);
+
+  /* ---------- Редизайн: токены (см. комментарий в :root выше) ---------- */
+  --brand-tint: rgba(255, 59, 78, 0.12);
+  --brand-border: rgba(255, 59, 78, 0.35);
+  --brand-ink: #ff8a95;
+
+  --surface-2: #19191c;
+  --surface-3: #202024;
+  --border-soft: #202024;
+  --border-strong: #2e2e33;
+
+  --text: #f4f4f5;
+  --text-2: #9a9aa2;
+  /* Этап 11: --text-3 давал 3.53:1 на --surface, --text-4 — 2.57:1, то есть
+     мелкие подписи (таймеры, даты графика, подсказки полей) не дотягивали
+     до AA. Осветлены до 5.13:1 и 3.75:1; светлая тема не тронута. */
+  --text-3: #8a8a93;
+  --text-4: #71717a;
+
+  --in-progress: #60a5fa;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-3: 0 18px 36px -12px rgba(0, 0, 0, 0.6);
+  --focus-ring: 0 0 0 3px rgba(244, 244, 245, 0.12);
 }
 * {
   box-sizing: border-box;
@@ -113,6 +182,16 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes fadeSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
   }
 }
 @keyframes fadeIn {
@@ -364,14 +443,15 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 22px;
+  min-height: 60px;
+  padding: 10px 24px;
   gap: 16px;
   flex-wrap: wrap;
 }
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 28px;
 }
 .topbar-brand {
   display: flex;
@@ -396,37 +476,182 @@ select:focus {
   color: var(--ink);
   white-space: nowrap;
 }
+/* Шапка приложения (design_handoff_tl_radar_redesign, шаг 2) — логотип
+   компактнее, чем в базовых .topbar-brand-*, которые остаются как есть
+   для публичного лендинга (app/page.tsx), не входящего в редизайн. */
+.topbar .topbar-brand-icon {
+  width: 28px;
+  height: 28px;
+}
+.topbar .topbar-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 .tab {
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: var(--radius-sm);
   font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--ink-muted);
+  color: var(--text-2);
   cursor: pointer;
-  border: 1px solid transparent;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 .tab.active {
-  background: var(--tint-red-active-bg);
-  color: var(--brand-dark);
-  border-color: var(--tint-red-active-border);
+  font-weight: 600;
+  background: var(--brand-tint);
+  color: var(--brand);
 }
 .tab:hover:not(.active) {
-  background: var(--hover-bg);
+  background: var(--surface-3);
+  color: var(--text);
 }
 .who {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
-.who .name {
-  font-size: var(--fs-sm);
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 150px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.topbar-search:hover {
+  border-color: var(--border-strong);
+  color: var(--text-2);
+}
+.topbar-search svg {
+  flex-shrink: 0;
+}
+.topbar-search span:not(.topbar-search-kbd) {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topbar-search-kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-4);
+  flex-shrink: 0;
+}
+.topbar .icon-btn {
+  width: 30px;
+  height: 30px;
+  background: var(--surface);
+}
+.topbar .icon-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.topbar .lang-switcher {
+  gap: 0;
+  background: none;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.topbar .lang-btn {
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: normal;
+  padding: 6px 8px;
+  border-radius: 0;
+}
+.topbar .lang-btn.active {
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: none;
+}
+.topbar .lang-btn:hover:not(.active) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.topbar .theme-toggle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+}
+.topbar .theme-toggle:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.topbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.topbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+/* Тёмная тема: инверсия ink/surface тут дала бы светлый кружок — в
+   макете (2b) аватар остаётся тёмным (нейтральный --border-strong) со
+   светлым текстом в обеих темах, просто разного тона. */
+:root[data-theme="dark"] .topbar-avatar {
+  background: var(--border-strong);
+  color: var(--text);
+}
+.topbar-profile-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.topbar-logout {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 0 0 0 8px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.topbar-logout:hover {
+  color: var(--ink);
+}
+@media (max-width: 900px) {
+  .topbar-search,
+  .topbar-profile-name {
+    display: none;
+  }
 }
 .lang-switcher {
   display: flex;
@@ -520,112 +745,196 @@ p.section-sub {
   align-items: center;
   gap: 6px;
 }
+/* Правая часть шапки: у аналитики это переключатель периода + экспорт,
+   у архива только экспорт (эталоны 01 и 08). */
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+@media (max-width: 720px) {
+  .page-header {
+    flex-wrap: wrap;
+  }
+  .page-header-actions,
+  .export-buttons {
+    flex: 1 1 100%;
+  }
+}
 
-/* ---------- Task filters ---------- */
+/* ---------- Task filters ----------
+   Редизайн v2, этап 1: панель фильтров — белая карточка с рамкой и тенью,
+   внутри растянутый поиск без собственной рамки и чипы-селекты на --surface-3
+   (эталон: design/redesign-v2/screens/08-archiv-light.png). */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 8px;
   margin-bottom: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
 }
 .filter-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  height: 42px;
-  border: 1px solid var(--border);
+  padding: 0 10px;
+  height: 32px;
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--ink-muted);
+  color: var(--text-3);
   flex: 2 1 220px;
   min-width: 180px;
 }
 .filter-search input {
   border: none;
   background: transparent;
-  color: var(--ink);
-  font-size: var(--fs-base);
+  color: var(--text);
+  font-size: 12.5px;
   width: 100%;
   padding: 0;
+}
+.filter-search input::placeholder {
+  color: var(--text-3);
 }
 .filter-search input:focus {
   outline: none;
 }
-.filter-bar .assignee-select {
-  flex: 1 1 180px;
-  min-width: 160px;
-}
-.filter-bar select {
-  flex: 1 1 140px;
-  min-width: 120px;
-  height: 42px;
-  padding: 0 10px;
-}
-.filter-reset {
+/* Чип-селект: нативный <select> без стрелки браузера + отдельная иконка
+   ChevronDown рядом, чтобы не хардкодить SVG-стрелку с цветом в CSS. */
+.filter-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 12px;
-  height: 42px;
-  border: 1px solid var(--tint-red-border);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.filter-chip select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 30px 0 12px;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--tint-red-bg-2);
-  color: var(--brand-dark);
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.filter-chip select:hover {
+  border-color: var(--border-strong);
+}
+.filter-chip select:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--focus-ring);
+}
+.filter-chip > svg {
+  position: absolute;
+  right: 10px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.filter-bar .assignee-select {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.filter-bar .assignee-select-trigger {
+  min-height: 32px;
+  padding: 4px 10px;
+  border-color: transparent;
+  background: var(--surface-3);
+  font-size: 12.5px;
+}
+.filter-bar .assignee-select-trigger:hover {
+  border-color: var(--border-strong);
+}
+.filter-bar .assignee-select-placeholder {
+  color: var(--text-2);
+}
+.filter-reset {
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: 12.5px;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 .filter-reset:hover {
-  background: var(--tint-red-active-bg);
+  color: var(--text);
 }
 .view-toggle {
   display: inline-flex;
   gap: 4px;
   flex-shrink: 0;
 }
+.view-toggle .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-color: transparent;
+  background: var(--surface-3);
+}
 .view-toggle-active {
-  background: var(--hover-bg);
+  background: var(--surface) !important;
+  border-color: var(--border-strong) !important;
   color: var(--brand);
 }
 .saved-views {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--ink-muted);
+  color: var(--text-3);
   flex-shrink: 0;
 }
-.saved-views select {
-  flex: none !important;
-  min-width: 140px !important;
-  height: 42px;
+.saved-views-chip select {
+  min-width: 140px;
 }
-.export-links {
-  display: inline-flex;
-  gap: 6px;
-  flex-shrink: 0;
+.saved-views .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-color: transparent;
+  background: var(--surface-3);
 }
-.export-link {
+/* Экспорт: две отдельные кнопки в шапке страницы (откат K2, этап 1) */
+.export-buttons {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color: var(--ink-muted);
-  font-size: var(--fs-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-.export-link:hover {
-  border-color: var(--ink-muted);
-  color: var(--ink);
-  background: var(--hover-bg);
+.export-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+.export-btn svg {
+  color: var(--text-2);
 }
 .table-sort-btn {
   display: inline-flex;
@@ -648,6 +957,12 @@ p.section-sub {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
+@media (max-width: 1200px) {
+  .kanban,
+  .kanban-skeleton {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 @media (max-width: 820px) {
   .kanban,
   .kanban-skeleton {
@@ -658,17 +973,22 @@ p.section-sub {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  padding: 0 2px;
   font-weight: 700;
-  font-size: var(--fs-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 13.5px;
+  letter-spacing: -0.2px;
 }
 .signal {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+/* Точка активного статуса — с ореолом цветом самого статуса (скрин 05).
+   Раньше здесь была анимация pulse с зашитым синим rgba; цвет теперь
+   приходит переменной и совпадает со статусом в обеих темах. */
+.signal-active {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal-color) 16%, transparent);
 }
 .signal.pulsing {
   animation: pulse 1.6s infinite;
@@ -685,8 +1005,18 @@ p.section-sub {
   }
 }
 .col-count {
-  color: var(--ink-muted);
+  font-family: var(--mono);
   font-weight: 600;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.col-count-limit {
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-border);
+  color: var(--brand-dark);
 }
 .card-stack {
   display: flex;
@@ -695,35 +1025,57 @@ p.section-sub {
   min-height: 40px;
 }
 .kanban-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 470px;
+  padding: 14px;
   border-radius: var(--radius-md);
-  padding: 6px;
-  margin: -6px;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  /* Колонка как «матовая» панель поверх фона страницы — тот же приём,
+     что и в исходном макете редизайна: полупрозрачная поверхность вместо
+     плоской заливки, чтобы карточки внутри читались как отдельный слой.
+     На CSS Grid с одной строкой (см. .kanban) высота растягивается на
+     всю строку по умолчанию (align-items: stretch), а min-height здесь
+     держит колонку разумного размера и там, где сетка уже не растягивает
+     (одна колонка на узких экранах, см. медиа-запрос ниже) — то есть
+     drop-зона dnd-kit остаётся на всю видимую площадь столбца, а не
+     схлопывается до размера карточек. */
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, var(--bg));
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
 }
 .kanban-col-no-drop {
   opacity: 0.45;
 }
 .kanban-col-droppable.kanban-col-over {
   background: var(--tint-red-bg);
+  border-color: var(--brand);
   box-shadow: inset 0 0 0 2px var(--brand);
 }
 .draggable-task {
   cursor: grab;
   touch-action: none;
 }
+.draggable-task-disabled {
+  cursor: not-allowed;
+}
 .task-card-dragging {
   cursor: grabbing;
-  opacity: 0.85;
+  opacity: 0.4;
+}
+.task-card-overlay {
+  cursor: grabbing;
   box-shadow: var(--shadow-hover);
-  z-index: 50;
-  position: relative;
+}
+.task-card-overlay .task-card {
+  animation: none;
 }
 .task-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 13px 14px;
-  border-left: 4px solid var(--waiting);
+  padding: 16px;
+  border-left: 3px solid var(--waiting);
   box-shadow: var(--shadow-resting);
   animation: fadeSlideIn 0.3s ease both;
   transition: box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
@@ -750,9 +1102,285 @@ p.section-sub {
   gap: 8px;
   margin-bottom: 6px;
 }
+
+/* ---------- Режимы карточки (редизайн v2, этап 4) ---------- */
+
+/* Компактный: колонка переполнена. Заголовок с таймером в первой строке,
+   кто/где/когда и приоритет — во второй. Скрин 03, колонка «KOMPAKT». */
+.task-card-compact {
+  padding: 12px 14px;
+  border-left-color: var(--border);
+}
+.t-compact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.t-compact-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-card-compact .t-compact-timer {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.t-compact-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  min-width: 0;
+}
+.t-compact-meta .t-avatar {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+}
+.t-compact-meta .pill {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+.t-compact-sep {
+  color: var(--text-4);
+}
+.t-compact-spacer {
+  flex: 1;
+  min-width: 0;
+}
+.t-compact-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border: none;
+  background: none;
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+.t-compact-expand:hover {
+  color: var(--text);
+}
+.t-compact-meta .overdue-text {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Плашка просрочки: во всю ширину карточки поверх её паддинга. */
+.t-overdue-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -16px -16px 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--brand-border);
+  border-radius: calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px) 0 0;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.t-overdue-banner-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.t-overdue-banner .t-overdue-banner-deadline {
+  letter-spacing: normal;
+  font-size: 11px;
+  color: inherit;
+}
+
+/* Расширенный: задача на паузе — время и история плиткой. */
+.t-tile {
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.t-tile-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-xs);
+}
+.t-tile-label {
+  color: var(--text-2);
+}
+.t-tile .t-tile-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+}
+.t-tile .t-tile-value-overdue {
+  color: var(--brand);
+}
+.t-tile .t-tile-strong {
+  font-weight: 700;
+  color: var(--text);
+}
+/* Превью чек-листа на карточке (редизайн v2, этап 5, скрин 03). */
+.t-checklist {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.t-checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-2);
+}
+.t-checklist-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.t-checklist-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.t-checklist-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--done);
+  transition: width 0.3s ease;
+}
+.t-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  padding: 2px 0;
+}
+.t-checklist-mark {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.t-checklist-item.is-done {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+.t-checklist-item.is-done .t-checklist-mark {
+  border-color: transparent;
+  color: var(--done);
+  text-decoration: none;
+}
+/* Превью последнего комментария на карточке (этап 5, D6, скрин 03). */
+.t-comment-preview {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.t-comment-preview .comment-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 9px;
+}
+.t-comment-preview-main {
+  min-width: 0;
+  flex: 1;
+}
+.t-comment-preview-body {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.t-comment-preview-meta {
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+/* Пустая колонка — пунктирная плашка с подсказкой по центру. */
+.col-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 96px;
+  padding: 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.t-counters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.t-counters span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.detail-trigger-labelled {
+  flex: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .t-card-header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
   flex-shrink: 0;
 }
@@ -775,12 +1403,45 @@ p.section-sub {
   white-space: normal;
   margin-top: 2px;
 }
-.task-card .t-assignee {
-  font-size: var(--fs-xs);
-  color: var(--ink-muted);
+/* Верхняя строка карточки (редизайн v2, этап 3): стек перекрывающихся
+   аватаров с инициалами + имена исполнителей через запятую. */
+.t-people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.t-avatars {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.t-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  /* Фон аватара — пастель из фиксированной палитры (getAvatarColor), она
+     светлая в обеих темах. Поэтому текст берётся не из --ink (в тёмной теме
+     он светлый и на пастели пропал бы), а затемнением самого фона. */
+  background: var(--avatar-color);
+  color: color-mix(in srgb, var(--avatar-color) 30%, black);
+  border: 2px solid var(--surface);
+  flex-shrink: 0;
+}
+.t-avatar + .t-avatar {
+  margin-left: -8px;
+}
+.task-card .t-assignee {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-weight: 500;
+  line-height: 1.35;
+  min-width: 0;
 }
 /* Единая система pill-бейджей: статус задачи (kanban, archive-table),
    роль пользователя (admin) — все через один и тот же --pill-color. */
@@ -806,9 +1467,43 @@ p.section-sub {
 :root[data-theme="light"] .pill {
   color: color-mix(in srgb, var(--pill-color) 70%, black);
 }
-.task-card .t-title {
+/* Точка внутри пилюли: у статуса — в цвет самой пилюли, у метки — цвет
+   метки на нейтральном фоне (скрин 03: «Netzwerk», «Wartung»). */
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pill-color);
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+.pill-with-dot {
+  text-align: left;
+  white-space: normal;
+}
+/* В ряду пилюль карточки приоритет и метки написаны обычным регистром
+   (скрин 03: «Hoch», «Netzwerk»), в отличие от статуса и архивных пилюль. */
+.t-labels .pill {
+  text-transform: none;
+  letter-spacing: normal;
   font-weight: 600;
-  font-size: var(--fs-md);
+}
+.label-pill {
+  background: var(--surface-3);
+  color: var(--text-2);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+:root[data-theme="light"] .label-pill {
+  color: var(--text-2);
+}
+.task-card .t-title {
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.35px;
+  line-height: 1.3;
+  text-wrap: pretty;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -820,26 +1515,23 @@ p.section-sub {
 }
 .task-card .t-desc {
   font-size: var(--fs-sm);
-  color: var(--ink-soft);
+  color: var(--text-2);
   margin-bottom: 8px;
   line-height: 1.55;
+  text-wrap: pretty;
 }
 .t-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 6px 14px;
   font-size: var(--fs-xs);
-  color: var(--ink-muted);
+  color: var(--text-2);
   margin-bottom: 10px;
 }
 .t-meta span {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: var(--radius-full);
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+  gap: 5px;
 }
 .t-meta svg {
   flex-shrink: 0;
@@ -847,13 +1539,14 @@ p.section-sub {
 .t-meta .overdue {
   color: var(--brand-dark);
   font-weight: 700;
-  background: var(--tint-red-bg);
-  border-color: var(--tint-red-border);
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-tint);
 }
 .t-timers {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-soft);
   margin-bottom: 10px;
-  padding-top: 8px;
+  padding-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -873,12 +1566,59 @@ p.section-sub {
   color: var(--ink);
   font-weight: 600;
 }
-.t-timer-primary {
-  font-size: var(--fs-sm);
-  margin-bottom: 2px;
+/* Блок живого таймера (редизайн v2, этап 3, скрин 03): подпись и крупное
+   значение слева, оценка с процентом — справа, полоса прогресса ниже. */
+.t-timer-block {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }
-.t-timer-primary .mono {
+.t-timer-main,
+.t-timer-estimate {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.t-timer-estimate {
+  align-items: flex-end;
+  text-align: right;
+  flex-shrink: 0;
+}
+.t-timer-label {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  line-height: 1.3;
+}
+.t-timer-block .t-timer-value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.t-timer-block .t-timer-percent {
   font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.t-timer-block .t-timer-percent-over {
+  color: var(--brand);
+}
+.t-timer-block.t-timer-primary-progress .t-timer-value {
+  color: var(--progress);
+}
+.t-timer-block.t-timer-primary-paused .t-timer-value {
+  color: var(--paused);
+}
+/* --paused (#d97706) держится тёмным осознанно ради контраста на белом
+   фоне светлой темы — то же затемнение, что уже применяется к тексту
+   .pill (см. комментарий выше). В тёмной теме --paused уже светлый
+   (#fbbf24) и корректно читается на тёмной карточке без правок. */
+:root[data-theme="light"] .t-timer-block.t-timer-primary-paused .t-timer-value {
+  color: color-mix(in srgb, var(--paused) 70%, black);
 }
 .t-timers-toggle {
   display: flex;
@@ -911,12 +1651,9 @@ p.section-sub {
   margin-top: 4px;
   animation: fadeIn 0.15s ease both;
 }
-.t-estimate {
-  padding: 2px 0 1px;
-}
 .t-estimate-bar {
-  height: 5px;
-  border-radius: 3px;
+  height: 6px;
+  border-radius: var(--radius-full);
   background: var(--border);
   overflow: hidden;
   margin-top: 4px;
@@ -938,12 +1675,47 @@ p.section-sub {
 }
 .t-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .t-actions .btn {
-  padding: 6px 10px;
-  font-size: var(--fs-xs);
+  flex: 1;
+  padding: 9px 14px;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.t-actions .icon-btn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+}
+.btn-dark {
+  background: var(--ink);
+  color: var(--surface);
+}
+.btn-dark:hover:not(:disabled) {
+  background: var(--ink-soft);
+}
+.btn-success {
+  background: var(--done);
+  color: #fff;
+}
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+/* Тёмная тема: --done там светлый и насыщенный (#4ade80) — белый текст на
+   нём проваливает контраст. Тёмно-зелёный читается кратно лучше. */
+:root[data-theme="dark"] .btn-success {
+  color: #0c2015;
+}
+@media (max-width: 900px) {
+  .btn-primary,
+  .btn-dark,
+  .btn-success,
+  .icon-btn {
+    min-height: 44px;
+  }
 }
 .icon-btn {
   background: none;
@@ -981,20 +1753,27 @@ p.section-sub {
 .archive-table th {
   text-align: left;
   background: var(--surface-alt);
-  padding: 10px 12px;
-  font-size: var(--fs-xs);
+  padding: 12px 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--ink-muted);
+  letter-spacing: 0.8px;
+  color: var(--text-3);
   border-bottom: 1px solid var(--border);
 }
 .archive-table td {
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
   vertical-align: top;
+  font-size: 12.5px;
+  color: var(--text-2);
 }
 .archive-table td .pill {
   margin-bottom: 4px;
+}
+.ta-right {
+  text-align: right;
 }
 .archive-row {
   animation: fadeSlideIn 0.3s ease both;
@@ -1011,6 +1790,14 @@ p.section-sub {
 }
 .archive-cards {
   display: none;
+}
+.archive-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
 }
 
 /* Ниже 720px архив показывается карточками вместо горизонтального
@@ -1043,12 +1830,6 @@ p.section-sub {
     font-weight: 700;
     font-size: var(--fs-sm);
     flex: 1;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .archive-card-assignees {
-    margin-bottom: 8px;
   }
   .archive-card-grid {
     display: grid;
@@ -1080,17 +1861,29 @@ p.section-sub {
 }
 .mono {
   font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--fs-xs);
   color: var(--ink-soft);
+}
+.ta-under {
+  color: var(--done);
+}
+.ta-over {
+  color: var(--brand);
 }
 .pause-line {
   font-family: var(--mono);
   font-size: var(--fs-xs);
-  color: var(--paused);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  /* Время паузы — единая строка. С переносом (и особенно в англоязычном
+     формате «03:20 PM») ячейка разваливалась на пять строк и раздувала
+     высоту всей таблицы. */
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 /* Светлая тема: --paused (#d97706) на --surface даёт 3.19:1, ниже AA.
    Тёмная тема уже проходит (10.5:1) — правим только светлую. */
@@ -1099,6 +1892,7 @@ p.section-sub {
 }
 .pause-line svg {
   flex-shrink: 0;
+  color: var(--text-4);
 }
 
 /* ---------- Form ---------- */
@@ -1203,31 +1997,57 @@ p.section-sub {
   gap: 4px;
   margin-bottom: 18px;
 }
-.stat-rows-caption {
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
-  margin-bottom: 14px;
-}
-.stat-rows {
+.period-switcher-tabs {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 560px;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
 }
-.stat-row {
+.period-switcher-tabs .tab {
+  padding: 6px 13px;
+  font-size: 12.5px;
+  border-radius: var(--radius-xs);
+}
+.period-switcher-tabs .tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-resting);
+}
+.stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
   box-shadow: var(--shadow-resting);
+  padding: 20px 22px;
   animation: fadeSlideIn 0.3s ease both;
+}
+.stat-rows-caption {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  margin-bottom: 16px;
+}
+.stat-rows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 40px;
+}
+@media (max-width: 720px) {
+  .stat-rows {
+    grid-template-columns: 1fr;
+  }
+}
+.stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .stat-row-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
 }
 .stat-row-name {
   font-weight: 600;
@@ -1235,18 +2055,21 @@ p.section-sub {
 }
 .stat-row-value {
   font-size: var(--fs-sm);
-  color: var(--ink-soft);
+  font-weight: 700;
+}
+.stat-row-zero .stat-row-name,
+.stat-row-zero .stat-row-value {
+  color: var(--text-3);
 }
 .stat-bar-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+  background: var(--surface-3);
   overflow: hidden;
 }
 .stat-bar-fill {
   height: 100%;
-  background: var(--progress);
+  background: var(--ink);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
@@ -1254,9 +2077,12 @@ p.section-sub {
   background: var(--brand);
 }
 .stat-row-foot {
-  margin-top: 6px;
-  font-size: var(--fs-xs);
-  color: var(--ink-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.stat-row-foot-over {
+  color: var(--brand);
 }
 .analytics-subsection-title {
   margin-top: 32px;
@@ -1367,7 +2193,9 @@ p.section-sub {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 640px;
+  /* Раньше было 640px, из-за чего поле пароля и кнопка переносились на
+     вторую строку. На скрине 06 строка пользователя одна: аватар и имя
+     слева, сброс пароля и удаление справа. */
 }
 .admin-row {
   background: var(--surface);
@@ -1387,10 +2215,39 @@ p.section-sub {
   box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
 }
+.admin-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  /* Этап 11: фон аватара — светлая пастель в обеих темах, а --ink в тёмной
+     светлеет, и инициалы на нём пропадали. Текст считается затемнением
+     самого фона, как у аватаров карточки и комментариев. */
+  background: var(--avatar-color);
+  color: color-mix(in srgb, var(--avatar-color) 30%, black);
+}
+.admin-avatar-self {
+  background: var(--ink);
+  color: var(--surface);
+}
+:root[data-theme="dark"] .admin-avatar-self {
+  background: var(--border-strong);
+  color: var(--text);
+}
 .admin-row-info {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+  /* Занимает место сразу за аватаром, иначе space-between отбрасывал имя
+     к центру, а действия переносились на вторую строку. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .admin-row-name {
   font-weight: 700;
@@ -1403,8 +2260,10 @@ p.section-sub {
 .admin-row-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 .admin-reset-form {
   display: flex;
@@ -1456,15 +2315,24 @@ p.section-sub {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 13px 14px;
-  border-left: 4px solid var(--border);
+  padding: 16px 18px;
+  border-left: 3px solid var(--border);
   box-shadow: var(--shadow-resting);
+  overflow: hidden;
   animation: fadeSlideIn 0.3s ease both;
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, max-height 0.22s ease, opacity 0.22s ease,
+    padding 0.22s ease, border-width 0.22s ease;
 }
 .project-row:hover {
   box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
+}
+.project-row.is-removing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
 }
 .project-row-head {
   display: flex;
@@ -1472,8 +2340,14 @@ p.section-sub {
   justify-content: space-between;
   gap: 10px;
 }
+.project-row-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .project-row-name {
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--fs-md);
   display: flex;
   align-items: center;
@@ -1490,15 +2364,31 @@ p.section-sub {
 }
 .project-row-desc {
   font-size: var(--fs-sm);
-  color: var(--ink-muted);
-  line-height: 1.5;
-  margin: 6px 0 0;
+  color: var(--text-2);
+  line-height: 1.55;
+  text-wrap: pretty;
+  margin: 9px 0 0;
 }
 .project-row .t-meta {
-  margin-top: 8px;
+  margin-top: 9px;
 }
 .t-meta .project-tag {
   color: var(--ink-muted);
+}
+.rule-row-inactive {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--border) 80%, var(--bg));
+  opacity: 0.72;
+}
+.rule-row-inactive .t-meta {
+  color: var(--text-3);
+}
+.rule-frequency {
+  font-weight: 600;
+  color: var(--ink);
+}
+.rule-row-inactive .rule-frequency {
+  color: var(--text-3);
 }
 
 /* ---------- Assignee multi-select ---------- */
@@ -1643,18 +2533,18 @@ p.section-sub {
 }
 .notif-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  border-radius: 999px;
+  top: -1px;
+  right: -1px;
+  width: 7px;
+  height: 7px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
   background: var(--brand);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
+  border: 1.5px solid var(--surface);
+  font-size: 0;
+  color: transparent;
+  overflow: hidden;
 }
 .notif-panel {
   position: absolute;
@@ -1669,6 +2559,9 @@ p.section-sub {
   box-shadow: var(--shadow-hover);
   overflow: hidden;
   animation: fadeSlideIn 0.15s ease both;
+}
+.notif-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
 }
 .notif-panel-head {
   display: flex;
@@ -1692,6 +2585,7 @@ p.section-sub {
   border-bottom: 1px solid var(--border);
   color: var(--ink);
   transition: background-color 0.15s ease;
+  animation: fadeSlideIn 0.2s ease both;
 }
 .notif-row:last-child {
   border-bottom: none;
@@ -1733,6 +2627,9 @@ p.section-sub {
   padding-top: 15vh;
   animation: fadeIn 0.15s ease;
 }
+.cmdk-backdrop.is-closing {
+  animation: fadeOut 0.15s ease forwards;
+}
 .cmdk-panel {
   width: 560px;
   max-width: calc(100vw - 32px);
@@ -1744,6 +2641,9 @@ p.section-sub {
   flex-direction: column;
   overflow: hidden;
   animation: fadeSlideIn 0.15s ease both;
+}
+.cmdk-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
 }
 .cmdk-input-row {
   display: flex;
@@ -2102,6 +3002,9 @@ p.section-sub {
   justify-content: flex-end;
   animation: fadeIn 0.18s ease;
 }
+.slideover-backdrop.is-closing {
+  animation: fadeOut 0.18s ease forwards;
+}
 .slideover-panel {
   width: 50%;
   min-width: 420px;
@@ -2113,6 +3016,9 @@ p.section-sub {
   flex-direction: column;
   animation: slideInRight 0.22s ease;
 }
+.slideover-panel.is-closing {
+  animation: slideOutRight 0.22s ease forwards;
+}
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
@@ -2121,18 +3027,48 @@ p.section-sub {
     transform: translateX(0);
   }
 }
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 .slideover-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+.slideover-header-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.slideover-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .slideover-title {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
   font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
   margin: 0;
 }
 .slideover-body {
@@ -2171,12 +3107,18 @@ p.section-sub {
   gap: 8px;
 }
 .detail-save-template-btn {
-  margin-left: auto;
   width: 32px;
   height: 32px;
 }
+.detail-pill-overdue {
+  border: 1px solid var(--brand-border);
+}
 .detail-meta {
-  margin-top: 10px;
+  margin-top: 14px;
+}
+.detail-meta-overdue {
+  color: var(--brand);
+  font-weight: 700;
 }
 .detail-row {
   display: flex;
@@ -2184,9 +3126,66 @@ p.section-sub {
   font-size: var(--fs-sm);
   margin-top: 12px;
 }
+/* Две плитки в ряд: текущий таймер и оценка (редизайн v2, этап 6, скрин 05). */
+.detail-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.detail-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.detail-tile-label {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.detail-tile .detail-tile-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  color: var(--text);
+}
+.detail-tile .detail-tile-value-overdue {
+  color: var(--brand);
+}
+/* Заголовки секций панели — моно-капс эйбрау, у чек-листа со счётчиком
+   и полосой прогресса в той же строке. */
 .detail-log-title {
-  font-size: var(--fs-md);
-  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 0 0 14px;
+}
+.detail-log-count {
+  font-size: 11px;
+  color: var(--text-2);
+}
+.detail-progress {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  overflow: hidden;
+}
+.detail-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--done);
+  transition: width 0.3s ease;
 }
 .activity-log-list {
   display: flex;
@@ -2196,23 +3195,25 @@ p.section-sub {
 .activity-log-row {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: baseline;
 }
-.activity-log-icon {
-  color: var(--ink-muted);
+.activity-log-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 2px;
-}
-.activity-log-body {
-  min-width: 0;
 }
 .activity-log-desc {
   font-size: var(--fs-sm);
+  min-width: 0;
 }
 .activity-log-meta {
   font-size: var(--fs-xs);
-  color: var(--ink-muted);
-  margin-top: 2px;
+  color: var(--text-3);
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .detail-log + .detail-log {
   margin-top: 20px;
@@ -2225,15 +3226,42 @@ p.section-sub {
   gap: 12px;
 }
 .comment-row {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-alt);
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+  animation: fadeSlideIn 0.2s ease both;
+  transition: max-height 0.22s ease, opacity 0.22s ease;
+}
+.comment-row.is-removing {
+  opacity: 0;
+}
+.comment-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  /* Тот же приём, что и у аватаров карточки: пастель светлая в обеих темах,
+     поэтому текст — затемнение самого фона, а не --ink. */
+  background: var(--avatar-color);
+  color: color-mix(in srgb, var(--avatar-color) 30%, black);
+}
+.comment-main {
+  min-width: 0;
+  flex: 1;
 }
 .comment-body {
   font-size: var(--fs-sm);
   white-space: pre-wrap;
   word-break: break-word;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 .comment-meta {
   display: flex;
@@ -2271,10 +3299,12 @@ p.section-sub {
   outline: none;
   border-color: var(--brand);
 }
+/* На скрине 05 @упоминание синее, а не брендовое красное: красный в этом
+   интерфейсе означает срочность и просрочку, упоминание ею не является. */
 .mention {
-  color: var(--brand-dark);
+  color: var(--tint-indigo-ink);
   font-weight: 600;
-  background: var(--tint-red-active-bg);
+  background: var(--tint-indigo-bg);
   border-radius: 4px;
   padding: 0 3px;
 }
@@ -2322,9 +3352,13 @@ p.section-sub {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--fs-xs);
-  color: var(--ink-muted);
-  padding: 0 4px;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-2);
+  padding: 6px 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
 }
 .checklist-list {
   display: flex;
@@ -2338,7 +3372,14 @@ p.section-sub {
   gap: 8px;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
-  transition: background-color 0.15s ease;
+  overflow: hidden;
+  animation: fadeSlideIn 0.2s ease both;
+  transition: background-color 0.15s ease, max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease;
+}
+.checklist-row.is-removing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .checklist-row:hover {
   background: var(--hover-bg);
@@ -2355,12 +3396,68 @@ p.section-sub {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  accent-color: var(--brand);
+  /* Зелёный, а не брендовый красный: на скрине 05 выполненный пункт
+     чек-листа отмечен зелёной галочкой, в тон полосе прогресса. */
+  accent-color: var(--done);
   cursor: pointer;
 }
 .checklist-item-done {
   color: var(--ink-muted);
   text-decoration: line-through;
+}
+/* ---------- Переключатель «Aktiv» (RecurringRuleRow) ---------- */
+.switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.switch-track {
+  width: 34px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease;
+}
+.switch-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  /* Токен, а не #fff: в паре с тёмным треком ниже он инвертируется вместе
+     с темой — в светлой белый бегунок на чёрном, в тёмной тёмный на светлом. */
+  background: var(--surface);
+  transition: transform 0.16s ease;
+}
+.switch-input:checked + .switch-track {
+  /* Чёрный включённый тумблер по скрину 04. Раньше был --brand из-за
+     белого бегунка: на светлом треке тёмной темы он пропадал. Теперь
+     бегунок — var(--surface) и инвертируется вместе с треком, так что
+     контраст держится в обеих темах без отдельного dark-override. */
+  background: var(--ink);
+}
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(14px);
+}
+.switch-input:focus-visible + .switch-track {
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.08);
+}
+.switch-input:disabled + .switch-track {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .checklist-row-actions {
   display: flex;
@@ -2391,12 +3488,23 @@ p.section-sub {
   outline: none;
   border-color: var(--brand);
 }
+.checklist-add-btn {
+  /* .btn-primary defaults to width: 100% for standalone form submits; here
+     it shares a row with a flex:1 input, and that width would out-compete
+     the input for space (its would-be flex-basis), squeezing the input down
+     to a sliver. Sized to content instead, like any other inline button. */
+  width: auto;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: var(--fs-sm);
+}
 
 /* ---------- Labels ---------- */
 .t-labels {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  margin-top: 4px;
   margin-bottom: 8px;
 }
 .label-option-name {
@@ -2447,6 +3555,28 @@ p.section-sub {
 .label-swatch-active {
   border-color: var(--ink);
 }
+.label-swatch-none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1;
+}
+.project-color-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+.table-project-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .label-create-btn {
   width: 28px;
   height: 28px;
@@ -2454,35 +3584,52 @@ p.section-sub {
 }
 
 /* ---------- WIP limits ---------- */
-.col-count-limit {
-  color: var(--priority-urgent);
-}
 .wip-limits-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-resting);
+  padding: 18px 20px;
+  /* Поля в один ряд и одна общая кнопка (редизайн v2, этап 9, скрин 06) —
+     раньше это была колонка со своей кнопкой у каждой строки. */
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
-  max-width: 360px;
-}
-.wip-limit-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 .wip-limit-label {
-  flex: 1;
-  font-size: var(--fs-sm);
-  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
 }
-.wip-limit-row input {
-  width: 100px;
-  padding: 6px 8px;
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wip-limit-field input {
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font: inherit;
-  font-size: var(--fs-sm);
+  font: 600 14px var(--mono);
+}
+.wip-limit-field input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--focus-ring);
+}
+.wip-limit-row input::placeholder {
+  color: var(--text-4);
+  font-weight: 400;
+  font-family: var(--sans);
 }
 
 /* ---------- Calendar view ---------- */
@@ -2586,4 +3733,641 @@ p.section-sub {
   .calendar-month-label {
     min-width: auto;
   }
+}
+
+/* ---------- Toasts (замена alert(), Этап 4 оптимизации) ---------- */
+.toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 70;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 40px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-hover);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  animation: fadeSlideIn 0.18s ease;
+}
+.toast.is-closing {
+  animation: toastFadeOut 0.2s ease forwards;
+}
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.toast-success .toast-icon {
+  color: var(--done);
+}
+.toast-error .toast-icon {
+  color: var(--brand-dark);
+}
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+  color: var(--ink);
+}
+.toast-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.toast-close:hover {
+  background: var(--hover-bg);
+  color: var(--ink);
+}
+
+
+/* ---------- Проекты и шаблоны (редизайн v2, этап 7) ---------- */
+
+/* Пилюля со счётчиком: число задач в проекте, пунктов в шаблоне. */
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* Приоритет в строке проекта и шаблона — обычным регистром, как на
+   скринах 02 и 04 (в отличие от статусных пилюль). */
+.project-row-head-right .pill {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+/* «— keine Priorität —», «— nicht zugewiesen —» — приглушённые заглушки. */
+.row-placeholder {
+  color: var(--text-4);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+/* Эйбрау формы редактирования: «✎ PROJEKT BEARBEITEN». */
+.form-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+.project-form {
+  box-shadow: var(--shadow-3);
+}
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.btn-text:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--hover-bg);
+}
+/* Шаблоны и повторяющиеся правила — две колонки (скрин 04). */
+.templates-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .templates-layout {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .row3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ---------- Архив: строки и пагинация (редизайн v2, этап 8) ---------- */
+
+/* Вторая строка ячейки задачи: статус, метки и исполнители моно (скрин 08). */
+.archive-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+.archive-assignees {
+  font-size: 11px;
+  color: var(--text-2);
+}
+/* Даты, длительности и заголовки колонок не переносятся: «24.07. 07:48»
+   и «3 Std 05 Min» на скрине 08 в одну строку. */
+.archive-table th,
+.archive-table td.mono {
+  white-space: nowrap;
+}
+.archive-table .count-pill {
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+}
+.archive-table .overdue-badge {
+  display: inline-block;
+  margin-top: 3px;
+  white-space: normal;
+  font-size: 10px;
+  line-height: 1.25;
+  /* Без минимальной ширины в узкой колонке пилюля сжималась в кружок
+     и текст в ней ломался по буквам. */
+  min-width: 104px;
+  text-align: center;
+}
+.archive-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.archive-summary {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.pagination-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.pagination-page:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.pagination-page.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  font-weight: 700;
+}
+.pagination-gap {
+  color: var(--text-4);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+
+/* ---------- Аналитика и Admin (редизайн v2, этап 9) ---------- */
+
+.stat-card + .stat-card {
+  margin-top: 18px;
+}
+.stat-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.stat-card-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+.stat-card-sub {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  margin: 0;
+  line-height: 1.5;
+}
+/* «GEARBEITET · % DER VERFÜGBAREN ZEIT» в правом верхнем углу карточки. */
+.stat-card-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  text-align: right;
+}
+/* Столбчатая диаграмма накопления (скрин 01). */
+.cfd-columns {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 200px;
+  overflow-x: auto;
+}
+.cfd-column {
+  flex: 1 1 0;
+  min-width: 26px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.cfd-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.cfd-segment {
+  display: block;
+  width: 100%;
+}
+.cfd-segment-top {
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+.cfd-date {
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--text-3);
+  text-align: center;
+  white-space: nowrap;
+}
+.cfd-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cfd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+}
+.cfd-legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+/* Точность оценок: дорожка с осью и риской по центру (= 1,0×). */
+.ea-table {
+  display: flex;
+  flex-direction: column;
+}
+.ea-head,
+.ea-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.2fr) 80px minmax(160px, 3fr) 120px;
+  align-items: center;
+  gap: 16px;
+}
+.ea-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.ea-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.ea-row:last-child {
+  border-bottom: none;
+}
+.ea-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.ea-track {
+  position: relative;
+  display: block;
+  height: 10px;
+}
+.ea-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--border);
+}
+.ea-tick {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-strong);
+}
+.ea-bar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  border-radius: var(--radius-full);
+  min-width: 6px;
+}
+.ea-bar.is-near {
+  background: var(--done);
+}
+.ea-bar.is-over {
+  background: var(--brand);
+}
+.ea-bar.is-under {
+  background: var(--in-progress);
+}
+.ea-value {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+.ea-value.is-near {
+  color: var(--done);
+}
+.ea-value.is-over {
+  color: var(--brand);
+}
+.ea-value.is-under {
+  color: var(--in-progress);
+}
+/* WIP-лимиты: поля в один ряд и одна кнопка сохранения (скрин 06). */
+.wip-limit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 150px;
+  min-width: 130px;
+}
+.wip-limits-save {
+  flex: none;
+}
+.wip-full-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: var(--fs-sm);
+  margin-bottom: 14px;
+}
+.admin-users-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-accounts-count {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.icon-btn-danger {
+  color: var(--brand);
+}
+.icon-btn-danger:hover {
+  color: var(--brand);
+  border-color: var(--brand-border);
+  background: var(--brand-tint);
+}
+
+
+/* ---------- Форма «Neue Aufgabe» (редизайн v2, этап 10) ---------- */
+
+.task-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.task-form-main .field + .field {
+  margin-top: 16px;
+}
+.task-form-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.task-form-side .form-card {
+  padding: 16px 18px;
+  max-width: none;
+}
+.task-form-side .field + .field {
+  margin-top: 14px;
+}
+.task-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.task-form-actions .btn-primary {
+  width: 100%;
+  justify-content: center;
+}
+.task-form-secondary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.task-form-secondary .btn {
+  flex: 1;
+  justify-content: center;
+}
+/* Подпись под полем: подсказка про иконку и предупреждение о дате в прошлом. */
+.field-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  line-height: 1.4;
+  margin: 6px 0 0;
+}
+.field-hint-warning {
+  color: var(--brand);
+}
+/* Выбор шаблона в шапке страницы. */
+.template-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+/* Приоритет четырьмя сегментными кнопками вместо селекта (скрин 07). */
+.priority-segmented {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.priority-segment {
+  padding: 7px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.priority-segment:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.priority-segment.is-active {
+  border-color: var(--segment-color);
+  color: var(--segment-color);
+  background: color-mix(in srgb, var(--segment-color) 12%, transparent);
+}
+/* Оценка: значение по-человечески справа от поля и пресеты под ним. */
+.estimate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.estimate-row input {
+  flex: 1;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.estimate-readable {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.estimate-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.estimate-preset {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.estimate-preset:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.estimate-preset.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+/* Поле с иконкой слева (Ort, Frist). */
+.input-with-icon {
+  position: relative;
+  display: block;
+}
+.input-with-icon svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+.input-with-icon input {
+  padding-left: 34px;
+}
+@media (max-width: 900px) {
+  .task-form-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ---------- Тёмная тема: точечные правки (редизайн v2, этап 11) ---------- */
+
+/* Белый текст на --brand в тёмной теме давал 3.51:1 — ниже AA для мелкого
+   текста. Эталон (скрин 05) показывает кнопку белым по красному, поэтому
+   правим не текст, а насыщенность фона: тот же красный, но глубже — 4.68:1. */
+:root[data-theme="dark"] .btn-primary {
+  background: color-mix(in srgb, var(--brand) 85%, black);
+}
+:root[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 92%, black);
+}
+
+/* Красный текст на своей же 12–16%-подложке давал 4.43:1. В тёмной теме
+   берём осветлённый --brand-dark (6.89:1); в светлой всё и так проходит. */
+:root[data-theme="dark"] .t-overdue-banner,
+:root[data-theme="dark"] .wip-full-warning,
+:root[data-theme="dark"] .overdue-badge {
+  color: var(--brand-dark);
+}
+
+/* Заглушки «— keine Priorität —» и «— nicht zugewiesen —» — это текст,
+   а не декор, поэтому им --text-3, а не самый приглушённый тир. */
+.row-placeholder {
+  color: var(--text-3);
 }

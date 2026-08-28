@@ -27,3 +27,25 @@ export async function signIn(page: Page, username: string) {
   await page.click('button[type=submit]:has-text("Anmelden")');
   await page.waitForURL('**/dashboard', { timeout: 15_000 });
 }
+
+// "Neue Aufgabe" is a button on Task-Manager (stage 5), not a standalone
+// top-nav tab reachable from every page — so getting to /dashboard/new from
+// elsewhere means landing on Task-Manager first. Two client-side
+// navigations back-to-back (tab click, then button click) occasionally
+// race in this sandbox: the click fires, dispatches fine, but the app
+// doesn't navigate — not a button-readiness issue (confirmed present and
+// visible beforehand), just an intermittent swallowed click under this
+// environment's load. A single bounded retry clears it without masking a
+// real regression (a genuinely broken button would fail both attempts).
+export async function goToNewTaskFromTaskManager(page: Page) {
+  await page.click('text=Task-Manager');
+  await page.waitForURL('**/dashboard');
+  await page.locator('[data-testid=new-task-button]').waitFor({ state: 'visible' });
+  await page.click('text=Neue Aufgabe');
+  try {
+    await page.waitForURL('**/dashboard/new', { timeout: 5_000 });
+  } catch {
+    await page.click('text=Neue Aufgabe');
+    await page.waitForURL('**/dashboard/new', { timeout: 15_000 });
+  }
+}

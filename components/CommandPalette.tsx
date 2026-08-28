@@ -5,12 +5,17 @@ import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useToast } from './ToastProvider';
+import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { useScrollLock } from '@/lib/hooks/useScrollLock';
 import { canViewStats } from '@/lib/logic/access';
 import { quickCreateTask } from '@/app/(app)/dashboard/actions';
 import type { UserRole } from '@/lib/supabase/types';
 
 export function CommandPalette({ role }: { role: UserRole }) {
   const dict = useDictionary();
+  const toast = useToast();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -18,6 +23,10 @@ export function CommandPalette({ role }: { role: UserRole }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { phase, onAnimationEnd } = useAnimatedUnmount(open);
+  const active = phase !== 'closed';
+  const panelRef = useFocusTrap<HTMLDivElement>(active);
+  useScrollLock(active);
 
   function close() {
     setOpen(false);
@@ -29,7 +38,7 @@ export function CommandPalette({ role }: { role: UserRole }) {
     startTransition(() => {
       quickCreateTask(title).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         const shouldNavigate = pathname !== '/dashboard';
@@ -49,10 +58,6 @@ export function CommandPalette({ role }: { role: UserRole }) {
     document.addEventListener('keydown', onGlobalKey);
     return () => document.removeEventListener('keydown', onGlobalKey);
   }, []);
-
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 0);
-  }, [open]);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -114,17 +119,32 @@ export function CommandPalette({ role }: { role: UserRole }) {
     <>
       <button
         type="button"
-        className="icon-btn cmdk-trigger"
+        className="topbar-search"
         title="Cmd/Ctrl+K"
         onClick={() => setOpen(true)}
         data-testid="command-palette-trigger"
       >
-        <Search size={17} strokeWidth={1.75} />
+        <Search size={14} strokeWidth={1.75} />
+        <span>{dict.commandPalette.triggerLabel}</span>
+        <span className="topbar-search-kbd">⌘K</span>
       </button>
-      {open &&
+      {phase !== 'closed' &&
         createPortal(
-          <div className="cmdk-backdrop" onClick={close}>
-            <div className="cmdk-panel" onClick={(e) => e.stopPropagation()} data-testid="command-palette">
+          <div
+            className={`cmdk-backdrop ${phase === 'closing' ? 'is-closing' : ''}`}
+            onClick={close}
+            onAnimationEnd={onAnimationEnd}
+          >
+            <div
+              ref={panelRef}
+              className={`cmdk-panel ${phase === 'closing' ? 'is-closing' : ''}`}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={handleKeyDown}
+              role="dialog"
+              aria-modal="true"
+              aria-label={dict.commandPalette.title}
+              data-testid="command-palette"
+            >
               <div className="cmdk-input-row">
                 <Search size={16} strokeWidth={1.75} />
                 <input
@@ -132,7 +152,6 @@ export function CommandPalette({ role }: { role: UserRole }) {
                   className="cmdk-input"
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
                   placeholder={dict.commandPalette.placeholder}
                   disabled={isPending}
                   data-testid="command-palette-input"

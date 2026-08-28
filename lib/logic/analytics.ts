@@ -99,3 +99,13 @@ export function computePersonStats(params: {
     workedMs: workedByPerson.get(p.id) ?? 0,
   }));
 }
+
+// Доля отработанного от доступного рабочего времени. Прямая шкала: 90 % —
+// это «отработано 90 % доступного времени» (откат K3, редизайн v2, этап 9).
+// Раньше та же величина показывалась инвертированной, как «% свободной
+// ёмкости». Может превысить 100 % при переработке — это намеренно, величина
+// переработки должна быть видна, а не упираться в потолок.
+export function workedPercent(workedMs: number, availableMs: number): number {
+  if (availableMs <= 0) return 0;
+  return (workedMs / availableMs) * 100;
+}

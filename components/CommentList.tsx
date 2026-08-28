@@ -3,12 +3,18 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { getInitials, getAvatarColor } from '@/lib/logic/initials';
+import { useToast } from './ToastProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { splitMentionSegments, type MentionableProfile } from '@/lib/logic/mentions';
 import { addComment, deleteComment } from '@/app/(app)/dashboard/comments-actions';
 import type { TaskComment } from '@/lib/supabase/types';
 
 const MENTION_SUGGESTION_LIMIT = 6;
+// Matches the .comment-row max-height/opacity/padding transition duration in
+// globals.css — the row stays in the DOM this long after delete so the
+// collapse animation can play, instead of just vanishing.
+const EXIT_MS = 240;
 
 export function CommentList({
   taskId,
@@ -26,11 +32,13 @@ export function CommentList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
   const [mentionProfiles, setMentionProfiles] = useState<MentionableProfile[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -115,7 +123,7 @@ export function CommentList({
     startTransition(() => {
       addComment(taskId, formData).then((result) => {
         if (result?.error) {
-          alert(result.error);
+          toast.error(result.error);
           return;
         }
         setBody('');
@@ -124,11 +132,31 @@ export function CommentList({
     });
   }
 
-  function handleDelete(commentId: string) {
+  function handleDelete(commentId: string, rowEl: HTMLElement | null) {
     if (!confirm(dict.comments.deleteConfirm)) return;
+
+    if (rowEl) {
+      rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
+      void rowEl.offsetHeight; // force reflow so the browser has a starting height to transition from
+      requestAnimationFrame(() => {
+        rowEl.style.maxHeight = '0px';
+      });
+    }
+    setRemovingIds((prev) => new Set(prev).add(commentId));
+
+    const settle = new Promise<void>((resolve) => setTimeout(resolve, EXIT_MS));
     startTransition(() => {
-      deleteComment(commentId).then((result) => {
-        if (result?.error) alert(result.error);
+      Promise.all([deleteComment(commentId), settle]).then(([result]) => {
+        setRemovingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(commentId);
+          return next;
+        });
+        if (result?.error) {
+          if (rowEl) rowEl.style.maxHeight = '';
+          toast.error(result.error);
+          return;
+        }
         onChange();
       });
     });
@@ -139,8 +167,20 @@ export function CommentList({
       {comments.length === 0 ? (
         <div className="empty-note">{dict.comments.empty}</div>
       ) : (
-        comments.map((c) => (
-          <div className="comment-row" key={c.id}>
+        comments.map((c, i) => (
+          <div
+            className={`comment-row ${removingIds.has(c.id) ? 'is-removing' : ''}`}
+            key={c.id}
+            style={{ animationDelay: `${i * 25}ms` }}
+          >
+            {/* Аватар слева, текст в бабле, моно-подпись под ним (скрин 05). */}
+            <span
+              className="comment-avatar"
+              style={{ ['--avatar-color' as string]: getAvatarColor(c.author_id ?? '') }}
+            >
+              {getInitials(resolveName(c.author_id))}
+            </span>
+            <div className="comment-main">
             <div className="comment-body">
               {splitMentionSegments(c.body).map((seg, i) => {
                 const name = seg.mentionUsername ? usernameToName.get(seg.mentionUsername) : null;
@@ -163,12 +203,13 @@ export function CommentList({
                   className="icon-btn comment-delete"
                   title={dict.comments.deleteTitle}
                   disabled={isPending}
-                  onClick={() => handleDelete(c.id)}
+                  onClick={(e) => handleDelete(c.id, e.currentTarget.closest<HTMLElement>('.comment-row'))}
                   data-testid="delete-comment"
                 >
                   <Trash2 size={14} strokeWidth={1.75} />
                 </button>
               )}
+            </div>
             </div>
           </div>
         ))

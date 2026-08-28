@@ -107,7 +107,7 @@ export async function GET(request: Request) {
     dict.archive.lateBy,
     dict.archive.colNetDuration,
     dict.archive.colEstimate,
-    dict.table.colAssignees,
+    dict.archive.colAssignees,
   ];
 
   const rows = filteredDone.map((t) => {

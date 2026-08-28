@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Download } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
@@ -11,6 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { AnalyticsStats } from './AnalyticsStats';
 import { CumulativeFlowChart } from '@/components/CumulativeFlowChart';
 import { EstimateAccuracyTable } from '@/components/EstimateAccuracyTable';
+import { ExportButtons } from '@/components/ExportButtons';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -29,16 +31,10 @@ export default async function AnalyticsPage({
   const days = parsePeriod(daysParam);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, locale')
-    .eq('id', user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
   if (!profile || !canViewStats(profile.role)) redirect('/dashboard');
 
   const dict = getDictionary(profile.locale ?? 'de');
@@ -97,23 +93,23 @@ export default async function AnalyticsPage({
 
   return (
     <div className="page-fade">
-      <h2 className="section-title">{dict.analytics.title}</h2>
-      <p className="section-sub">{dict.analytics.subtitle}</p>
-      <div className="period-switcher">
-        {PERIOD_OPTIONS.map((d) => (
-          <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
-            {dict.analytics.periodLabels[d]}
-          </Link>
-        ))}
-        <div className="export-links">
-          <a className="export-link" href={`/api/export/analytics?format=csv&days=${days}`} data-testid="export-csv">
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.csv}
-          </a>
-          <a className="export-link" href={`/api/export/analytics?format=xlsx&days=${days}`} data-testid="export-xlsx">
-            <Download size={14} strokeWidth={1.75} />
-            {dict.export.xlsx}
-          </a>
+      <div className="page-header">
+        <div>
+          <h2 className="section-title">{dict.analytics.title}</h2>
+          <p className="section-sub">{dict.analytics.subtitle}</p>
+        </div>
+        <div className="page-header-actions">
+          <div className="period-switcher-tabs">
+            {PERIOD_OPTIONS.map((d) => (
+              <Link key={d} href={`/analytics?days=${d}`} className={`tab ${d === days ? 'active' : ''}`}>
+                {dict.analytics.periodLabels[d]}
+              </Link>
+            ))}
+          </div>
+          <ExportButtons
+            csvHref={`/api/export/analytics?format=csv&days=${days}`}
+            xlsxHref={`/api/export/analytics?format=xlsx&days=${days}`}
+          />
         </div>
       </div>
       {(profiles ?? []).length === 0 ? (
@@ -122,13 +118,21 @@ export default async function AnalyticsPage({
         <>
           <AnalyticsStats stats={stats} availableMs={availableMs} />
 
-          <h3 className="section-title analytics-subsection-title">{dict.analytics.cumulativeFlowTitle}</h3>
-          <p className="section-sub">{dict.analytics.cumulativeFlowSubtitle}</p>
-          <CumulativeFlowChart data={cumulativeFlow} dict={dict} />
+          {/* Заголовки блоков переехали внутрь карточек: на скрине 01 у
+              каждого блока своя карточка с заголовком и легендой в шапке. */}
+          <CumulativeFlowChart
+            data={cumulativeFlow}
+            dict={dict}
+            title={dict.analytics.cumulativeFlowTitle}
+            subtitle={dict.analytics.cumulativeFlowSubtitle}
+          />
 
-          <h3 className="section-title analytics-subsection-title">{dict.analytics.estimateAccuracyTitle}</h3>
-          <p className="section-sub">{dict.analytics.estimateAccuracySubtitle}</p>
-          <EstimateAccuracyTable stats={estimateAccuracy} dict={dict} />
+          <EstimateAccuracyTable
+            stats={estimateAccuracy}
+            dict={dict}
+            title={dict.analytics.estimateAccuracyTitle}
+            subtitle={dict.analytics.estimateAccuracySubtitle}
+          />
         </>
       )}
     </div>

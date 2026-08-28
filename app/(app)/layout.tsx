@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Radar } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { getInitials } from '@/lib/logic/initials';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
 import { getThemeCookie } from '@/lib/theme/cookie';
@@ -10,23 +11,17 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { ToastProvider } from '@/components/ToastProvider';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name, role, locale')
-    .eq('id', user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
 
   const name = profile?.name ?? user.email ?? 'Пользователь';
   const role = profile?.role ?? 'editor';
@@ -36,33 +31,38 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <LocaleProvider locale={locale} dict={dict}>
-      <ServiceWorkerRegister />
-      <div className="app-root">
-        <div className="topbar">
-          <div className="topbar-left">
-            <div className="topbar-brand">
-              <span className="topbar-brand-icon">
-                <Radar size={20} strokeWidth={2.25} />
-              </span>
-              <span className="topbar-brand-name">TL-Radar</span>
+      <ToastProvider>
+        <ServiceWorkerRegister />
+        <div className="app-root">
+          <div className="topbar">
+            <div className="topbar-left">
+              <div className="topbar-brand">
+                <span className="topbar-brand-icon">
+                  <Radar size={20} strokeWidth={2.25} />
+                </span>
+                <span className="topbar-brand-name">TL-Radar</span>
+              </div>
+              <TopTabs role={role} />
             </div>
-            <TopTabs role={role} />
+            <div className="who">
+              <CommandPalette role={role} />
+              <NotificationBell userId={user.id} />
+              <ThemeToggle theme={theme} />
+              <LanguageSwitcher />
+              <div className="topbar-profile">
+                <span className="topbar-avatar">{getInitials(name)}</span>
+                <span className="topbar-profile-name">{name}</span>
+                <form action={signOut}>
+                  <button className="topbar-logout" type="submit">
+                    {dict.topbar.logout}
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
-          <div className="who">
-            <CommandPalette role={role} />
-            <NotificationBell />
-            <ThemeToggle theme={theme} />
-            <LanguageSwitcher />
-            <span className="name">{name}</span>
-            <form action={signOut}>
-              <button className="btn btn-ghost" type="submit">
-                {dict.topbar.logout}
-              </button>
-            </form>
-          </div>
+          <main>{children}</main>
         </div>
-        <main>{children}</main>
-      </div>
+      </ToastProvider>
     </LocaleProvider>
   );
 }
