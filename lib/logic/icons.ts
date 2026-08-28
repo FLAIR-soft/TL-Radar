@@ -85,11 +85,6 @@ export const ICON_MAP: Record<IconName, LucideIcon> = {
   Briefcase,
 };
 
-export function resolveIcon(name: string | null | undefined): LucideIcon | null {
-  if (!name) return null;
-  return ICON_MAP[name as IconName] ?? null;
-}
-
 export function isIconName(name: string | null | undefined): name is IconName {
   return !!name && Object.prototype.hasOwnProperty.call(ICON_MAP, name);
 }
