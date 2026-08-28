@@ -14,6 +14,7 @@ test.describe('overlay accessibility', () => {
 
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.waitForTimeout(300);
 
     const trigger = page.locator('[data-testid=open-create-project]');
     await trigger.click();
