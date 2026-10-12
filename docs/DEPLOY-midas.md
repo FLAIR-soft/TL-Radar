@@ -1,85 +1,111 @@
-# Деплой на MIDAS (hostit.mifcom.dev)
+# Деплой на MIDAS (midas.mifcom.dev)
 
-Платформа принимает `.tar.gz` с проектом. Если внутри есть `Dockerfile` —
-собирает образ и запускает контейнер; имя проекта становится поддоменом
-`<name>.hostit.mifcom.dev`.
+MIDAS — внутренняя платформа MIFCOM. Один проект = один поддомен
+`<имя>.midas.mifcom.dev`. Приложение загружается архивом `.tar.gz`; если в
+корне архива есть `Dockerfile`, собирается образ и запускается контейнер.
 
-## Что уже подготовлено в репозитории
+Контракт платформы: `https://midas.mifcom.dev/llms.txt`.
+
+## Решения по этому проекту
+
+| Что | Значение |
+| --- | --- |
+| Имя проекта | `tl-organizer` → `https://tl-organizer.midas.mifcom.dev` |
+| Видимость | `unlisted` — видят все, кто вошёл под учёткой MIFCOM и знает адрес; в каталоге дашборда не показывается |
+| База | включена (`"database": true` в `midas.json`) |
+| Владелец | берётся из API-токена, отдельным полем не передаётся |
+
+Имя и владение привязываются при первом деплое и потом не меняются.
+Видимость меняется на дашборде.
+
+## Что уже подготовлено
 
 | Файл | Зачем |
 | --- | --- |
-| `Dockerfile` | Трёхстадийная сборка Next.js в standalone, финальный образ на `node:22-alpine`, запуск от непривилегированного пользователя |
-| `hostit.json` | Явно задаёт тип `docker` и порт `3000` |
-| `.dockerignore` | Не тащит в образ `.git`, `node_modules`, `e2e`, `design` |
-| `next.config.ts` | `output: "standalone"` — без него образ пришлось бы собирать со всем `node_modules` |
-| `scripts/pack-hostit.sh` | Собирает архив и кладёт в него `.env.production` только с публичными переменными |
-| `.env.production.example` | Образец; реальный `.env.production` в git не хранится |
+| `Dockerfile` | Next.js в standalone, `node:22-alpine`, непривилегированный пользователь, порт 3000 на `0.0.0.0` |
+| `midas.json` | `type: docker`, `port: 3000`, `database: true` |
+| `.dockerignore` | не тащит в образ `.git`, `node_modules`, `e2e`, `design` |
+| `next.config.ts` | `output: "standalone"` |
+| `scripts/pack-midas.sh` | собирает архив, кладёт `.env.production` только с публичными переменными, проверяет что `midas.json` и `Dockerfile` в корне |
 
 ## Порядок выкатки
 
-Всё из Git Bash, из корня репозитория.
+Токен — на `https://midas.mifcom.dev/account` (один активный на пользователя,
+протухает после 30 дней без использования). **В репозиторий его не класть.**
+
+Всё из Git Bash, из корня репозитория:
 
 ```bash
 npm ci
-npm run build          # должен пройти с output: "standalone"
+npm run build
 npm run lint
-
-bash scripts/pack-hostit.sh
-# → ../tl-organizer-hostit.tgz
+bash scripts/pack-midas.sh          # → ../tl-organizer.tgz
 ```
 
-Проверить, свободно ли имя:
+Проверить имя:
 
 ```bash
-curl -s https://hostit.mifcom.dev/api/v1/projects/tl-organizer
+curl -fsS -H "Authorization: Bearer $MIDAS_TOKEN" \
+  https://midas.mifcom.dev/api/v1/projects/tl-organizer
 ```
 
-`{"exists": false}` — первая выкатка:
+Первый деплой. `curl.exe` из Git for Windows не понимает unix-пути —
+путь конвертируется через `cygpath`:
 
 ```bash
-curl -X POST "https://hostit.mifcom.dev/api/v1/deploy" \
+WINPATH=$(cygpath -w ../tl-organizer.tgz)
+curl -fsS -X POST https://midas.mifcom.dev/api/v1/deploy \
+  -H "Authorization: Bearer $MIDAS_TOKEN" \
   -F "name=tl-organizer" \
-  -F "creator=Roman Holovachov" \
-  -F "description=Internal task and time dashboard for the MIFCOM PC assembly team" \
-  -F "tarball=@../tl-organizer-hostit.tgz"
+  -F "tarball=@$WINPATH" \
+  -F "visibility=unlisted" \
+  -F "description=Internal task and time dashboard for the MIFCOM PC assembly team: who is working on what, where, and how long it actually took."
 ```
 
-Ответ содержит `password`. **Он показывается один раз, восстановления нет** —
-сразу в менеджер паролей. Повторные выкатки:
+Первая сборка идёт минуту-две — ответ приходит, когда приложение уже живо.
+Повторные деплои: то же самое без `visibility` и `description`.
 
-```bash
-curl -X POST "https://hostit.mifcom.dev/api/v1/deploy" \
-  -H "Authorization: Bearer <password>" \
-  -F "name=tl-organizer" \
-  -F "tarball=@../tl-organizer-hostit.tgz"
-```
+## Что платформа даёт приложению
 
-Лимиты: 100 МБ архив, 500 МБ в распакованном виде, 20 000 файлов.
+**Личность пользователя.** Все проекты стоят за Microsoft Entra SSO. Шлюз
+добавляет в каждый запрос, дошедший до приложения:
 
-## Ограничения платформы, которые меняют архитектуру
+- `X-Auth-Request-Email` — почта в нижнем регистре, **это и есть идентификатор**;
+- `X-Auth-Request-User`, `-Preferred-Username`, `-Display-Name`.
 
-Проверено по описанию API hostit. Три вещи, которых там нет:
+Своего логина быть не должно: неаутентифицированный посетитель до приложения
+не доходит.
 
-**1. Переменных окружения на рантайме нет.** В `deploy` передаются только имя,
-автор, описание и архив. Всё, что нужно приложению, попадает внутрь образа на
-сборке. Отсюда следствие: `SUPABASE_SERVICE_ROLE_KEY` использовать нельзя — он
-дал бы полный обход RLS и лежал бы прямо в образе. Значит сброс паролей и
-удаление пользователей в `/admin` на MIDAS не работают. При переходе на SSO это
-и не нужно — страница `/admin` сокращается до WIP-лимитов.
+**База.** На рантайме в контейнер приходят `DATABASE_URL` и `PGHOST`/`PGPORT`/
+`PGUSER`/`PGPASSWORD`/`PGDATABASE`. Сертификат самоподписанный: подключаться с
+выключенной проверкой (`ssl: { rejectUnauthorized: false }` для `pg`,
+`sslmode=require` для libpq — **никогда `verify-full`**). База переживает
+передеплои и удаляется только вместе с проектом.
 
-**2. Базы данных платформа не предоставляет.** Это хостинг приложения, не СУБД,
-и постоянного тома в API тоже нет. Решение «база тоже внутрь MIFCOM» на одном
-hostit не реализуется: нужен отдельный Postgres внутри периметра и кто-то, кто
-его админит. До этого момента приложение продолжает ходить в Supabase.
+**Справочник сотрудников.** `GET /api/v1/directory` — все пользователи MIFCOM
+с почтой, именем и `erp_user_id`. Из браузера: обычный GET с
+`credentials: "include"` и **без единого своего заголовка**, иначе preflight
+упрётся в редирект на логин.
 
-**3. Про аутентификацию в описании платформы нет ничего.** Поддомен описан как
-публичный. Пока не подтверждено, что MIDAS закрывает приложение собой и
-передаёт пользователя, **логин убирать нельзя** — иначе данные команды окажутся
-доступны любому, кто знает адрес.
+**Почта.** `POST /api/v1/mail`, только адреса MIFCOM, без своих SMTP-ключей.
 
-## Перед первой выкаткой
+## Чего платформа не даёт — и что из-за этого ломается
 
-- `npm run build` и `npm run lint` зелёные;
-- в `.env.production` попали только `NEXT_PUBLIC_*` (скрипт печатает, что записал);
-- адрес Supabase в архиве — тот, который нужен; на боевой базе ничего не ломается;
-- после выкатки открыть приложение и проверить вход, борд, архив и аналитику.
+**Куки вырезаются в обе стороны.** Шлюз снимает `Cookie` с входящих запросов
+и `Set-Cookie` с ответов. Ломается:
+
+- сессия Supabase Auth — вход зациклится;
+- выбор языка (`lib/i18n/cookie.ts`);
+- выбор темы (`lib/theme/cookie.ts`).
+
+Язык и тему переносить в `localStorage` или в базу по ключу
+`X-Auth-Request-Email`. CSRF на куках тоже не работает — вместо него шлюз сам
+отбивает межсайтовые POST.
+
+**Нет планировщика.** В контракте MIDAS нет cron. Сейчас на pg_cron и Edge
+Functions Supabase висят: автопауза в 16:00, правила повторяющихся задач,
+уведомления о дедлайне. На MIDAS их исполнять нечем — нужно либо считать
+состояние на лету при чтении, либо дёргать приложение извне.
+
+**Приложение нельзя встроить в iframe** чужого проекта, межсайтовые
+POST/WebSocket отбиваются с 403.
