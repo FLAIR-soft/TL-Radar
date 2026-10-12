@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Собирается при упаковке для hostit, в git не хранится
+.env.production
