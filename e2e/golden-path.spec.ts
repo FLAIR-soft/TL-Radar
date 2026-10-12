@@ -13,15 +13,18 @@ test.describe('golden path', () => {
     // Registering a second account to assign alongside the owner.
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await register(page, helper.firstName, helper.lastName);
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
 
     await signIn(page, owner.username);
 
     const projectName = 'E2E Project ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.waitForTimeout(300);
     await page.click('[data-testid=open-create-project]');
     await page.fill('input[name=name]', projectName);
     await page.click('.project-form button:has-text("Projekt hinzufügen")');
@@ -42,6 +45,7 @@ test.describe('golden path', () => {
     await page.fill('input[name=estimatedMinutes]', '45');
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     const card = page.locator('.task-card', { hasText: taskTitle });
     await expect(card).toContainText(owner.fullName);
@@ -51,6 +55,7 @@ test.describe('golden path', () => {
     // Editing preserves what was just set.
     await card.getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
+    await page.waitForTimeout(300);
     await expect(page.locator('input[name=estimatedMinutes]')).toHaveValue('45');
     await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toBeVisible();
     await expect(page.locator('select[name=projectId]')).toHaveValue(await page.locator('select[name=projectId] option', { hasText: projectName }).getAttribute('value'));
@@ -60,6 +65,7 @@ test.describe('golden path', () => {
     await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toHaveCount(0);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
     const updatedCard = page.locator('.task-card', { hasText: taskTitle });
     await expect(updatedCard).toContainText(owner.fullName);
     await expect(updatedCard).not.toContainText(helper.fullName);
@@ -72,12 +78,15 @@ test.describe('golden path', () => {
     const taskTitle = 'E2E Solo Task ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.locator('.task-card', { hasText: taskTitle }).getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
+    await page.waitForTimeout(300);
     await page.click(`.assignee-chip:has-text("${owner.fullName}") button`);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
 
@@ -94,9 +103,11 @@ test.describe('golden path', () => {
     const taskTitle = 'E2E Delete Me ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
     await expect(page.locator('.task-card', { hasText: taskTitle })).toBeVisible();
 
     await page.locator('.task-card', { hasText: taskTitle }).getByTestId('delete-task').click();
@@ -104,6 +115,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Archiv');
     await page.waitForURL('**/archive');
+    await page.waitForTimeout(300);
     await expect(page.getByText(taskTitle)).toHaveCount(0);
   });
 
@@ -114,9 +126,11 @@ test.describe('golden path', () => {
     const taskTitle = 'E2E Gating Task ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     const card = page.locator('.task-card', { hasText: taskTitle });
     // The redirect back to /dashboard lands before the newly-created task's
@@ -144,8 +158,10 @@ test.describe('golden path', () => {
 
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.waitForTimeout(300);
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
+    await page.waitForTimeout(300);
     await expect(page.locator('.stat-rows')).toBeVisible();
 
     expect(errors).toEqual([]);
@@ -158,6 +174,7 @@ test.describe('golden path', () => {
     const projectName = 'E2E Log Project ' + Math.random().toString(36).slice(2, 8);
     await page.click('text=Projekte');
     await page.waitForURL('**/projects');
+    await page.waitForTimeout(300);
     await page.click('[data-testid=open-create-project]');
     await page.fill('input[name=name]', projectName);
     await page.click('.project-form button:has-text("Projekt hinzufügen")');
@@ -174,6 +191,7 @@ test.describe('golden path', () => {
     await page.fill('input[name=title]', taskTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     const card = page.locator('.task-card', { hasText: taskTitle });
     await card.locator('[data-testid=view-task-log]').click();
@@ -202,10 +220,12 @@ test.describe('golden path', () => {
     async function createTask(title: string, deadline: string | null) {
       await page.click('text=Neue Aufgabe');
       await page.waitForURL('**/dashboard/new');
+      await page.waitForTimeout(300);
       await page.fill('input[name=title]', title);
       if (deadline) await page.fill('input[name=deadline]', deadline);
       await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
       await page.waitForURL('**/dashboard');
+      await page.waitForTimeout(300);
     }
 
     // Created out of urgency order on purpose, so a passing sort assertion
@@ -244,10 +264,12 @@ test.describe('golden path', () => {
     async function createTask(title: string, priority?: string) {
       await page.click('text=Neue Aufgabe');
       await page.waitForURL('**/dashboard/new');
+      await page.waitForTimeout(300);
       await page.fill('input[name=title]', title);
       if (priority) await page.selectOption('select[name=priority]', priority);
       await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
       await page.waitForURL('**/dashboard');
+      await page.waitForTimeout(300);
     }
 
     await createTask(highTitle, 'high');
@@ -258,6 +280,7 @@ test.describe('golden path', () => {
     // truth, so wait on it rather than a fixed timeout).
     await page.fill('.filter-search input', uniqueWord);
     await page.waitForURL(new RegExp('q=' + uniqueWord));
+    await page.waitForTimeout(300);
     await expect(page.locator('.task-card')).toHaveCount(1);
 
     // Reset chip clears the URL and brings every task back (dashboard is
@@ -287,9 +310,11 @@ test.describe('golden path', () => {
     const title = 'E2E DnD Task ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // Filter down to just this task via the dashboard search box (Stage 2):
     // other tests sharing this DB leave many tasks behind, and a tall column
@@ -352,9 +377,11 @@ test.describe('golden path', () => {
     const title = 'E2E DnD Invalid ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // See the comment in the previous test: filtering to just this task via
     // the search box keeps every column short and on-screen with no
@@ -392,9 +419,11 @@ test.describe('golden path', () => {
     const title = 'E2E Comment Task ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // Filter down to just this task (see the drag & drop tests above for why).
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
@@ -429,9 +458,11 @@ test.describe('golden path', () => {
     await register(page, owner.firstName, owner.lastName);
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await register(page, helper.firstName, helper.lastName);
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
 
     await signIn(page, owner.username);
 
@@ -439,6 +470,7 @@ test.describe('golden path', () => {
     const title = 'E2E Notif Task ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('.assignee-select-trigger');
     await page.click(`.assignee-option:has-text("${helper.fullName}")`);
@@ -446,6 +478,7 @@ test.describe('golden path', () => {
     await page.click('input[name=title]');
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // Commenting on the task should notify the assigned helper, not the owner
     // (the actor performing the action never gets their own notification).
@@ -460,12 +493,15 @@ test.describe('golden path', () => {
     // Removing the helper as assignee should notify them too.
     await page.locator('.task-card', { hasText: title }).getByTestId('edit-task').click();
     await page.waitForURL('**/dashboard/new?edit=*');
+    await page.waitForTimeout(300);
     await page.click(`.assignee-chip:has-text("${helper.fullName}") button`);
     await page.click('button[type=submit]:has-text("Änderungen speichern")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await signIn(page, helper.username);
 
     // Assigned + comment + unassigned = 3 unread notifications for the helper.
@@ -488,9 +524,11 @@ test.describe('golden path', () => {
     const title = 'E2E Checklist Task ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
@@ -538,12 +576,14 @@ test.describe('golden path', () => {
     const title = 'E2E Template Source ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.fill('input[name=location]', 'Room 42');
     await page.fill('input[name=estimatedMinutes]', '30');
     await page.fill('textarea[name=description]', 'Some description');
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
@@ -561,6 +601,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Vorlagen');
     await page.waitForURL('**/templates');
+    await page.waitForTimeout(300);
     const templateRow = page.locator('.project-row', { hasText: title });
     await expect(templateRow).toBeVisible();
     await expect(templateRow).toContainText('2');
@@ -569,6 +610,7 @@ test.describe('golden path', () => {
     await goToNewTaskFromTaskManager(page);
     await page.selectOption('.field:has(label:text-is("Aus Vorlage")) select', { label: title });
     await page.waitForURL('**/dashboard/new?template=*');
+    await page.waitForTimeout(300);
 
     await expect(page.locator('input[name=title]')).toHaveValue(title);
     await expect(page.locator('input[name=location]')).toHaveValue('Room 42');
@@ -581,6 +623,7 @@ test.describe('golden path', () => {
     await page.fill('input[name=title]', newTitle);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const newCard = page.locator('.task-card', { hasText: newTitle });
@@ -589,6 +632,7 @@ test.describe('golden path', () => {
     // Delete the template.
     await page.click('text=Vorlagen');
     await page.waitForURL('**/templates');
+    await page.waitForTimeout(300);
     page.once('dialog', (dialog) => dialog.accept());
     await page.locator('.project-row', { hasText: title }).locator('[data-testid=delete-template]').click();
     await expect(page.locator('.project-row', { hasText: title })).toHaveCount(0);
@@ -602,9 +646,11 @@ test.describe('golden path', () => {
     const title = 'E2E Recurring Source ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
@@ -612,9 +658,14 @@ test.describe('golden path', () => {
     await page.click('[data-testid=save-as-template]');
     await expect(page.locator('[data-testid=toast]')).toBeVisible();
     await page.click('[data-testid=slideover-close]');
+    // Confirm the slideover actually closed before navigating away — an
+    // overlay still on top can otherwise swallow the next click.
+    await expect(page.locator('.slideover-backdrop')).toHaveCount(0);
 
     await page.click('text=Vorlagen');
     await page.waitForURL('**/templates');
+    await page.waitForTimeout(300);
+    await expect(page.locator('[data-testid=open-create-rule]')).toBeVisible();
     await page.click('[data-testid=open-create-rule]');
     await page.selectOption('select[name=templateId]', { label: title });
     await page.selectOption('select[name=frequency]', 'weekly');
@@ -647,6 +698,7 @@ test.describe('golden path', () => {
     await expect(page.locator('[data-testid=command-palette-option]').first()).toHaveText('Archiv');
     await page.keyboard.press('Enter');
     await page.waitForURL('**/archive');
+    await page.waitForTimeout(300);
 
     // A query matching nothing is quick-added as a task assigned to the current user.
     const rand = Math.random().toString(36).slice(2, 8);
@@ -656,6 +708,7 @@ test.describe('golden path', () => {
     await expect(page.locator('[data-testid=command-palette-option]')).toHaveCount(1);
     await page.keyboard.press('Enter');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
@@ -682,10 +735,12 @@ test.describe('golden path', () => {
     ]) {
       await page.click('text=Neue Aufgabe');
       await page.waitForURL('**/dashboard/new');
+      await page.waitForTimeout(300);
       await page.fill('input[name=title]', title);
       await page.selectOption('select[name=priority]', priority);
       await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
       await page.waitForURL('**/dashboard');
+      await page.waitForTimeout(300);
     }
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
@@ -733,10 +788,12 @@ test.describe('golden path', () => {
     const title = 'E2E Analytics Done ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.fill('input[name=estimatedMinutes]', '10');
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const card = page.locator('.task-card', { hasText: title });
@@ -754,6 +811,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
+    await page.waitForTimeout(300);
     // График переписан со SVG-областей на div-колонки (редизайн v2, этап 9),
     // а точность оценок получила собственную разметку вместо таблицы архива.
     await expect(page.locator('.cfd-columns')).toBeVisible();
@@ -774,9 +832,11 @@ test.describe('golden path', () => {
     const title = 'E2E Export ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     const startBtn = page.locator('.task-card', { hasText: title }).locator('button:has-text("Starten")');
@@ -811,6 +871,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Analytik');
     await page.waitForURL('**/analytics');
+    await page.waitForTimeout(300);
     const analyticsCsvHref = await page.locator('[data-testid=export-csv]').getAttribute('href');
     const analyticsCsvResp = await page.request.get(analyticsCsvHref!);
     expect(analyticsCsvResp.status()).toBe(200);
@@ -826,15 +887,18 @@ test.describe('golden path', () => {
     await register(page, owner.firstName, owner.lastName);
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await register(page, helper.firstName, helper.lastName);
 
     const rand = Math.random().toString(36).slice(2, 8);
     const title = 'E2E Mention Task ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // Helper is not assigned to the task, only watching it.
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
@@ -844,6 +908,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await signIn(page, owner.username);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
@@ -858,6 +923,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Abmelden');
     await page.waitForURL('**/login');
+    await page.waitForTimeout(300);
     await signIn(page, helper.username);
 
     // Watcher-only 'comment' notification + the 'mention' notification = 2.
@@ -877,6 +943,7 @@ test.describe('golden path', () => {
 
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.fill('input[name=deadline]', todayIso);
 
@@ -890,6 +957,7 @@ test.describe('golden path', () => {
 
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
     await expect(page.locator('.task-card .label-pill', { hasText: labelName })).toBeVisible();

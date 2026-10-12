@@ -11,6 +11,9 @@ export function uniqueName(prefix: string) {
 
 export async function register(page: Page, firstName: string, lastName: string, username?: string) {
   await page.goto('/login');
+  // See the settle comment below: 'load' firing doesn't guarantee hydration
+  // has attached the toggle button's click handler yet.
+  await page.waitForTimeout(300);
   await page.click('button:has-text("Registrieren")');
   await page.fill('input[name=firstName]', firstName);
   await page.fill('input[name=lastName]', lastName);
@@ -18,14 +21,22 @@ export async function register(page: Page, firstName: string, lastName: string, 
   await page.fill('input[name=password]', PASSWORD);
   await page.click('button[type=submit]:has-text("Registrieren")');
   await page.waitForURL('**/dashboard', { timeout: 15_000 });
+  // Landing here is a full-page redirect (Server Action), not a client-side
+  // route change — clicking a nav link before React finishes hydrating can
+  // silently miss (SSR'd markup is already there, so Playwright's
+  // actionability checks don't catch the gap). A short settle avoids that race.
+  await page.waitForTimeout(300);
 }
 
 export async function signIn(page: Page, username: string) {
   await page.goto('/login');
+  // Same hydration settle as register() above.
+  await page.waitForTimeout(300);
   await page.fill('input[name=username]', username);
   await page.fill('input[name=password]', PASSWORD);
   await page.click('button[type=submit]:has-text("Anmelden")');
   await page.waitForURL('**/dashboard', { timeout: 15_000 });
+  await page.waitForTimeout(300);
 }
 
 // "Neue Aufgabe" is a button on Task-Manager (stage 5), not a standalone

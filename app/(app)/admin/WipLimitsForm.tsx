@@ -7,11 +7,13 @@ import { updateWipLimit } from '@/app/(app)/dashboard/wip-actions';
 import { STATUS_COLOR } from '@/lib/logic/tasks';
 import type { WipLimit, WipStatus } from '@/lib/supabase/types';
 
-// Порядок колонок канбана плюс «Erledigt». Реально показываются только те
-// статусы, под которые в wip_limits есть строка: до применения миграции
-// 0033 её нет у 'done', и четвёртое поле просто не появляется — вместо
-// того чтобы падать на CHECK-констрейнте при сохранении.
-const STATUS_ORDER: WipStatus[] = ['waiting', 'in_progress', 'paused', 'done'];
+// Порядок колонок канбана. 'done' сознательно не включён: колонки
+// «Erledigt» в канбане нет — завершённые задачи сразу уезжают в архив, и
+// лимит для этого статуса нигде не проверяется (см. setStatus). Строка
+// 'done' в wip_limits (миграция 0033) не удаляется и не мешает — просто
+// не показывается здесь, чтобы не создавать вид настройки, которая ничего
+// не делает.
+const STATUS_ORDER: WipStatus[] = ['waiting', 'in_progress', 'paused'];
 
 export function WipLimitsForm({ limits }: { limits: WipLimit[] }) {
   const dict = useDictionary();

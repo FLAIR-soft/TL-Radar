@@ -15,9 +15,11 @@ test.describe('kanban drag & drop — keyboard and pending-lock', () => {
     const title = 'E2E Kbd DnD ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     // See the mouse-drag tests in golden-path.spec.ts for why: narrows every
     // column to just this task so it's on-screen with no scrolling,
@@ -75,9 +77,11 @@ test.describe('kanban drag & drop — keyboard and pending-lock', () => {
     const title = 'E2E Pending DnD ' + rand;
     await page.click('text=Neue Aufgabe');
     await page.waitForURL('**/dashboard/new');
+    await page.waitForTimeout(300);
     await page.fill('input[name=title]', title);
     await page.click('button[type=submit]:has-text("Aufgabe hinzufügen")');
     await page.waitForURL('**/dashboard');
+    await page.waitForTimeout(300);
 
     await page.goto(`/dashboard?q=${encodeURIComponent(rand)}`);
 
