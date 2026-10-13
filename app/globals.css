@@ -5,18 +5,32 @@
   --surface-alt: #fafafa;
   --hover-bg: #f4f4f5;
   --border: #e4e4e7;
+  /* Рамка полей и вторичных кнопок. Отдельно от --border: тот
+     рисует разделители, а здесь это граница самого контрола,
+     и ей нужно 3:1 к фону поля. 3.20:1. */
+  --control-border: #8b909b;
   --ink: #18181b;
   --ink-muted: #55606e;
   --ink-soft: #3f3f46;
   --brand: #e20617;
   --brand-dark: #b10310;
+  /* Заливка и текст на ней. Отдельно от --brand: в тёмной теме цвет текста
+     приходится осветлять, а заливка должна оставаться фирменной красной.
+     Белый на #e20617 — 4.92:1, на тёмной поверхности сама заливка 3.51:1. */
+  --brand-solid: #e20617;
+  --on-brand: #ffffff;
   --waiting: #71717a;
   --progress: #2563eb;
   --paused: #d97706;
   --done: #16a34a;
-  --priority-low: #94a3b8;
+  --done-solid: #0f7a38;
+  --on-done: #ffffff;
+  /* Пересчитано на этапе 9: #94a3b8 давал 4.27:1 в пилюле и 2.56:1 полосой
+     приоритета слева на карточке. Стало 5.01:1 и 3.17:1. */
+  --priority-low: #8192a9;
   --priority-medium: #8b5cf6;
-  --priority-high: #f97316;
+  /* Там же: было 4.49:1 и 2.80:1, стало 5.15:1 и 3.37:1. */
+  --priority-high: #e56607;
   --priority-urgent: #dc2626;
   --tint-red-bg: #fff7f7;
   --tint-red-bg-2: #fef2f2;
@@ -29,14 +43,14 @@
   --skeleton-b: #f6f6f7;
   --shadow-soft: rgba(0, 0, 0, 0.06);
   --shadow-card: rgba(24, 24, 27, 0.08);
-  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
-  /* Шрифт временно системный. next/font/google скачивал Archivo во время
-     сборки, а у сборщика MIDAS нет доступа в интернет — сборка падала.
-     Фирменный шрифт (Titillium Web / Eurostile) ставится файлами в проект
-     на этапе 9: дизайн-система требует самостоятельного хостинга шрифтов,
-     а не загрузки с чужого домена. */
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  /* Фирменный шрифт MIFCOM. Eurostile из фирменного стиля коммерческий и
+     веб-лицензии на него нет, а на сайте MIFCOM рабочим шрифтом стоит
+     Titillium Web — его и берём. Кириллицы и греческого в нём нет, поэтому
+     вторым идёт Noto Sans: браузер подставляет его только для тех глифов,
+     которых нет в первом. Оба лежат файлами в сборке (см. app/layout.tsx). */
+  --sans: "Titillium Web", "Noto Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* Border-radius (Этап 6 редизайна) — единая шкала вместо разброса
      6/8/9/10/12/14px. Круги (50%) и pill-форма (--radius-full) — свои
@@ -82,8 +96,10 @@
 
   --text: #18181b;
   --text-2: #55606e;
-  --text-3: #8b909b;
-  --text-4: #a0a4ae;
+  /* Пересчитано формулой на этапе 9: было 3.20:1 и 2.50:1 на --surface,
+     то есть мелкие подписи не дотягивали до AA. Стало 5.07:1 и 3.20:1. */
+  --text-3: #686d78;
+  --text-4: #8b909b;
 
   --in-progress: #2563eb;
   --waiting-tint: #f4f4f5;
@@ -113,15 +129,20 @@
   --surface-alt: #202024;
   --hover-bg: #232327;
   --border: #2e2e33;
+  --control-border: #71717a;
   --ink: #f2f2f4;
   --ink-muted: #9a9aa2;
   --ink-soft: #c8c8cd;
   --brand: #ff3b4e;
   --brand-dark: #ff8a93;
+  --brand-solid: #e20617;
+  --on-brand: #ffffff;
   --waiting: #a1a1aa;
   --progress: #60a5fa;
   --paused: #fbbf24;
   --done: #4ade80;
+  --done-solid: #0f7a38;
+  --on-done: #ffffff;
   --priority-low: #cbd5e1;
   --priority-medium: #a78bfa;
   --priority-high: #fb923c;
@@ -268,7 +289,7 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--brand);
+  background: var(--brand-solid);
   box-shadow: 0 0 0 4px rgba(226, 6, 23, 0.12);
 }
 .brand-mark span {
@@ -344,7 +365,7 @@ textarea,
 select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
   font-family: var(--sans);
   font-size: var(--fs-base);
@@ -388,8 +409,8 @@ select:focus {
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   width: 100%;
 }
 .btn-primary:hover:not(:disabled) {
@@ -398,7 +419,7 @@ select:focus {
 .btn-ghost {
   background: transparent;
   color: var(--ink-muted);
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
 }
 .btn-ghost:hover {
   border-color: var(--ink-muted);
@@ -417,7 +438,7 @@ select:focus {
   height: 13px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
+  border-top-color: var(--on-brand);
   animation: spin 0.6s linear infinite;
   flex-shrink: 0;
 }
@@ -467,8 +488,8 @@ select:focus {
   width: 34px;
   height: 34px;
   border-radius: var(--radius-sm);
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-solid);
+  color: var(--on-brand);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1284,7 +1305,7 @@ p.section-sub {
 .t-checklist-fill {
   height: 100%;
   border-radius: var(--radius-full);
-  background: var(--done);
+  background: var(--done-solid);
   transition: width 0.3s ease;
 }
 .t-checklist-item {
@@ -1670,7 +1691,7 @@ p.section-sub {
   transition: width 0.3s ease;
 }
 .t-estimate-fill.t-estimate-over {
-  background: var(--brand);
+  background: var(--brand-solid);
 }
 .t-locked-note {
   font-size: var(--fs-xs);
@@ -1703,16 +1724,11 @@ p.section-sub {
   background: var(--ink-soft);
 }
 .btn-success {
-  background: var(--done);
-  color: #fff;
+  background: var(--done-solid);
+  color: var(--on-done);
 }
 .btn-success:hover:not(:disabled) {
   filter: brightness(1.08);
-}
-/* Тёмная тема: --done там светлый и насыщенный (#4ade80) — белый текст на
-   нём проваливает контраст. Тёмно-зелёный читается кратно лучше. */
-:root[data-theme="dark"] .btn-success {
-  color: #0c2015;
 }
 @media (max-width: 900px) {
   .btn-primary,
@@ -2079,7 +2095,7 @@ p.section-sub {
   transition: width 0.3s ease;
 }
 .stat-bar-fill.stat-bar-over {
-  background: var(--brand);
+  background: var(--brand-solid);
 }
 .stat-row-foot {
   font-size: 11.5px;
@@ -2545,7 +2561,7 @@ p.section-sub {
   min-width: 0;
   padding: 0;
   border-radius: 50%;
-  background: var(--brand);
+  background: var(--brand-solid);
   border: 1.5px solid var(--surface);
   font-size: 0;
   color: transparent;
@@ -3189,7 +3205,7 @@ p.section-sub {
   display: block;
   height: 100%;
   border-radius: var(--radius-full);
-  background: var(--done);
+  background: var(--done-solid);
   transition: width 0.3s ease;
 }
 .activity-log-list {
@@ -4126,10 +4142,10 @@ p.section-sub {
   min-width: 6px;
 }
 .ea-bar.is-near {
-  background: var(--done);
+  background: var(--done-solid);
 }
 .ea-bar.is-over {
-  background: var(--brand);
+  background: var(--brand-solid);
 }
 .ea-bar.is-under {
   background: var(--in-progress);
@@ -4461,8 +4477,8 @@ p.section-sub {
   gap: 8px;
 }
 .btn-danger {
-  background: var(--brand);
-  color: #fff;
+  background: var(--brand-solid);
+  color: var(--on-brand);
 }
 .btn-danger:hover:not(:disabled) {
   background: var(--brand-dark);
@@ -4517,4 +4533,42 @@ p.section-sub {
   font-size: var(--fs-xs);
   color: var(--ink-muted);
   line-height: 1.45;
+}
+
+
+/* ---------- Логотип MIFCOM в шапке (этап 9) ---------- */
+.topbar-logo {
+  height: 18px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+/* Светлый и тёмный варианты лежат рядом: в логотипе есть фирменный красный,
+   который нельзя перекрашивать вместе с чёрным текстом, поэтому один файл
+   с currentColor тут не подходит. */
+.topbar-logo-dark {
+  display: none;
+}
+:root[data-theme="dark"] .topbar-logo-light {
+  display: none;
+}
+:root[data-theme="dark"] .topbar-logo-dark {
+  display: block;
+}
+.topbar-brand-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  /* На телефоне в шапке остаётся только имя инструмента: логотип и название
+     рядом не помещаются, а понять, где ты находишься, важнее. */
+  .topbar-logo,
+  .topbar-brand-sep {
+    display: none;
+  }
+  :root[data-theme="dark"] .topbar-logo-dark {
+    display: none;
+  }
 }

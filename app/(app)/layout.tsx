@@ -1,4 +1,3 @@
-import { Radar } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { getLocale } from '@/lib/i18n/locale';
 import { getInitials } from '@/lib/logic/initials';
@@ -34,9 +33,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="topbar">
               <div className="topbar-left">
                 <div className="topbar-brand">
-                  <span className="topbar-brand-icon">
-                    <Radar size={20} strokeWidth={2.25} />
-                  </span>
+                  {/* Два файла вместо одного с currentColor: в логотипе есть
+                      фирменный красный, который не должен перекрашиваться
+                      вместе с остальным. Ненужный вариант скрыт по теме.
+                      next/image здесь не нужен: SVG он не оптимизирует и
+                      пропускает как есть, а файлы по полтора килобайта. */}
+                  {/* eslint-disable @next/next/no-img-element */}
+                  <img
+                    className="topbar-logo topbar-logo-light"
+                    src="/mifcom-logo-black.svg"
+                    alt="MIFCOM"
+                  />
+                  <img
+                    className="topbar-logo topbar-logo-dark"
+                    src="/mifcom-logo-white.svg"
+                    alt="MIFCOM"
+                  />
+                  {/* eslint-enable @next/next/no-img-element */}
+                  <span className="topbar-brand-sep" aria-hidden="true" />
                   <span className="topbar-brand-name">TL-Organizer</span>
                 </div>
                 <TopTabs />

@@ -1,4 +1,4 @@
-// Sovpadaet s USERNAME_PATTERN (lib/auth/synthetic-email.ts) — username'y
+// Username'y упоминаний: латиница, цифры, точка и подчёркивание. Раньше
 // vsegda nizhniy registr, poetomu tokeny iz teksta kommentariya privodim
 // k nizhnemu registru pered poiskom po profiles.username.
 const MENTION_PATTERN = /@([a-z0-9_.]{3,32})/gi;
