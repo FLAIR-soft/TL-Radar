@@ -55,6 +55,26 @@ async function probe(label: string, ssl: false | { rejectUnauthorized: boolean }
   }
 }
 
+async function migrations() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return { ok: false, error: 'DATABASE_URL отсутствует' };
+  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 5000 });
+  try {
+    await client.connect();
+    const { rows } = await client.query(
+      "select version, left(checksum, 8) as checksum, applied_at from schema_migrations order by version"
+    );
+    const tables = await client.query(
+      "select count(*)::int as n from information_schema.tables where table_schema = 'public'"
+    );
+    return { ok: true, applied: rows, tablesInPublic: tables.rows[0].n };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  } finally {
+    await client.end().catch(() => {});
+  }
+}
+
 export async function GET() {
   const h = await headers();
 
@@ -98,6 +118,7 @@ export async function GET() {
       ssl: await probe('ssl, rejectUnauthorized: false', { rejectUnauthorized: false }),
       plain: await probe('без ssl', false),
     },
+    migrations: await migrations(),
     identity,
     cookies,
     forwarding: {

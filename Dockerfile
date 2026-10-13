@@ -29,6 +29,9 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/db ./db
 USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+# Миграции применяются до старта сервера. Если схема не легла, контейнер не
+# поднимается: приложение, которое молча не работает, хуже упавшего.
+CMD ["sh", "-c", "node db/migrate.js && node server.js"]
