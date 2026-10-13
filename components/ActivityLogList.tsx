@@ -73,7 +73,7 @@ export function ActivityLogList({
           />
           <div className="activity-log-desc">{describe(log)}</div>
           <div className="activity-log-meta mono">
-            {resolveName(log.actor_id)} · {fmtDateTime(log.created_at, dict.intlLocale)}
+            {resolveName(log.actor)} · {fmtDateTime(log.created_at, dict.intlLocale)}
           </div>
         </div>
       ))}

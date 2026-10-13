@@ -14,7 +14,7 @@ export function TopTabs() {
     { href: '/projects', label: dict.topbar.projects },
     { href: '/templates', label: dict.topbar.templates },
     { href: '/analytics', label: dict.topbar.analytics },
-    ...(role === 'admin' ? [{ href: '/admin', label: dict.topbar.admin }] : []),
+    { href: '/admin', label: dict.topbar.admin },
   ];
 
   return (

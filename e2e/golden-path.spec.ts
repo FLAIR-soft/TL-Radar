@@ -58,7 +58,7 @@ test.describe('golden path', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('input[name=estimatedMinutes]')).toHaveValue('45');
     await expect(page.locator(`.assignee-chip:has-text("${helper.fullName}")`)).toBeVisible();
-    await expect(page.locator('select[name=projectId]')).toHaveValue(await page.locator('select[name=projectId] option', { hasText: projectName }).getAttribute('value'));
+    await expect(page.locator('select[name=projectId]')).toHaveValue((await page.locator('select[name=projectId] option', { hasText: projectName }).getAttribute('value')) ?? '');
 
     // Removing the helper leaves at least the owner — must not error.
     await page.click(`.assignee-chip:has-text("${helper.fullName}") button`);

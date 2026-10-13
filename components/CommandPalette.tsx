@@ -69,7 +69,7 @@ export function CommandPalette() {
     { id: 'projects', label: dict.topbar.projects, href: '/projects' },
     { id: 'templates', label: dict.topbar.templates, href: '/templates' },
     { id: 'analytics', label: dict.topbar.analytics, href: '/analytics' },
-    ...(role === 'admin' ? [{ id: 'admin', label: dict.topbar.admin, href: '/admin' }] : []),
+    { id: 'admin', label: dict.topbar.admin, href: '/admin' },
   ];
 
   const trimmedQuery = query.trim();
