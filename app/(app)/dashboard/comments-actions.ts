@@ -1,29 +1,28 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec, row, rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
 import { notifyMany } from '@/lib/logic/notifications';
 import { extractMentionedUsernames } from '@/lib/logic/mentions';
-import type { TaskComment } from '@/lib/supabase/types';
+import type { TaskComment } from '@/lib/db/types';
 
+// Ролей в новой базе нет вовсе (их держала таблица profiles), поэтому
+// «админ может удалить любой комментарий» переехать было некуда: удалить
+// комментарий теперь может только его автор. Флаг оставлен в ответе, чтобы не
+// переписывать props CommentList, и всегда false.
+const IS_ADMIN = false;
+
+// За шлюзом MIDAS неаутентифицированный посетитель сюда не доходит, а
+// getCurrentUser() бросает исключение, если заголовка с почтой нет, — ветки
+// «не вошёл → errors.unauthorized» больше нет. Язык берётся из куки.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, locale')
-    .eq('id', user.id)
-    .single();
-
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, isAdmin: profile?.role === 'admin', dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 export interface TaskCommentsResult {
@@ -36,51 +35,56 @@ export interface TaskCommentsResult {
 // kak getActivityLog. currentUserId/isAdmin vozvrashchayutsya vmeste s
 // kommentariyami, chtoby klientskiy komponent znal, komu pokazyvat' knopku
 // udaleniya, ne threadya rol' cherez vsyu tsepochku props stranits.
+// (currentUserId теперь — почта, а не uuid.)
 export async function getTaskComments(taskId: string): Promise<TaskCommentsResult> {
-  const auth = await requireAuth();
-  if (!auth) return { comments: [], currentUserId: null, isAdmin: false };
-  const { supabase, userId, isAdmin } = auth;
+  const user = await getCurrentUser();
 
-  const { data } = await supabase
-    .from('task_comments')
-    .select('*')
-    .eq('task_id', taskId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: true });
+  const comments = await rows<TaskComment>(
+    `select * from task_comments
+      where task_id = $1 and deleted_at is null
+      order by created_at`,
+    [taskId]
+  );
 
-  return { comments: data ?? [], currentUserId: userId, isAdmin };
+  return { comments, currentUserId: user.email, isAdmin: IS_ADMIN };
 }
 
 export async function addComment(taskId: string, formData: FormData): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').comments.errors.unauthorized };
-  const { supabase, userId, dict } = auth;
+  const { user, dict } = await requireAuth();
 
   const body = String(formData.get('body') || '').trim();
   if (!body) {
     return { error: dict.comments.errors.empty };
   }
 
-  const { data: comment, error } = await supabase
-    .from('task_comments')
-    .insert({ task_id: taskId, author_id: userId, body })
-    .select('id')
-    .single();
-
-  if (error || !comment) {
-    return { error: error?.message ?? dict.comments.errors.empty };
+  let comment: { id: string } | null;
+  try {
+    comment = await row<{ id: string }>(
+      `insert into task_comments (task_id, author, body) values ($1, $2, $3) returning id`,
+      [taskId, user.email, body]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.comments.errors.empty };
   }
 
-  await logActivity(supabase, 'task', taskId, 'comment_added', userId, { commentId: comment.id });
+  if (!comment) {
+    return { error: dict.comments.errors.empty };
+  }
 
-  const [{ data: assignees }, { data: watchers }] = await Promise.all([
-    supabase.from('task_assignees').select('assignee_id').eq('task_id', taskId).is('removed_at', null),
-    supabase.from('task_watchers').select('user_id').eq('task_id', taskId),
-  ]);
+  await logActivity('task', taskId, 'comment_added', user.email, { commentId: comment.id });
+
+  // Исполнители и наблюдатели — одним запросом; повторы всё равно отсеет
+  // notifyMany, но union даёт их сразу без склейки двух списков в JS.
+  const recipients = await rows<{ email: string }>(
+    `select assignee_email as email from task_assignees
+      where task_id = $1 and removed_at is null
+     union
+     select email from task_watchers where task_id = $1`,
+    [taskId]
+  );
   await notifyMany(
-    supabase,
-    [...(assignees ?? []).map((a) => a.assignee_id), ...(watchers ?? []).map((w) => w.user_id)],
-    userId,
+    recipients.map((r) => r.email),
+    user.email,
     'comment',
     taskId,
     { preview: body.slice(0, 140) }
@@ -88,12 +92,16 @@ export async function addComment(taskId: string, formData: FormData): Promise<{ 
 
   const mentionedUsernames = extractMentionedUsernames(body);
   if (mentionedUsernames.length) {
-    const { data: mentioned } = await supabase.from('profiles').select('id').in('username', mentionedUsernames);
-    if (mentioned?.length) {
+    // Юзернеймов больше нет: @упоминание сопоставляется с частью почты до
+    // собачки (r.holovachov@mifcom.de → @r.holovachov).
+    const mentioned = await rows<{ email: string }>(
+      `select email from people where split_part(email, '@', 1) = any($1::text[])`,
+      [mentionedUsernames]
+    );
+    if (mentioned.length) {
       await notifyMany(
-        supabase,
-        mentioned.map((p) => p.id),
-        userId,
+        mentioned.map((p) => p.email),
+        user.email,
         'mention',
         taskId,
         { preview: body.slice(0, 140) }
@@ -107,22 +115,22 @@ export async function addComment(taskId: string, formData: FormData): Promise<{ 
 }
 
 export async function deleteComment(commentId: string): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').comments.errors.unauthorized };
-  const { supabase, userId, isAdmin, dict } = auth;
+  const { user, dict } = await requireAuth();
 
-  const { data: comment } = await supabase
-    .from('task_comments')
-    .select('author_id')
-    .eq('id', commentId)
-    .single();
+  const comment = await row<{ author: string | null }>(
+    `select author from task_comments where id = $1`,
+    [commentId]
+  );
 
   if (!comment) return {};
-  if (comment.author_id !== userId && !isAdmin) {
+  if (comment.author !== user.email) {
     return { error: dict.comments.errors.notAllowed };
   }
 
-  await supabase.from('task_comments').update({ deleted_at: new Date().toISOString() }).eq('id', commentId);
+  await exec(
+    `update task_comments set deleted_at = $1 where id = $2`,
+    [new Date().toISOString(), commentId]
+  );
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');

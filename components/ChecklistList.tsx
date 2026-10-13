@@ -10,7 +10,7 @@ import {
   deleteChecklistItem,
   moveChecklistItem,
 } from '@/app/(app)/dashboard/checklist-actions';
-import type { TaskChecklistItem } from '@/lib/supabase/types';
+import type { TaskChecklistItem } from '@/lib/db/types';
 
 // Matches the .checklist-row max-height/opacity/padding transition duration
 // in globals.css — the row stays in the DOM this long after delete so the

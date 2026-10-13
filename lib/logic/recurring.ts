@@ -5,7 +5,7 @@
 // Uchityvayem tol'ko rabochiye dni (pn-pt) — reshemo soglasovano s
 // zakazchikom pered realizatsiyey.
 
-import type { RecurringFrequency } from '@/lib/supabase/types';
+import type { RecurringFrequency } from '@/lib/db/types';
 
 function isoWeekday(d: Date): number {
   const day = d.getUTCDay();

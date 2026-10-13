@@ -5,7 +5,7 @@ import { Trash2, Repeat } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { toggleRecurringRule, deleteRecurringRule } from './rules-actions';
-import type { RecurringRule } from '@/lib/supabase/types';
+import type { RecurringRule } from '@/lib/db/types';
 
 // Matches the .project-row max-height/opacity/padding transition duration
 // in globals.css — the row stays on screen this long after delete so the

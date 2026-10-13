@@ -1,6 +1,6 @@
 import { STATUS_COLOR, fmtDateShort } from '@/lib/logic/tasks';
 import type { DailyStatusCounts } from '@/lib/logic/cumulative-flow';
-import type { TaskStatus } from '@/lib/supabase/types';
+import type { TaskStatus } from '@/lib/db/types';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 
 // Снизу вверх, как на скрине 01: Erledigt, Pausiert, In Bearbeitung, Wartend.

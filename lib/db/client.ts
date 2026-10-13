@@ -1,4 +1,4 @@
-import { Pool, types, type PoolClient } from 'pg';
+import { Pool, types, type PoolClient, type QueryResultRow } from 'pg';
 
 // Драйвер pg по умолчанию разбирает даты в объекты Date. Вся логика времени
 // (lib/logic/tasks.ts, berlin-time.ts) и компоненты написаны под строки ISO —
@@ -40,7 +40,7 @@ function getPool(): Pool {
 }
 
 /** Все строки результата. */
-export async function rows<T = Record<string, unknown>>(
+export async function rows<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: readonly unknown[] = []
 ): Promise<T[]> {
@@ -49,7 +49,7 @@ export async function rows<T = Record<string, unknown>>(
 }
 
 /** Первая строка или null. */
-export async function row<T = Record<string, unknown>>(
+export async function row<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: readonly unknown[] = []
 ): Promise<T | null> {

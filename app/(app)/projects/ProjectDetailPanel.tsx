@@ -8,7 +8,7 @@ import { getActivityLog } from '@/lib/logic/activity-log-query';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { Project, ActivityLog } from '@/lib/supabase/types';
+import type { Project, ActivityLog } from '@/lib/db/types';
 
 export function ProjectDetailPanel({
   project,

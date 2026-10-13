@@ -5,7 +5,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { updateWipLimit } from '@/app/(app)/dashboard/wip-actions';
 import { STATUS_COLOR } from '@/lib/logic/tasks';
-import type { WipLimit, WipStatus } from '@/lib/supabase/types';
+import type { WipLimit, WipStatus } from '@/lib/db/types';
 
 // Порядок колонок канбана. 'done' сознательно не включён: колонки
 // «Erledigt» в канбане нет — завершённые задачи сразу уезжают в архив, и

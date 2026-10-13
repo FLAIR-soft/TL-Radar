@@ -2,7 +2,7 @@
 
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
-import type { ActivityLog, ActivityEventType, TaskStatus } from '@/lib/supabase/types';
+import type { ActivityLog, ActivityEventType, TaskStatus } from '@/lib/db/types';
 
 // Цвет точки события (редизайн v2, этап 6, скрин 05): вместо иконки слева
 // у строки журнала цветная точка, смысл — по типу события.

@@ -1,23 +1,20 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { computeNextRunAt } from '@/lib/logic/recurring';
-import type { RecurringFrequency } from '@/lib/supabase/types';
+import type { RecurringFrequency } from '@/lib/db/types';
 
+// Проверять вход здесь больше нечего: за шлюзом MIDAS неаутентифицированный
+// посетитель до приложения не доходит, а getCurrentUser() бросает исключение,
+// если заголовка с почтой нет. Язык берётся из куки, а не из профиля.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 const FREQUENCIES: RecurringFrequency[] = ['daily', 'weekly', 'monthly'];
@@ -28,12 +25,13 @@ export interface RecurringRuleFormState {
 
 // Pravila (Etap 8) sozdayut zadachi tol'ko iz shablona (Etap 7) po
 // raspisaniyu — uchityvayem tol'ko rabochiye dni, po soglasovaniyu s
-// zakazchikom pered realizatsiyey.
+// zakazchikom pered realizatsiyey. Ispolnitelya poka net: pg_cron ostalsya v
+// Supabase, zapusk pravil poyavitsya na etape 8.
 export async function createRecurringRule(
   _prevState: RecurringRuleFormState,
   formData: FormData
 ): Promise<RecurringRuleFormState> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
 
   const templateId = String(formData.get('templateId') || '').trim();
   const frequencyRaw = String(formData.get('frequency') || '').trim();
@@ -57,30 +55,29 @@ export async function createRecurringRule(
   const todayKey = new Date().toISOString().slice(0, 10);
   const nextRunAt = computeNextRunAt(frequency, weekday, dayOfMonth, todayKey);
 
-  const { error } = await supabase.from('recurring_rules').insert({
-    template_id: templateId,
-    frequency,
-    weekday,
-    day_of_month: dayOfMonth,
-    next_run_at: nextRunAt,
-    active: true,
-    created_by: userId,
-  });
-
-  if (error) return { error: error.message };
+  try {
+    await exec(
+      `insert into recurring_rules
+         (template_id, frequency, weekday, day_of_month, next_run_at, active, created_by)
+       values ($1, $2, $3, $4, $5, true, $6)`,
+      [templateId, frequency, weekday, dayOfMonth, nextRunAt, user.email]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.recurring.errors.missingTemplate };
+  }
 
   revalidatePath('/templates');
   return { error: null };
 }
 
 export async function toggleRecurringRule(id: string, active: boolean): Promise<void> {
-  const { supabase } = await requireAuth();
-  await supabase.from('recurring_rules').update({ active }).eq('id', id);
+  await getCurrentUser();
+  await exec(`update recurring_rules set active = $2 where id = $1`, [id, active]);
   revalidatePath('/templates');
 }
 
 export async function deleteRecurringRule(id: string): Promise<void> {
-  const { supabase } = await requireAuth();
-  await supabase.from('recurring_rules').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  await getCurrentUser();
+  await exec(`update recurring_rules set deleted_at = now() where id = $1`, [id]);
   revalidatePath('/templates');
 }

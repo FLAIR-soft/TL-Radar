@@ -6,7 +6,7 @@ import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { LABEL_COLORS } from '@/lib/logic/label-colors';
 import { createLabel } from '../labels-actions';
-import type { Label } from '@/lib/supabase/types';
+import type { Label } from '@/lib/db/types';
 
 // Tot zhe vypadayushchiy mul'ti-select, chto AssigneeSelect, plyus inline
 // sozdaniye novoy metki pryamo v paneli (imya + tsvet iz fiksirovannoy

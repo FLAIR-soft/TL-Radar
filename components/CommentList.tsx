@@ -8,7 +8,7 @@ import { useToast } from './ToastProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { splitMentionSegments, type MentionableProfile } from '@/lib/logic/mentions';
 import { addComment, deleteComment } from '@/app/(app)/dashboard/comments-actions';
-import type { TaskComment } from '@/lib/supabase/types';
+import type { TaskComment } from '@/lib/db/types';
 
 const MENTION_SUGGESTION_LIMIT = 6;
 // Matches the .comment-row max-height/opacity/padding transition duration in
@@ -176,9 +176,9 @@ export function CommentList({
             {/* Аватар слева, текст в бабле, моно-подпись под ним (скрин 05). */}
             <span
               className="comment-avatar"
-              style={{ ['--avatar-color' as string]: getAvatarColor(c.author_id ?? '') }}
+              style={{ ['--avatar-color' as string]: getAvatarColor(c.author ?? '') }}
             >
-              {getInitials(resolveName(c.author_id))}
+              {getInitials(resolveName(c.author))}
             </span>
             <div className="comment-main">
             <div className="comment-body">
@@ -195,9 +195,9 @@ export function CommentList({
             </div>
             <div className="comment-meta mono">
               <span>
-                {resolveName(c.author_id)} · {fmtDateTime(c.created_at, dict.intlLocale)}
+                {resolveName(c.author)} · {fmtDateTime(c.created_at, dict.intlLocale)}
               </span>
-              {(c.author_id === currentUserId || isAdmin) && (
+              {(c.author === currentUserId || isAdmin) && (
                 <button
                   type="button"
                   className="icon-btn comment-delete"

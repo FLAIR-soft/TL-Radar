@@ -1,38 +1,33 @@
-import { redirect } from 'next/navigation';
 import { TriangleAlert } from 'lucide-react';
 import { plural } from '@/lib/i18n/plural';
-import { createClient } from '@/lib/supabase/server';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { getInitials, getAvatarColor } from '@/lib/logic/initials';
-import { ResetPasswordForm } from './ResetPasswordForm';
-import { DeleteUserButton } from './DeleteUserButton';
 import { WipLimitsForm } from './WipLimitsForm';
+import type { Person, WipLimit } from '@/lib/db/types';
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const user = await getCachedUser();
+  // Сброса паролей и удаления учётных записей здесь больше нет: ими
+  // распоряжается Entra, а не приложение. Остались WIP-лимиты и список людей.
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
 
-  if (!user) redirect('/login');
-
-  const profile = await getCachedProfile(user.id);
-
-  if (profile?.role !== 'admin') redirect('/dashboard');
-
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  const [{ data: profiles }, { data: wipLimits }, { data: activeTasks }] = await Promise.all([
-    supabase.from('profiles').select('id, name, username, role').order('name', { ascending: true }),
-    supabase.from('wip_limits').select('*'),
+  const [people, wipLimits, activeTasks] = await Promise.all([
+    rows<Person>(`select * from people order by coalesce(display_name, email)`),
+    rows<WipLimit>(`select * from wip_limits`),
     // Только статусы активных задач — чтобы показать, какая колонка уже
-    // упёрлась в свой лимит (скрин 06). Одним запросом, без задач целиком.
-    supabase.from('tasks').select('status').neq('status', 'done').is('deleted_at', null),
+    // упёрлась в свой лимит. Одним запросом, без задач целиком.
+    rows<{ status: string }>(
+      `select status from tasks where status <> 'done' and deleted_at is null`
+    ),
   ]);
 
   const countByStatus = new Map<string, number>();
-  for (const t of activeTasks ?? []) countByStatus.set(t.status, (countByStatus.get(t.status) ?? 0) + 1);
+  for (const t of activeTasks) countByStatus.set(t.status, (countByStatus.get(t.status) ?? 0) + 1);
 
-  const fullColumns = (wipLimits ?? []).filter(
+  const fullColumns = wipLimits.filter(
     (w) => w.limit_count !== null && (countByStatus.get(w.status) ?? 0) >= w.limit_count
   );
 
@@ -46,12 +41,12 @@ export default async function AdminPage() {
       </div>
       <h3 className="section-title analytics-subsection-title">{dict.wipLimits.title}</h3>
       <p className="section-sub">{dict.wipLimits.subtitle}</p>
-      <WipLimitsForm limits={wipLimits ?? []} />
+      <WipLimitsForm limits={wipLimits} />
       {fullColumns.map((w) => (
         <div className="wip-full-warning" key={w.status}>
           <TriangleAlert size={14} strokeWidth={2} />
           {dict.wipLimits.fullWarning
-            .replace('{status}', dict.status[w.status])
+            .replace('{status}', dict.status[w.status as 'waiting' | 'in_progress' | 'paused'])
             .replace('{n}', String(countByStatus.get(w.status) ?? 0))
             .replace('{limit}', String(w.limit_count))}
         </div>
@@ -59,40 +54,37 @@ export default async function AdminPage() {
       <div className="admin-users-head">
         <h3 className="section-title analytics-subsection-title">{dict.admin.usersTitle}</h3>
         <span className="mono admin-accounts-count">
-          {plural(dict.admin.accountsCount, (profiles ?? []).length, dict.intlLocale)}
+          {plural(dict.admin.accountsCount, people.length, dict.intlLocale)}
         </span>
       </div>
       <div className="admin-list">
-        {(profiles ?? []).map((p) => {
-          const isSelf = p.id === user.id;
+        {people.map((p) => {
+          const isSelf = p.email === user.email;
+          const name = p.display_name ?? p.email;
           return (
-          <div key={p.id} className="admin-row">
-            <span
-              className={`admin-avatar ${isSelf ? 'admin-avatar-self' : ''}`}
-              style={isSelf ? undefined : { ['--avatar-color' as string]: getAvatarColor(p.id) }}
-            >
-              {getInitials(p.name)}
-            </span>
-            <div className="admin-row-info">
-              <span className="admin-row-name">{p.name}</span>
-              <span className="admin-row-username mono">@{p.username}</span>
+            <div key={p.email} className="admin-row">
               <span
-                className="pill"
-                style={{ ['--pill-color' as string]: p.role === 'admin' ? 'var(--brand-dark)' : 'var(--tint-indigo-ink)' }}
+                className={`admin-avatar ${isSelf ? 'admin-avatar-self' : ''}`}
+                style={isSelf ? undefined : { ['--avatar-color' as string]: getAvatarColor(p.email) }}
               >
-                {p.role === 'admin' ? dict.admin.roleAdmin : dict.admin.roleEditor}
+                {getInitials(name)}
               </span>
-              {isSelf && (
-                <span className="pill" style={{ ['--pill-color' as string]: 'var(--ink-muted)' }}>
-                  {dict.admin.selfLabel}
-                </span>
-              )}
+              <div className="admin-row-info">
+                <span className="admin-row-name">{name}</span>
+                <span className="admin-row-username mono">{p.email}</span>
+                {/* Человек, заведённый по почте и ещё не заходивший: имени нет. */}
+                {!p.display_name && (
+                  <span className="pill" style={{ ['--pill-color' as string]: 'var(--ink-muted)' }}>
+                    {dict.admin.roleEditor}
+                  </span>
+                )}
+                {isSelf && (
+                  <span className="pill" style={{ ['--pill-color' as string]: 'var(--ink-muted)' }}>
+                    {dict.admin.selfLabel}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="admin-row-actions">
-              <ResetPasswordForm userId={p.id} />
-              {p.id !== user.id && <DeleteUserButton userId={p.id} />}
-            </div>
-          </div>
           );
         })}
       </div>

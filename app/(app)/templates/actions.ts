@@ -1,59 +1,73 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec, row, rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+import type { Task } from '@/lib/db/types';
 
+// Проверять вход здесь больше нечего: за шлюзом MIDAS неаутентифицированный
+// посетитель до приложения не доходит, а getCurrentUser() бросает исключение,
+// если заголовка с почтой нет. Язык берётся из куки, а не из профиля.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
+
+type TemplateSource = Pick<
+  Task,
+  'title' | 'description' | 'location' | 'estimated_minutes' | 'priority' | 'icon' | 'project_id'
+>;
 
 // Shablony (Etap 7) sozdayutsya tol'ko iz sushchestvuyushchey zadachi — sam
 // shablon posle sozdaniya izmenit' nel'zya (tol'ko spisok + myagkoye
 // udaleniye), po roadmapu.
 export async function createTemplateFromTask(taskId: string): Promise<{ error?: string }> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
 
-  const { data: task } = await supabase
-    .from('tasks')
-    .select('title, description, location, estimated_minutes, priority, icon, project_id')
-    .eq('id', taskId)
-    .single();
+  const task = await row<TemplateSource>(
+    `select title, description, location, estimated_minutes, priority, icon, project_id
+       from tasks
+      where id = $1`,
+    [taskId]
+  );
 
   if (!task) return { error: dict.templates.errors.taskNotFound };
 
-  const { data: checklistItems } = await supabase
-    .from('task_checklist_items')
-    .select('title')
-    .eq('task_id', taskId)
-    .is('deleted_at', null)
-    .order('position', { ascending: true });
+  const checklistItems = await rows<{ title: string }>(
+    `select title
+       from task_checklist_items
+      where task_id = $1 and deleted_at is null
+      order by position`,
+    [taskId]
+  );
 
-  const checklist = (checklistItems ?? []).map((i) => i.title);
+  const checklist = checklistItems.map((i) => i.title);
 
-  const { error } = await supabase.from('task_templates').insert({
-    title: task.title,
-    description: task.description || null,
-    location: task.location || null,
-    estimated_minutes: task.estimated_minutes,
-    priority: task.priority,
-    icon: task.icon,
-    project_id: task.project_id,
-    checklist: checklist.length ? checklist : null,
-    created_by: userId,
-  });
-
-  if (error) return { error: error.message };
+  // checklist — теперь text[], а не jsonb: драйвер pg принимает обычный
+  // массив строк и сам превращает его в массив Postgres.
+  try {
+    await exec(
+      `insert into task_templates
+         (title, description, location, estimated_minutes, priority, icon, project_id, checklist, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        task.title,
+        task.description || null,
+        task.location || null,
+        task.estimated_minutes,
+        task.priority,
+        task.icon,
+        task.project_id,
+        checklist.length ? checklist : null,
+        user.email,
+      ]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.templates.errors.missingTitle };
+  }
 
   revalidatePath('/templates');
   return {};
@@ -63,7 +77,7 @@ export async function createTemplateFromTask(taskId: string): Promise<{ error?: 
 // нет, поэтому поля берутся из самой формы. Те же имена полей, что и у
 // создания задачи, — форма одна.
 export async function createTemplateFromFields(formData: FormData): Promise<{ error?: string }> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
 
   const title = String(formData.get('title') ?? '').trim();
   if (!title) return { error: dict.templates.errors.missingTitle };
@@ -74,28 +88,35 @@ export async function createTemplateFromFields(formData: FormData): Promise<{ er
   const priorityRaw = String(formData.get('priority') ?? '');
   const priority = (['low', 'medium', 'high', 'urgent'] as const).find((p) => p === priorityRaw) ?? null;
 
-  const { error } = await supabase.from('task_templates').insert({
-    title,
-    description: String(formData.get('description') ?? '').trim() || null,
-    location: String(formData.get('location') ?? '').trim() || null,
-    estimated_minutes: estimated !== null && Number.isFinite(estimated) && estimated > 0 ? estimated : null,
-    priority,
-    icon: String(formData.get('icon') ?? '') || null,
-    project_id: String(formData.get('projectId') ?? '') || null,
-    checklist: null,
-    created_by: userId,
-  });
-
-  if (error) return { error: error.message };
+  try {
+    await exec(
+      `insert into task_templates
+         (title, description, location, estimated_minutes, priority, icon, project_id, checklist, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        title,
+        String(formData.get('description') ?? '').trim() || null,
+        String(formData.get('location') ?? '').trim() || null,
+        estimated !== null && Number.isFinite(estimated) && estimated > 0 ? estimated : null,
+        priority,
+        String(formData.get('icon') ?? '') || null,
+        String(formData.get('projectId') ?? '') || null,
+        null,
+        user.email,
+      ]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.templates.errors.missingTitle };
+  }
 
   revalidatePath('/templates');
   return {};
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
-  const { supabase } = await requireAuth();
+  await getCurrentUser();
 
-  await supabase.from('task_templates').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  await exec(`update task_templates set deleted_at = now() where id = $1`, [id]);
 
   revalidatePath('/templates');
 }

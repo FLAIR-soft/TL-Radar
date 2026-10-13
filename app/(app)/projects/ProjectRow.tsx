@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { Trash2, Pencil, MapPin, User } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
-import type { Project } from '@/lib/supabase/types';
+import type { Project } from '@/lib/db/types';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { plural } from '@/lib/i18n/plural';
@@ -45,7 +45,7 @@ export function ProjectRow({
             name: project.name,
             description: project.description ?? '',
             location: project.location ?? '',
-            ownerId: project.owner_id ?? '',
+            ownerId: project.owner_email ?? '',
             icon: project.icon ?? '',
             priority: project.priority ?? '',
             color: project.color ?? '',

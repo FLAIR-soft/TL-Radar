@@ -1,24 +1,27 @@
-import type { createClient } from '@/lib/supabase/server';
-import type { ActivityEntityType, ActivityEventType } from '@/lib/supabase/types';
+import { exec } from '@/lib/db/client';
+import type { ActivityEntityType, ActivityEventType } from '@/lib/db/types';
 
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
-
-// Zapis' odnogo sobytiya v zhurnal (Etap 3: tol'ko zapis', UI dobavitsya
-// otdel'no). Oshibki insert ne dolzhny lomat' osnovnoye deystviye (sozdaniye/
-// izmeneniye zadachi ili proekta) — poetomu oshibka zdes' prosto proglatyvaetsya.
+// Запись одного события в журнал. Ошибки вставки не должны ломать основное
+// действие (создание/изменение задачи или проекта) — поэтому ошибка здесь
+// просто проглатывается.
+//
+// При Supabase это выходило само собой: клиент возвращал ошибку значением, а
+// вызывающий код его не проверял. Драйвер pg бросает исключение, так что
+// глотание пришлось выписать явно — смысл прежний.
 export async function logActivity(
-  supabase: SupabaseServerClient,
   entityType: ActivityEntityType,
   entityId: string,
   eventType: ActivityEventType,
-  actorId: string | null,
+  actorEmail: string | null,
   detail?: Record<string, unknown>
 ): Promise<void> {
-  await supabase.from('activity_log').insert({
-    entity_type: entityType,
-    entity_id: entityId,
-    event_type: eventType,
-    actor_id: actorId,
-    detail: detail ?? null,
-  });
+  try {
+    await exec(
+      `insert into activity_log (entity_type, entity_id, event_type, actor, detail)
+       values ($1::text, $2::uuid, $3::text, $4::text, $5::jsonb)`,
+      [entityType, entityId, eventType, actorEmail, detail ?? null]
+    );
+  } catch (e) {
+    console.error('logActivity: событие не записано', e);
+  }
 }

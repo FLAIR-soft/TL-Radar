@@ -1,33 +1,33 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec, rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import type { WipLimit, WipStatus } from '@/lib/supabase/types';
+import type { WipLimit, WipStatus } from '@/lib/db/types';
 
 export async function getWipLimits(): Promise<WipLimit[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.from('wip_limits').select('*');
-  return data ?? [];
+  return rows<WipLimit>(`select * from wip_limits`);
 }
 
+// Раньше менять лимиты мог только профиль с ролью admin. Ролей в новой базе
+// нет вовсе (их держала таблица profiles), поэтому проверка прав здесь
+// переехать было некуда: лимиты меняет любой, кто дошёл до приложения.
+// Проверка входа сводится к getCurrentUser() — он бросает исключение, если
+// заголовка с почтой нет. Язык берётся из куки.
 export async function updateWipLimit(status: WipStatus, limit: number | null): Promise<{ error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: getDictionary('de').wipLimits.errors.unauthorized };
+  await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
 
-  const { data: profile } = await supabase.from('profiles').select('role, locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-  if (profile?.role !== 'admin') return { error: dict.wipLimits.errors.forbidden };
-
-  const { error } = await supabase
-    .from('wip_limits')
-    .update({ limit_count: limit && limit > 0 ? Math.round(limit) : null })
-    .eq('status', status);
-
-  if (error) return { error: error.message };
+  try {
+    await exec(
+      `update wip_limits set limit_count = $1 where status = $2`,
+      [limit && limit > 0 ? Math.round(limit) : null, status]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.wipLimits.errors.forbidden };
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/admin');

@@ -1,4 +1,4 @@
-import type { Priority } from '@/lib/supabase/types';
+import type { Priority } from '@/lib/db/types';
 
 export const PRIORITY_COLOR: Record<Priority, string> = {
   low: 'var(--priority-low)',

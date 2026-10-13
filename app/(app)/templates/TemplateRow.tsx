@@ -7,7 +7,7 @@ import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { plural } from '@/lib/i18n/plural';
 import { deleteTemplate } from './actions';
-import type { TaskTemplate } from '@/lib/supabase/types';
+import type { TaskTemplate } from '@/lib/db/types';
 
 // Matches the .project-row max-height/opacity/padding transition duration
 // in globals.css — the row stays on screen this long after delete so the

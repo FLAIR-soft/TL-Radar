@@ -1,27 +1,24 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import type { ActivityEntityType, ActivityLog } from '@/lib/supabase/types';
+import { rows } from '@/lib/db/client';
+import type { ActivityEntityType, ActivityLog } from '@/lib/db/types';
 
-// Chteniye zhurnala po zaprosu (slaid-bar zagruzhayet yego tol'ko pri otkrytii,
-// a ne zaranee dlya vsekh zadach/proektov na stranitse) — otdel'no ot
-// logActivity (zapis'), kotoraya vyzyvayetsya iz drugikh server actions.
+// Чтение журнала по запросу (слайд-панель загружает его только при открытии,
+// а не заранее для всех задач/проектов на странице) — отдельно от logActivity
+// (запись), которая вызывается из других server actions.
+//
+// Прежняя проверка «есть ли пользователь» была проверкой сессии Supabase, а не
+// правом на эти строки: журнал не делится по людям, его видели все вошедшие.
+// За шлюзом MIDAS неаутентифицированный посетитель сюда не доходит, поэтому
+// отдельной проверки не осталось.
 export async function getActivityLog(
   entityType: ActivityEntityType,
   entityId: string
 ): Promise<ActivityLog[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data } = await supabase
-    .from('activity_log')
-    .select('*')
-    .eq('entity_type', entityType)
-    .eq('entity_id', entityId)
-    .order('created_at', { ascending: false });
-
-  return data ?? [];
+  return rows<ActivityLog>(
+    `select * from activity_log
+     where entity_type = $1::text and entity_id = $2::uuid
+     order by created_at desc`,
+    [entityType, entityId]
+  );
 }

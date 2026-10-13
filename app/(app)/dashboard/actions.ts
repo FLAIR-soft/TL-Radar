@@ -2,34 +2,34 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec, row, rows, tx } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { isWithinWorkHours } from '@/lib/logic/tasks';
 import { logActivity } from '@/lib/logic/activity-log';
 import { notifyMany } from '@/lib/logic/notifications';
-import type { TaskStatus, Priority } from '@/lib/supabase/types';
+import type { TaskStatus, Priority } from '@/lib/db/types';
 
+// Проверять вход здесь больше нечего: за шлюзом MIDAS неаутентифицированный
+// посетитель до приложения не доходит, а getCurrentUser() бросает исключение,
+// если заголовка с почтой нет. Язык берётся из куки, а не из профиля:
+// таблицы profiles с настройками больше нет.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('locale')
-    .eq('id', user.id)
-    .single();
-
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 export interface TaskFormState {
   error: string | null;
 }
+
+// Идентификатор шаблона приходит из адресной строки через скрытое поле формы.
+// PostgREST на нечитаемый uuid отвечал «ничего не найдено», а драйвер pg
+// бросает ошибку разбора — поэтому заведомо неверное значение отсекается до
+// запроса: как и раньше, чек-лист просто не копируется.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
 
@@ -54,7 +54,9 @@ function readTaskFields(formData: FormData) {
   };
 }
 
-function readAssigneeIds(formData: FormData): string[] {
+// Имя поля формы не меняется (AssigneeSelect по-прежнему пишет hidden-input
+// с name="assigneeIds") — теперь в нём лежит почта человека, а не uuid.
+function readAssigneeEmails(formData: FormData): string[] {
   return formData
     .getAll('assigneeIds')
     .map((v) => String(v).trim())
@@ -69,71 +71,89 @@ function readLabelIds(formData: FormData): string[] {
 }
 
 export async function createTask(_prevState: TaskFormState, formData: FormData): Promise<TaskFormState> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
   const fields = readTaskFields(formData);
-  const assigneeIds = readAssigneeIds(formData);
+  const assigneeEmails = readAssigneeEmails(formData);
   const labelIds = readLabelIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
-  if (!assigneeIds.length) {
+  if (!assigneeEmails.length) {
     return { error: dict.taskForm.errors.missingAssignee };
   }
 
-  const { data: task, error } = await supabase
-    .from('tasks')
-    .insert({
-      ...fields,
-      status: 'waiting',
-      created_by: userId,
-      updated_by: userId,
-    })
-    .select('id')
-    .single();
-
-  if (error || !task) {
-    return { error: error?.message ?? dict.taskForm.errors.missingFields };
-  }
-
   const now = new Date().toISOString();
-  await supabase.from('task_assignees').insert(
-    assigneeIds.map((assignee_id) => ({
-      task_id: task.id,
-      assignee_id,
-      added_at: now,
-      added_by: userId,
-    }))
-  );
 
-  await logActivity(supabase, 'task', task.id, 'created', userId, { title: fields.title });
-  for (const assigneeId of assigneeIds) {
-    await logActivity(supabase, 'task', task.id, 'assignee_added', userId, { assigneeId });
+  // Задача и её исполнители пишутся одной транзакцией: форма не даёт создать
+  // задачу без исполнителя, и база не должна получить такую строку, если
+  // вторая вставка не прошла.
+  let taskId: string;
+  try {
+    taskId = await tx(async (client) => {
+      const inserted = await client.query<{ id: string }>(
+        `insert into tasks (title, description, location, deadline, project_id,
+                            estimated_minutes, icon, priority, status, created_by, updated_by)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, 'waiting', $9, $9)
+         returning id`,
+        [
+          fields.title,
+          fields.description,
+          fields.location,
+          fields.deadline,
+          fields.project_id,
+          fields.estimated_minutes,
+          fields.icon,
+          fields.priority,
+          user.email,
+        ]
+      );
+      const id = inserted.rows[0].id;
+
+      await client.query(
+        `insert into task_assignees (task_id, assignee_email, added_at, added_by)
+         select $1::uuid, email, $3::timestamptz, $4::text
+         from unnest($2::text[]) as email`,
+        [id, assigneeEmails, now, user.email]
+      );
+
+      return id;
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
   }
-  await notifyMany(supabase, assigneeIds, userId, 'assigned', task.id, { title: fields.title });
+
+  await logActivity('task', taskId, 'created', user.email, { title: fields.title });
+  for (const assigneeId of assigneeEmails) {
+    await logActivity('task', taskId, 'assignee_added', user.email, { assigneeId });
+  }
+  await notifyMany(assigneeEmails, user.email, 'assigned', taskId, { title: fields.title });
 
   if (labelIds.length) {
-    await supabase.from('task_labels').insert(
-      labelIds.map((label_id) => ({ task_id: task.id, label_id, added_by: userId }))
+    await exec(
+      `insert into task_labels (task_id, label_id, added_by)
+       select $1::uuid, label_id, $3::text
+       from unnest($2::uuid[]) as label_id`,
+      [taskId, labelIds, user.email]
     );
   }
 
   // Sozdaniye iz shablona (Etap 7): kopiruyem chek-list shablona v novuyu
   // zadachu — izmeneniye shablona posle etogo uzhe ne vliyayet na zadachu.
   const templateId = String(formData.get('templateId') || '').trim();
-  if (templateId) {
-    const { data: template } = await supabase
-      .from('task_templates')
-      .select('checklist')
-      .eq('id', templateId)
-      .single();
+  if (templateId && UUID_RE.test(templateId)) {
+    const template = await row<{ checklist: string[] | null }>(
+      `select checklist from task_templates where id = $1`,
+      [templateId]
+    );
 
-    const checklist = (template?.checklist as string[] | null) ?? [];
+    const checklist = template?.checklist ?? [];
     for (let i = 0; i < checklist.length; i++) {
-      await supabase
-        .from('task_checklist_items')
-        .insert({ task_id: task.id, title: checklist[i], position: i });
-      await logActivity(supabase, 'task', task.id, 'checklist_item_added', userId, { title: checklist[i] });
+      await exec(
+        `insert into task_checklist_items (task_id, title, position) values ($1, $2, $3)`,
+        [taskId, checklist[i], i]
+      );
+      await logActivity('task', taskId, 'checklist_item_added', user.email, { title: checklist[i] });
     }
   }
 
@@ -146,26 +166,39 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
 // vyzyvayetsya napryamuyu iz klientskogo komponenta (ne cherez <form
 // action>), poetomu bez redirect() — palette sama reshayet, kuda perekhodit'.
 export async function quickCreateTask(title: string): Promise<{ error?: string; taskId?: string }> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
   const trimmed = title.trim();
   if (!trimmed) return { error: dict.taskForm.errors.missingFields };
 
-  const { data: task, error } = await supabase
-    .from('tasks')
-    .insert({ title: trimmed, status: 'waiting', created_by: userId, updated_by: userId })
-    .select('id')
-    .single();
-
-  if (error || !task) return { error: error?.message ?? dict.taskForm.errors.missingFields };
-
   const now = new Date().toISOString();
-  await supabase
-    .from('task_assignees')
-    .insert({ task_id: task.id, assignee_id: userId, added_at: now, added_by: userId });
-  await logActivity(supabase, 'task', task.id, 'created', userId, { title: trimmed });
+
+  let taskId: string;
+  try {
+    taskId = await tx(async (client) => {
+      const inserted = await client.query<{ id: string }>(
+        `insert into tasks (title, status, created_by, updated_by)
+         values ($1, 'waiting', $2, $2)
+         returning id`,
+        [trimmed, user.email]
+      );
+      const id = inserted.rows[0].id;
+
+      await client.query(
+        `insert into task_assignees (task_id, assignee_email, added_at, added_by)
+         values ($1, $2, $3, $4)`,
+        [id, user.email, now, user.email]
+      );
+
+      return id;
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
+  }
+
+  await logActivity('task', taskId, 'created', user.email, { title: trimmed });
 
   revalidatePath('/dashboard');
-  return { taskId: task.id };
+  return { taskId };
 }
 
 export async function editTaskFields(
@@ -173,90 +206,116 @@ export async function editTaskFields(
   _prevState: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
   const fields = readTaskFields(formData);
-  const assigneeIds = readAssigneeIds(formData);
+  const assigneeEmails = readAssigneeEmails(formData);
   const labelIds = readLabelIds(formData);
 
   if (!fields.title) {
     return { error: dict.taskForm.errors.missingFields };
   }
-  if (!assigneeIds.length) {
+  if (!assigneeEmails.length) {
     return { error: dict.taskForm.errors.missingAssignee };
   }
 
-  const { error } = await supabase
-    .from('tasks')
-    .update({ ...fields, updated_by: userId })
-    .eq('id', taskId);
-
-  if (error) {
-    return { error: error.message };
+  try {
+    await exec(
+      `update tasks
+          set title = $1,
+              description = $2,
+              location = $3,
+              deadline = $4,
+              project_id = $5,
+              estimated_minutes = $6,
+              icon = $7,
+              priority = $8,
+              updated_by = $9
+        where id = $10`,
+      [
+        fields.title,
+        fields.description,
+        fields.location,
+        fields.deadline,
+        fields.project_id,
+        fields.estimated_minutes,
+        fields.icon,
+        fields.priority,
+        user.email,
+        taskId,
+      ]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
   }
 
-  await logActivity(supabase, 'task', taskId, 'updated', userId, { title: fields.title });
+  await logActivity('task', taskId, 'updated', user.email, { title: fields.title });
 
-  const { data: current } = await supabase
-    .from('task_assignees')
-    .select('id, assignee_id')
-    .eq('task_id', taskId)
-    .is('removed_at', null);
+  const current = await rows<{ id: string; assignee_email: string }>(
+    `select id, assignee_email from task_assignees
+      where task_id = $1 and removed_at is null`,
+    [taskId]
+  );
 
-  const currentIds = new Set((current ?? []).map((a) => a.assignee_id));
-  const newIds = new Set(assigneeIds);
+  const currentEmails = new Set(current.map((a) => a.assignee_email));
+  const newEmails = new Set(assigneeEmails);
   const now = new Date().toISOString();
 
-  const toRemove = (current ?? []).filter((a) => !newIds.has(a.assignee_id));
-  const toAdd = assigneeIds.filter((id) => !currentIds.has(id));
+  const toRemove = current.filter((a) => !newEmails.has(a.assignee_email));
+  const toAdd = assigneeEmails.filter((email) => !currentEmails.has(email));
 
   if (toRemove.length) {
-    await supabase
-      .from('task_assignees')
-      .update({ removed_at: now, removed_by: userId })
-      .in(
-        'id',
-        toRemove.map((a) => a.id)
-      );
+    await exec(
+      `update task_assignees
+          set removed_at = $1, removed_by = $2
+        where id = any($3::uuid[])`,
+      [now, user.email, toRemove.map((a) => a.id)]
+    );
     for (const a of toRemove) {
-      await logActivity(supabase, 'task', taskId, 'assignee_removed', userId, { assigneeId: a.assignee_id });
+      await logActivity('task', taskId, 'assignee_removed', user.email, { assigneeId: a.assignee_email });
     }
     await notifyMany(
-      supabase,
-      toRemove.map((a) => a.assignee_id),
-      userId,
+      toRemove.map((a) => a.assignee_email),
+      user.email,
       'unassigned',
       taskId,
       { title: fields.title }
     );
   }
   if (toAdd.length) {
-    await supabase.from('task_assignees').insert(
-      toAdd.map((assignee_id) => ({
-        task_id: taskId,
-        assignee_id,
-        added_at: now,
-        added_by: userId,
-      }))
+    await exec(
+      `insert into task_assignees (task_id, assignee_email, added_at, added_by)
+       select $1::uuid, email, $3::timestamptz, $4::text
+       from unnest($2::text[]) as email`,
+      [taskId, toAdd, now, user.email]
     );
     for (const assigneeId of toAdd) {
-      await logActivity(supabase, 'task', taskId, 'assignee_added', userId, { assigneeId });
+      await logActivity('task', taskId, 'assignee_added', user.email, { assigneeId });
     }
-    await notifyMany(supabase, toAdd, userId, 'assigned', taskId, { title: fields.title });
+    await notifyMany(toAdd, user.email, 'assigned', taskId, { title: fields.title });
   }
 
-  const { data: currentLabels } = await supabase.from('task_labels').select('label_id').eq('task_id', taskId);
-  const currentLabelIds = new Set((currentLabels ?? []).map((l) => l.label_id));
+  const currentLabels = await rows<{ label_id: string }>(
+    `select label_id from task_labels where task_id = $1`,
+    [taskId]
+  );
+  const currentLabelIds = new Set(currentLabels.map((l) => l.label_id));
   const newLabelIds = new Set(labelIds);
   const labelsToRemove = [...currentLabelIds].filter((id) => !newLabelIds.has(id));
   const labelsToAdd = labelIds.filter((id) => !currentLabelIds.has(id));
 
   if (labelsToRemove.length) {
-    await supabase.from('task_labels').delete().eq('task_id', taskId).in('label_id', labelsToRemove);
+    await exec(
+      `delete from task_labels where task_id = $1 and label_id = any($2::uuid[])`,
+      [taskId, labelsToRemove]
+    );
   }
   if (labelsToAdd.length) {
-    await supabase
-      .from('task_labels')
-      .insert(labelsToAdd.map((label_id) => ({ task_id: taskId, label_id, added_by: userId })));
+    await exec(
+      `insert into task_labels (task_id, label_id, added_by)
+       select $1::uuid, label_id, $3::text
+       from unnest($2::uuid[]) as label_id`,
+      [taskId, labelsToAdd, user.email]
+    );
   }
 
   revalidatePath('/dashboard');
@@ -264,102 +323,92 @@ export async function editTaskFields(
 }
 
 export async function deleteTask(taskId: string) {
-  const { supabase, userId } = await requireAuth();
-  await supabase
-    .from('tasks')
-    .update({ deleted_at: new Date().toISOString(), updated_by: userId })
-    .eq('id', taskId);
-  await logActivity(supabase, 'task', taskId, 'deleted', userId);
+  const { user } = await requireAuth();
+  await exec(
+    `update tasks set deleted_at = $1, updated_by = $2 where id = $3`,
+    [new Date().toISOString(), user.email, taskId]
+  );
+  await logActivity('task', taskId, 'deleted', user.email);
   revalidatePath('/dashboard');
   revalidatePath('/archive');
 }
 
 export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<{ error?: string }> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
 
   if (!isWithinWorkHours()) {
     return { error: dict.taskCard.outsideWorkHours };
   }
 
-  const { data: task } = await supabase
-    .from('tasks')
-    .select('status, started_at')
-    .eq('id', taskId)
-    .single();
+  const task = await row<{ status: TaskStatus; started_at: string | null }>(
+    `select status, started_at from tasks where id = $1`,
+    [taskId]
+  );
 
   if (!task) return {};
 
   if (task.status !== newStatus && (newStatus === 'waiting' || newStatus === 'in_progress' || newStatus === 'paused')) {
-    const { data: limitRow } = await supabase
-      .from('wip_limits')
-      .select('limit_count')
-      .eq('status', newStatus)
-      .single();
+    const limitRow = await row<{ limit_count: number | null }>(
+      `select limit_count from wip_limits where status = $1`,
+      [newStatus]
+    );
     if (limitRow?.limit_count !== null && limitRow?.limit_count !== undefined) {
-      const { count } = await supabase
-        .from('tasks')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', newStatus)
-        .is('deleted_at', null);
-      if ((count ?? 0) >= limitRow.limit_count) {
+      const counted = await row<{ n: number }>(
+        `select count(*)::int as n from tasks where status = $1 and deleted_at is null`,
+        [newStatus]
+      );
+      if ((counted?.n ?? 0) >= limitRow.limit_count) {
         return { error: dict.wipLimits.errors.limitReached };
       }
     }
   }
 
   const now = new Date().toISOString();
-  const update: {
-    status: TaskStatus;
-    started_at?: string;
-    completed_at?: string;
-    updated_by: string;
-  } = {
-    status: newStatus,
-    updated_by: userId,
-  };
+  // Открыть паузу при уходе в paused; закрыть открытую — при возврате в работу
+  // и при завершении. started_at ставится только если его ещё не было,
+  // completed_at — только при переходе в done.
+  const opensPause = task.status === 'in_progress' && newStatus === 'paused';
+  const closesPause = (task.status === 'paused' && newStatus === 'in_progress') || newStatus === 'done';
+  const startsNow = (newStatus === 'in_progress' || newStatus === 'done') && !task.started_at;
+  const completesNow = newStatus === 'done';
 
-  if (newStatus === 'in_progress' && !task.started_at) {
-    update.started_at = now;
-  }
-
-  if (task.status === 'in_progress' && newStatus === 'paused') {
-    await supabase
-      .from('task_pauses')
-      .insert({ task_id: taskId, paused_at: now, resumed_at: null, auto: false, created_by: userId });
-  }
-
-  if (task.status === 'paused' && newStatus === 'in_progress') {
-    const { data: openPause } = await supabase
-      .from('task_pauses')
-      .select('id')
-      .eq('task_id', taskId)
-      .is('resumed_at', null)
-      .order('paused_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (openPause) {
-      await supabase.from('task_pauses').update({ resumed_at: now }).eq('id', openPause.id);
+  // Смена статуса и работа с паузой обязаны произойти вместе: наполовину
+  // применённый переход ломает весь учёт времени по задаче.
+  await tx(async (client) => {
+    if (opensPause) {
+      await client.query(
+        `insert into task_pauses (task_id, paused_at, resumed_at, auto, created_by)
+         values ($1, $2, null, false, $3)`,
+        [taskId, now, user.email]
+      );
     }
-  }
 
-  if (newStatus === 'done') {
-    const { data: openPause } = await supabase
-      .from('task_pauses')
-      .select('id')
-      .eq('task_id', taskId)
-      .is('resumed_at', null)
-      .order('paused_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (openPause) {
-      await supabase.from('task_pauses').update({ resumed_at: now }).eq('id', openPause.id);
+    if (closesPause) {
+      await client.query(
+        `update task_pauses
+            set resumed_at = $1
+          where id = (
+            select id from task_pauses
+             where task_id = $2 and resumed_at is null
+             order by paused_at desc
+             limit 1
+          )`,
+        [now, taskId]
+      );
     }
-    update.completed_at = now;
-    if (!task.started_at) update.started_at = now;
-  }
 
-  await supabase.from('tasks').update(update).eq('id', taskId);
-  await logActivity(supabase, 'task', taskId, 'status_changed', userId, {
+    await client.query(
+      `update tasks
+          set status = $1,
+              updated_by = $2,
+              started_at = coalesce(started_at, $3::timestamptz),
+              completed_at = coalesce($4::timestamptz, completed_at)
+        where id = $5`,
+      [newStatus, user.email, startsNow ? now : null, completesNow ? now : null, taskId]
+    );
+  });
+
+  await logActivity('task', taskId, 'status_changed', user.email, {
     from: task.status,
     to: newStatus,
   });

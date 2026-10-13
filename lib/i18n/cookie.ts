@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { defaultLocale, isLocale } from './config';
-import type { Locale } from '@/lib/supabase/types';
+import type { Locale } from '@/lib/db/types';
 
 export const LOCALE_COOKIE = 'locale';
 

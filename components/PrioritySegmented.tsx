@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
-import type { Priority } from '@/lib/supabase/types';
+import type { Priority } from '@/lib/db/types';
 
 const OPTIONS: Priority[] = ['low', 'medium', 'high', 'urgent'];
 

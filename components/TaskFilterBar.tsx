@@ -8,7 +8,7 @@ import { useToast } from './ToastProvider';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { LabelFilterSelect } from './LabelFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
-import type { Label } from '@/lib/supabase/types';
+import type { Label } from '@/lib/db/types';
 
 export function TaskFilterBar({
   profiles,

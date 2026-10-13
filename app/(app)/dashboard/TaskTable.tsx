@@ -10,7 +10,7 @@ import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, TaskPause, TaskStatus, Priority, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Priority, Label } from '@/lib/db/types';
 
 type SortKey = 'title' | 'status' | 'project' | 'priority' | 'deadline' | 'estimate';
 

@@ -1,37 +1,66 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import type { NotificationView } from '@/lib/supabase/types';
+import { exec, row, rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import type { NotificationView } from '@/lib/logic/notifications';
+import type { NotificationType, TaskStatus } from '@/lib/db/types';
 
 const LIST_LIMIT = 30;
 
-// Obychnyy Route Handler, a ne Server Action: bell opraivaet count kazhdyye
-// 30 sekund fonovo, i eto ne dolzhno peresekat'sya s router/RSC-mekhanikoy
-// Server Actions (naprimer, revalidatePath drugogo deystviya v etot moment) —
-// obychnyy fetch() polnost'yu nezavisim ot etogo, v otlichiye ot vyzova
-// 'use server' funktsii pryamo iz klientskogo komponenta.
+// Строка выборки списка: уведомление плюс название и статус задачи одним
+// запросом. Раньше это отдавала функция get_my_notifications (0031); она
+// опиралась на auth.uid(), в новой базе её нет, и джойн написан здесь.
+type NotificationRow = {
+  id: string;
+  recipient_email: string;
+  type: NotificationType;
+  task_id: string | null;
+  payload: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+  task_title: string | null;
+  task_status: TaskStatus | null;
+};
+
+// Обычный Route Handler, а не Server Action: колокольчик опрашивает счётчик
+// каждые 30 секунд фоново, и это не должно пересекаться с router/RSC-механикой
+// Server Actions (например, с revalidatePath другого действия в этот момент) —
+// обычный fetch() полностью независим от неё, в отличие от вызова 'use server'
+// функции прямо из клиентского компонента.
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ count: 0, items: [] });
+  const user = await getCurrentUser();
 
   const { searchParams } = new URL(request.url);
   const full = searchParams.get('full') === '1';
 
-  // get_my_notifications() (0031) otdayot notifications + task title/status
-  // odnim zaprosom cherez server-side LEFT JOIN — u task_id namerenno net FK
-  // (0020, polimorfnaya ssylka), poetomu obychnyy PostgREST-embed zdes' ne
-  // vyrazim. count i polnyy spisok nezavisimy drug ot druga — odna volna
-  // cherez Promise.all vmesto posledovatel'nykh await.
-  const [{ count }, { data: rows }] = await Promise.all([
-    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('recipient_id', user.id).is('read_at', null),
-    full ? supabase.rpc('get_my_notifications', { p_limit: LIST_LIMIT }) : Promise.resolve({ data: null }),
+  // RLS больше нет: получателя фильтруем сами. Раньше это делала политика, и
+  // без явного условия каждый видел бы чужие уведомления.
+  //
+  // Счётчик и полный список друг от друга не зависят — одна волна через
+  // Promise.all вместо последовательных await.
+  const [unread, list] = await Promise.all([
+    row<{ count: number }>(
+      `select count(*)::int as count
+       from notifications
+       where recipient_email = $1 and read_at is null`,
+      [user.email]
+    ),
+    full
+      ? rows<NotificationRow>(
+          `select n.id, n.recipient_email, n.type, n.task_id, n.payload, n.read_at, n.created_at,
+                  t.title as task_title, t.status::text as task_status
+           from notifications n
+           left join tasks t on t.id = n.task_id
+           where n.recipient_email = $1
+           order by n.created_at desc
+           limit $2`,
+          [user.email, LIST_LIMIT]
+        )
+      : Promise.resolve([] as NotificationRow[]),
   ]);
 
-  const items: NotificationView[] = (rows ?? []).map((n) => ({
+  const items: NotificationView[] = list.map((n) => ({
     id: n.id,
-    recipient_id: n.recipient_id,
+    recipient_email: n.recipient_email,
     type: n.type,
     task_id: n.task_id,
     payload: n.payload,
@@ -41,28 +70,29 @@ export async function GET(request: Request) {
     taskStatus: n.task_status,
   }));
 
-  return NextResponse.json({ count: count ?? 0, items });
+  return NextResponse.json({ count: unread?.count ?? 0, items });
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const user = await getCurrentUser();
 
   const body = await request.json();
   const now = new Date().toISOString();
 
+  // Условие по получателю обязательно: оно и подтверждает право пометить
+  // уведомление прочитанным. Раньше это же делала политика RLS.
   if (body.action === 'markRead' && typeof body.id === 'string') {
-    await supabase
-      .from('notifications')
-      .update({ read_at: now })
-      .eq('id', body.id)
-      .eq('recipient_id', user.id)
-      .is('read_at', null);
+    await exec(
+      `update notifications set read_at = $1::timestamptz
+       where id = $2::uuid and recipient_email = $3 and read_at is null`,
+      [now, body.id, user.email]
+    );
   } else if (body.action === 'markAll') {
-    await supabase.from('notifications').update({ read_at: now }).eq('recipient_id', user.id).is('read_at', null);
+    await exec(
+      `update notifications set read_at = $1::timestamptz
+       where recipient_email = $2 and read_at is null`,
+      [now, user.email]
+    );
   }
 
   return NextResponse.json({ ok: true });

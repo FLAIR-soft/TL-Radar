@@ -1,10 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 
+// Своего выхода у приложения нет: сессию держит шлюз MIDAS, а не мы.
+// Кнопка ведёт на выход из MIDAS — после него человек выходит и из Entra.
 export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
+  redirect('https://midas.mifcom.dev/oauth2/sign_out');
 }

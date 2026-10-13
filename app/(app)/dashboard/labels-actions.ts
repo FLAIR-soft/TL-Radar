@@ -1,48 +1,46 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { row, rows } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LABEL_COLORS } from '@/lib/logic/label-colors';
-import type { Label } from '@/lib/supabase/types';
+import type { Label } from '@/lib/db/types';
 
+// Ветки «не вошёл → errors.unauthorized» больше нет: за шлюзом MIDAS
+// неаутентифицированный посетитель сюда не доходит, а getCurrentUser()
+// бросает исключение, если заголовка с почтой нет. Язык — из куки.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 export async function getLabels(): Promise<Label[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.from('labels').select('*').is('deleted_at', null).order('name');
-  return data ?? [];
+  return rows<Label>(`select * from labels where deleted_at is null order by name`);
 }
 
 export async function createLabel(name: string, color: string): Promise<{ error?: string; label?: Label }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').labels.errors.unauthorized };
-  const { supabase, userId, dict } = auth;
+  const { user, dict } = await requireAuth();
 
   const trimmed = name.trim();
   if (!trimmed) return { error: dict.labels.errors.missingName };
   if (!(LABEL_COLORS as readonly string[]).includes(color)) return { error: dict.labels.errors.missingName };
 
-  const { data, error } = await supabase
-    .from('labels')
-    .insert({ name: trimmed, color, created_by: userId })
-    .select('*')
-    .single();
+  let label: Label | null;
+  try {
+    label = await row<Label>(
+      `insert into labels (name, color, created_by) values ($1, $2, $3) returning *`,
+      [trimmed, color, user.email]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.labels.errors.missingName };
+  }
 
-  if (error || !data) return { error: error?.message ?? dict.labels.errors.missingName };
+  if (!label) return { error: dict.labels.errors.missingName };
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');
-  return { label: data };
+  return { label };
 }

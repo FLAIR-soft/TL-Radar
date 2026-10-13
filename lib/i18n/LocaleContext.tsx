@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { Locale } from '@/lib/supabase/types';
+import type { Locale } from '@/lib/db/types';
 import type { Dictionary } from './get-dictionary';
 
 const LocaleContext = createContext<{ locale: Locale; dict: Dictionary } | null>(null);

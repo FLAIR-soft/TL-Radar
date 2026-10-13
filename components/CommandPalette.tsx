@@ -9,11 +9,9 @@ import { useToast } from './ToastProvider';
 import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useScrollLock } from '@/lib/hooks/useScrollLock';
-import { canViewStats } from '@/lib/logic/access';
 import { quickCreateTask } from '@/app/(app)/dashboard/actions';
-import type { UserRole } from '@/lib/supabase/types';
 
-export function CommandPalette({ role }: { role: UserRole }) {
+export function CommandPalette() {
   const dict = useDictionary();
   const toast = useToast();
   const router = useRouter();
@@ -70,7 +68,7 @@ export function CommandPalette({ role }: { role: UserRole }) {
     { id: 'archive', label: dict.topbar.archive, href: '/archive' },
     { id: 'projects', label: dict.topbar.projects, href: '/projects' },
     { id: 'templates', label: dict.topbar.templates, href: '/templates' },
-    ...(canViewStats(role) ? [{ id: 'analytics', label: dict.topbar.analytics, href: '/analytics' }] : []),
+    { id: 'analytics', label: dict.topbar.analytics, href: '/analytics' },
     ...(role === 'admin' ? [{ id: 'admin', label: dict.topbar.admin, href: '/admin' }] : []),
   ];
 

@@ -1,28 +1,35 @@
 import { LayoutTemplate } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { rows } from '@/lib/db/client';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { EmptyState } from '@/components/EmptyState';
 import { TemplateRow } from './TemplateRow';
 import { RecurringRuleRow } from './RecurringRuleRow';
 import { CreateRecurringRulePanel } from './CreateRecurringRulePanel';
+import type { Project, RecurringRule, TaskTemplate } from '@/lib/db/types';
 
 export default async function TemplatesPage() {
-  const supabase = await createClient();
-  const user = await getCachedUser();
-  const profile = await getCachedProfile(user!.id);
-  const dict = getDictionary(profile?.locale ?? 'de');
+  // Язык больше не хранится в профиле — он живёт в куке, как на дашборде.
+  const dict = getDictionary(await getLocaleCookie());
 
-  const [{ data: templates }, { data: projects }, { data: rules }] = await Promise.all([
-    supabase.from('task_templates').select('*').is('deleted_at', null).order('created_at', { ascending: false }),
-    supabase.from('projects').select('id, name').is('deleted_at', null),
-    supabase.from('recurring_rules').select('*').is('deleted_at', null).order('created_at', { ascending: false }),
+  const [templates, projects, rules] = await Promise.all([
+    rows<TaskTemplate>(
+      `select * from task_templates where deleted_at is null order by created_at desc`
+    ),
+    rows<Pick<Project, 'id' | 'name'>>(
+      `select id, name from projects where deleted_at is null`
+    ),
+    // Правила повторения переносятся как есть: исполнителя (pg_cron) больше
+    // нет, запуск появится на этапе 8. Экран только показывает и правит их.
+    rows<RecurringRule>(
+      `select * from recurring_rules where deleted_at is null order by created_at desc`
+    ),
   ]);
 
-  const list = templates ?? [];
-  const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
+  const list = templates;
+  const projectNames = new Map(projects.map((p) => [p.id, p.name]));
   const templateTitles = new Map(list.map((t) => [t.id, t.title]));
-  const ruleList = rules ?? [];
+  const ruleList = rules;
   const templateOptions = list.map((t) => ({ id: t.id, title: t.title }));
 
   return (

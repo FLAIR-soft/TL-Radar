@@ -1,4 +1,4 @@
-import type { TaskStatus, Task, TaskPause } from '@/lib/supabase/types';
+import type { TaskStatus, Task, TaskPause } from '@/lib/db/types';
 import { berlinCalendarDate, workWindowForBerlinDay, type TimeInterval } from './berlin-time';
 
 export type { TimeInterval };

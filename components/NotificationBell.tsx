@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
-import { createClient } from '@/lib/supabase/client';
 import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
-import type { NotificationType, NotificationView } from '@/lib/supabase/types';
+import type { NotificationView } from '@/lib/logic/notifications';
+import type { NotificationType } from '@/lib/db/types';
 
 const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   assigned: UserPlus,
@@ -37,18 +37,20 @@ function describe(n: NotificationView, dict: Dictionary): string {
   }
 }
 
-const FALLBACK_POLL_MS = 30000;
+const POLL_MS = 30000;
 
-// Fetch obychnogo Route Handler (app/api/notifications), a ne Server Action:
-// eto ne dolzhno peresekat'sya s RSC/router-mekhanikoy drugikh Server Actions
-// (naprimer, redirect posle sozdaniya proekta) — eto byla real'naya problema,
-// poymannaya e2e-testami (sm. commit).
+// Fetch обычного Route Handler (app/api/notifications), а не Server Action:
+// это не должно пересекаться с RSC/router-механикой других Server Actions
+// (например, с redirect после создания проекта) — это была настоящая проблема,
+// пойманная e2e-тестами (см. коммит).
 //
-// Schyotchik zhivyot na Realtime (postgres_changes INSERT po notifications,
-// 0030) — poll kazhdyye 30s bol'she ne nuzhen v fonovoy vkladke. Yesli
-// Realtime-kanal ne podnyalsya (status !== 'SUBSCRIBED'), vklyuchayetsya
-// fallback-poll, no tol'ko poka vkladka vidima (document.visibilityState).
-export function NotificationBell({ userId }: { userId: string }) {
+// Счётчик живёт на опросе раз в 30 секунд. Supabase Realtime, на котором он
+// держался раньше (postgres_changes INSERT по notifications, 0030), в MIDAS
+// нет: моментального обновления в открытой вкладке больше не будет, badge
+// отстаёт в худшем случае на интервал опроса. Опрос идёт только в видимой
+// вкладке (document.visibilityState) — скрытая вкладка в базу не ходит, а при
+// возвращении на неё счётчик обновляется сразу, по событию visibilitychange.
+export function NotificationBell() {
   const dict = useDictionary();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -73,42 +75,15 @@ export function NotificationBell({ userId }: { userId: string }) {
 
     fetchCount();
 
-    const supabase = createClient();
-    const statusRef = { current: 'CLOSED' as string };
-    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
-
-    function onVisibilityChange() {
-      if (statusRef.current !== 'SUBSCRIBED') pollIfVisible();
-    }
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId}` },
-        () => {
-          if (!cancelled) setCount((c) => c + 1);
-        }
-      )
-      .subscribe((status) => {
-        if (cancelled) return;
-        statusRef.current = status;
-        if (status === 'SUBSCRIBED' && fallbackInterval) {
-          clearInterval(fallbackInterval);
-          fallbackInterval = null;
-        } else if (status !== 'SUBSCRIBED' && !fallbackInterval) {
-          fallbackInterval = setInterval(pollIfVisible, FALLBACK_POLL_MS);
-        }
-      });
+    const interval = setInterval(pollIfVisible, POLL_MS);
+    document.addEventListener('visibilitychange', pollIfVisible);
 
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      if (fallbackInterval) clearInterval(fallbackInterval);
-      supabase.removeChannel(channel);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', pollIfVisible);
     };
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {

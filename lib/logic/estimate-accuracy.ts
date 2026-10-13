@@ -1,4 +1,4 @@
-import type { Task, TaskPause, TaskAssignee } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskAssignee } from '@/lib/db/types';
 import { netDuration } from './tasks';
 
 export interface EstimateAccuracyStat {
@@ -32,7 +32,7 @@ export function computeEstimateAccuracy(params: {
   for (const a of assignees) {
     if (a.removed_at) continue;
     const list = assigneesByTask.get(a.task_id) ?? [];
-    list.push(a.assignee_id);
+    list.push(a.assignee_email);
     assigneesByTask.set(a.task_id, list);
   }
 

@@ -1,4 +1,4 @@
-import type { Task, TaskPause, TaskAssignee } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskAssignee } from '@/lib/db/types';
 import { inProgressIntervals } from './tasks';
 import { berlinCalendarDate, workWindowForBerlinDay, type TimeInterval } from './berlin-time';
 
@@ -89,7 +89,7 @@ export function computePersonStats(params: {
       if (overlap) ms += overlap.end - overlap.start;
     }
     if (ms > 0) {
-      workedByPerson.set(a.assignee_id, (workedByPerson.get(a.assignee_id) ?? 0) + ms);
+      workedByPerson.set(a.assignee_email, (workedByPerson.get(a.assignee_email) ?? 0) + ms);
     }
   }
 

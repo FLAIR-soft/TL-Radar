@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { rows } from '@/lib/db/client';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats, workedPercent } from '@/lib/logic/analytics';
 import { fmtDuration } from '@/lib/logic/tasks';
 import { exportResponse, parseFormat } from '@/lib/export/respond';
+import type { Person, Task, TaskAssignee, TaskPause } from '@/lib/db/types';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 
@@ -13,16 +14,10 @@ function parsePeriod(raw: string | null): (typeof PERIOD_OPTIONS)[number] {
 }
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response('Unauthorized', { status: 401 });
-
-  const { data: profile } = await supabase.from('profiles').select('role, locale').eq('id', user.id).single();
-  if (!profile || !canViewStats(profile.role)) return new Response('Forbidden', { status: 403 });
-
-  const dict = getDictionary(profile.locale ?? 'de');
+  // Ролей в новой схеме нет, своей сессии у приложения тоже: кто дошёл до
+  // маршрута, того пропустил шлюз MIDAS. Прежние ответы 401/403 по
+  // profile.role убраны вместе с ролями — см. страницу /analytics.
+  const dict = getDictionary(await getLocaleCookie());
   const { searchParams } = new URL(request.url);
   const format = parseFormat(searchParams);
   const days = parsePeriod(searchParams.get('days'));
@@ -30,35 +25,45 @@ export async function GET(request: Request) {
   const rangeEnd = new Date();
   const rangeStart = new Date(rangeEnd.getTime() - days * 24 * 3600 * 1000);
 
-  const [{ data: profiles }, { data: tasks }] = await Promise.all([
-    supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('tasks').select('*').is('deleted_at', null).not('started_at', 'is', null),
+  // Отбор задач тот же, что и раньше: неудалённые и уже запущенные. Паузы и
+  // назначения берутся соединением с этим же отбором — вместо второго захода
+  // со списком id задач в .in().
+  const [people, activeTasks, pauses, assignees] = await Promise.all([
+    rows<Pick<Person, 'email' | 'display_name'>>(
+      `select email, display_name from people order by coalesce(display_name, email)`
+    ),
+    rows<Task>(`select * from tasks where deleted_at is null and started_at is not null`),
+    rows<TaskPause>(
+      `select p.* from task_pauses p
+       join tasks t on t.id = p.task_id
+       where t.deleted_at is null and t.started_at is not null`
+    ),
+    rows<TaskAssignee>(
+      `select a.* from task_assignees a
+       join tasks t on t.id = a.task_id
+       where t.deleted_at is null and t.started_at is not null`
+    ),
   ]);
-  const activeTasks = tasks ?? [];
-  const taskIds = activeTasks.map((t) => t.id);
 
-  const [{ data: pauses }, { data: assignees }] = taskIds.length
-    ? await Promise.all([
-        supabase.from('task_pauses').select('*').in('task_id', taskIds),
-        supabase.from('task_assignees').select('*').in('task_id', taskIds),
-      ])
-    : [{ data: [] }, { data: [] }];
+  // Человек в расчёте — это { id, name }, где id теперь почта: тот же ключ,
+  // что и в task_assignees.assignee_email.
+  const profileList = people.map((p) => ({ id: p.email, name: p.display_name ?? p.email }));
 
   const stats = computePersonStats({
-    profiles: profiles ?? [],
+    profiles: profileList,
     tasks: activeTasks,
-    pauses: pauses ?? [],
-    assignees: assignees ?? [],
+    pauses,
+    assignees,
     rangeStart,
     rangeEnd,
   });
   const availableMs = availableWorkingMs(rangeStart, rangeEnd);
 
   const header = [dict.analytics.colPerson, dict.analytics.colWorked, dict.analytics.colPercent];
-  const rows = stats.map((s) => {
+  const exportRows = stats.map((s) => {
     const pct = Math.round(workedPercent(s.workedMs, availableMs));
     return [s.name, fmtDuration(s.workedMs, dict.duration), `${pct}%`];
   });
 
-  return exportResponse([header, ...rows], format, 'analytics', dict.analytics.title);
+  return exportResponse([header, ...exportRows], format, 'analytics', dict.analytics.title);
 }

@@ -21,7 +21,7 @@ import { useToast } from '@/components/ToastProvider';
 import { setStatus } from './actions';
 import { TaskCard } from './TaskCard';
 import type { ChecklistPreviewItem, LastComment } from '@/lib/logic/task-relations';
-import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Label } from '@/lib/db/types';
 
 const COLUMNS: TaskStatus[] = ['waiting', 'in_progress', 'paused'];
 

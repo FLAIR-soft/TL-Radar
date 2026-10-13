@@ -1,69 +1,64 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec, row, rows, tx } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
-import type { TaskChecklistItem } from '@/lib/supabase/types';
+import type { TaskChecklistItem } from '@/lib/db/types';
 
+// Прежняя проверка «есть ли пользователь» была проверкой сессии Supabase:
+// за шлюзом MIDAS неаутентифицированный посетитель сюда не доходит, а
+// getCurrentUser() бросает исключение, если заголовка с почтой нет. Поэтому
+// ветки «не вошёл → errors.unauthorized» больше нет. Язык — из куки.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 // Zapros po trebovaniyu (slaid-bar zagruzhayet tol'ko pri otkrytii) — tak zhe
 // kak getTaskComments/getActivityLog.
 export async function getChecklistItems(taskId: string): Promise<TaskChecklistItem[]> {
-  const auth = await requireAuth();
-  if (!auth) return [];
+  await getCurrentUser();
 
-  const { data } = await auth.supabase
-    .from('task_checklist_items')
-    .select('*')
-    .eq('task_id', taskId)
-    .is('deleted_at', null)
-    .order('position', { ascending: true });
-
-  return data ?? [];
+  return rows<TaskChecklistItem>(
+    `select * from task_checklist_items
+      where task_id = $1 and deleted_at is null
+      order by position`,
+    [taskId]
+  );
 }
 
 export async function addChecklistItem(taskId: string, formData: FormData): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
-  const { supabase, userId, dict } = auth;
+  const { user, dict } = await requireAuth();
 
   const title = String(formData.get('title') || '').trim();
   if (!title) {
     return { error: dict.checklist.errors.empty };
   }
 
-  const { data: last } = await supabase
-    .from('task_checklist_items')
-    .select('position')
-    .eq('task_id', taskId)
-    .order('position', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: item, error } = await supabase
-    .from('task_checklist_items')
-    .insert({ task_id: taskId, title, position: (last?.position ?? -1) + 1 })
-    .select('id')
-    .single();
-
-  if (error || !item) {
-    return { error: error?.message ?? dict.checklist.errors.empty };
+  // Позиция — следующая за максимальной (удалённые пункты тоже учитываются,
+  // как и раньше): считается тем же запросом, что и вставка.
+  let item: { id: string } | null;
+  try {
+    item = await row<{ id: string }>(
+      `insert into task_checklist_items (task_id, title, position)
+       values ($1, $2, coalesce(
+         (select max(position) from task_checklist_items where task_id = $1), -1) + 1)
+       returning id`,
+      [taskId, title]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.checklist.errors.empty };
   }
 
-  await logActivity(supabase, 'task', taskId, 'checklist_item_added', userId, { title });
+  if (!item) {
+    return { error: dict.checklist.errors.empty };
+  }
+
+  await logActivity('task', taskId, 'checklist_item_added', user.email, { title });
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');
@@ -73,10 +68,9 @@ export async function addChecklistItem(taskId: string, formData: FormData): Prom
 // Otmetka done ne menyayet status zadachi i ne trogayet uchyot vremeni —
 // eto prosto update polya done, nikakoy dopolnitel'noy logiki.
 export async function toggleChecklistItem(id: string, done: boolean): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
+  await getCurrentUser();
 
-  await auth.supabase.from('task_checklist_items').update({ done }).eq('id', id);
+  await exec(`update task_checklist_items set done = $1 where id = $2`, [done, id]);
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');
@@ -84,13 +78,12 @@ export async function toggleChecklistItem(id: string, done: boolean): Promise<{ 
 }
 
 export async function deleteChecklistItem(id: string): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
+  await getCurrentUser();
 
-  await auth.supabase
-    .from('task_checklist_items')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+  await exec(
+    `update task_checklist_items set deleted_at = $1 where id = $2`,
+    [new Date().toISOString(), id]
+  );
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');
@@ -100,18 +93,14 @@ export async function deleteChecklistItem(id: string): Promise<{ error?: string 
 // Pereupryadochivaniye strelkami (bez DnD, po roadmapu): menyayem position
 // mestami s sosedom v nuzhnuyu storonu.
 export async function moveChecklistItem(taskId: string, id: string, direction: 'up' | 'down'): Promise<{ error?: string }> {
-  const auth = await requireAuth();
-  if (!auth) return { error: getDictionary('de').checklist.errors.unauthorized };
-  const { supabase } = auth;
+  await getCurrentUser();
 
-  const { data: items } = await supabase
-    .from('task_checklist_items')
-    .select('id, position')
-    .eq('task_id', taskId)
-    .is('deleted_at', null)
-    .order('position', { ascending: true });
-
-  if (!items) return {};
+  const items = await rows<{ id: string; position: number }>(
+    `select id, position from task_checklist_items
+      where task_id = $1 and deleted_at is null
+      order by position`,
+    [taskId]
+  );
 
   const index = items.findIndex((i) => i.id === id);
   const neighborIndex = direction === 'up' ? index - 1 : index + 1;
@@ -120,10 +109,18 @@ export async function moveChecklistItem(taskId: string, id: string, direction: '
   const current = items[index];
   const neighbor = items[neighborIndex];
 
-  await Promise.all([
-    supabase.from('task_checklist_items').update({ position: neighbor.position }).eq('id', current.id),
-    supabase.from('task_checklist_items').update({ position: current.position }).eq('id', neighbor.id),
-  ]);
+  // Обе половины обмена — одной транзакцией: иначе при сбое между ними два
+  // пункта получат одинаковую позицию.
+  await tx(async (client) => {
+    await client.query(`update task_checklist_items set position = $1 where id = $2`, [
+      neighbor.position,
+      current.id,
+    ]);
+    await client.query(`update task_checklist_items set position = $1 where id = $2`, [
+      current.position,
+      neighbor.id,
+    ]);
+  });
 
   revalidatePath('/dashboard');
   revalidatePath('/archive');

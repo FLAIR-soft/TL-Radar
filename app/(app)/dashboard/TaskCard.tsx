@@ -17,7 +17,7 @@ import {
   Eye,
 } from 'lucide-react';
 import type { ChecklistPreviewItem, LastComment } from '@/lib/logic/task-relations';
-import type { Task, TaskPause, TaskStatus, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, TaskStatus, Label } from '@/lib/db/types';
 import {
   STATUS_COLOR,
   fmtDate,
@@ -150,7 +150,7 @@ export function TaskCard({
   const TaskIcon = isIconName(task.icon) ? ICON_MAP[task.icon] : undefined;
   const creatorName = task.created_by ? profileNames.get(task.created_by) : undefined;
   const lastCommentAuthor =
-    (lastComment?.authorId ? profileNames.get(lastComment.authorId) : undefined) ?? dict.activityLog.unknownUser;
+    (lastComment?.author ? profileNames.get(lastComment.author) : undefined) ?? dict.activityLog.unknownUser;
 
   // Режим карточки не выбирается пользователем — он следует из контекста
   // (редизайн v2, этап 4):
@@ -481,7 +481,7 @@ export function TaskCard({
         <div className="t-comment-preview">
           <span
             className="comment-avatar"
-            style={{ ['--avatar-color' as string]: getAvatarColor(lastComment.authorId ?? '') }}
+            style={{ ['--avatar-color' as string]: getAvatarColor(lastComment.author ?? '') }}
           >
             {getInitials(lastCommentAuthor)}
           </span>

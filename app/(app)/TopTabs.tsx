@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
-import type { UserRole } from '@/lib/supabase/types';
-import { canViewStats } from '@/lib/logic/access';
 
-export function TopTabs({ role }: { role: UserRole }) {
+export function TopTabs() {
   const pathname = usePathname();
   const dict = useDictionary();
   const tabs = [
@@ -15,7 +13,7 @@ export function TopTabs({ role }: { role: UserRole }) {
     { href: '/archive', label: dict.topbar.archive },
     { href: '/projects', label: dict.topbar.projects },
     { href: '/templates', label: dict.topbar.templates },
-    ...(canViewStats(role) ? [{ href: '/analytics', label: dict.topbar.analytics }] : []),
+    { href: '/analytics', label: dict.topbar.analytics },
     ...(role === 'admin' ? [{ href: '/admin', label: dict.topbar.admin }] : []),
   ];
 

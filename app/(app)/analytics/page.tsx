@@ -1,10 +1,8 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Users } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { rows } from '@/lib/db/client';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { canViewStats } from '@/lib/logic/access';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
 import { computeCumulativeFlow } from '@/lib/logic/cumulative-flow';
 import { computeEstimateAccuracy } from '@/lib/logic/estimate-accuracy';
@@ -13,6 +11,7 @@ import { AnalyticsStats } from './AnalyticsStats';
 import { CumulativeFlowChart } from '@/components/CumulativeFlowChart';
 import { EstimateAccuracyTable } from '@/components/EstimateAccuracyTable';
 import { ExportButtons } from '@/components/ExportButtons';
+import type { ActivityLog, Person, Task, TaskAssignee, TaskPause } from '@/lib/db/types';
 
 const PERIOD_OPTIONS = [7, 30, 90] as const;
 type Period = (typeof PERIOD_OPTIONS)[number];
@@ -30,47 +29,56 @@ export default async function AnalyticsPage({
   const { days: daysParam } = await searchParams;
   const days = parsePeriod(daysParam);
 
-  const supabase = await createClient();
-  const user = await getCachedUser();
-  if (!user) redirect('/login');
-
-  const profile = await getCachedProfile(user.id);
-  if (!profile || !canViewStats(profile.role)) redirect('/dashboard');
-
-  const dict = getDictionary(profile.locale ?? 'de');
+  // Ролей в новой схеме нет: кто дошёл до приложения, тот прошёл Entra через
+  // шлюз MIDAS. Прежняя проверка canViewStats(profile.role) вместе с редиректом
+  // на /login и /dashboard отсюда убрана — проверять больше нечего.
+  const dict = getDictionary(await getLocaleCookie());
 
   const rangeEnd = new Date();
   const rangeStart = new Date(rangeEnd.getTime() - days * 24 * 3600 * 1000);
 
-  const [{ data: profiles }, { data: tasks }] = await Promise.all([
-    supabase.from('profiles').select('id, name').order('name'),
-    // Vse nezaudalyonnyye zadachi (ne tol'ko zapushchennyye) — nuzhny i
-    // 'waiting' zadachi dlya cumulative flow (Etap 11).
-    supabase.from('tasks').select('*').is('deleted_at', null),
+  // Боковые таблицы раньше запрашивались вторым заходом по списку id задач
+  // (.in('task_id', taskIds)). Теперь тот же отбор выражается соединением с
+  // tasks, поэтому все четыре запроса уходят параллельно, а длинный список
+  // uuid не ездит в базу параметром.
+  const [people, allTasks, pauses, assignees, statusChanges] = await Promise.all([
+    rows<Pick<Person, 'email' | 'display_name'>>(
+      `select email, display_name from people order by coalesce(display_name, email)`
+    ),
+    // Все неудалённые задачи (не только запущенные) — нужны и 'waiting'
+    // задачи для cumulative flow (Этап 11).
+    rows<Task>(`select * from tasks where deleted_at is null`),
+    rows<TaskPause>(
+      `select p.* from task_pauses p
+       join tasks t on t.id = p.task_id
+       where t.deleted_at is null`
+    ),
+    rows<TaskAssignee>(
+      `select a.* from task_assignees a
+       join tasks t on t.id = a.task_id
+       where t.deleted_at is null`
+    ),
+    rows<ActivityLog>(
+      `select al.* from activity_log al
+       join tasks t on t.id = al.entity_id
+       where al.entity_type = 'task'
+         and al.event_type = 'status_changed'
+         and t.deleted_at is null`
+    ),
   ]);
 
-  const allTasks = tasks ?? [];
   const activeTasks = allTasks.filter((t) => t.started_at);
-  const taskIds = allTasks.map((t) => t.id);
 
-  const [{ data: pauses }, { data: assignees }, { data: statusChanges }] = taskIds.length
-    ? await Promise.all([
-        supabase.from('task_pauses').select('*').in('task_id', taskIds),
-        supabase.from('task_assignees').select('*').in('task_id', taskIds),
-        supabase
-          .from('activity_log')
-          .select('*')
-          .eq('entity_type', 'task')
-          .eq('event_type', 'status_changed')
-          .in('entity_id', taskIds),
-      ])
-    : [{ data: [] }, { data: [] }, { data: [] }];
+  // Расчётные функции принимают людей как { id, name }; идентификатор —
+  // почта, как и ключ в task_assignees.assignee_email, поэтому сопоставление
+  // «строка назначения → человек» остаётся прямым.
+  const profileList = people.map((p) => ({ id: p.email, name: p.display_name ?? p.email }));
 
   const stats = computePersonStats({
-    profiles: profiles ?? [],
+    profiles: profileList,
     tasks: activeTasks,
-    pauses: pauses ?? [],
-    assignees: assignees ?? [],
+    pauses,
+    assignees,
     rangeStart,
     rangeEnd,
   });
@@ -79,16 +87,16 @@ export default async function AnalyticsPage({
 
   const cumulativeFlow = computeCumulativeFlow({
     tasks: allTasks,
-    statusChanges: statusChanges ?? [],
+    statusChanges,
     rangeStart,
     rangeEnd,
   });
 
   const estimateAccuracy = computeEstimateAccuracy({
-    profiles: profiles ?? [],
+    profiles: profileList,
     tasks: allTasks,
-    pauses: pauses ?? [],
-    assignees: assignees ?? [],
+    pauses,
+    assignees,
   });
 
   return (
@@ -112,7 +120,7 @@ export default async function AnalyticsPage({
           />
         </div>
       </div>
-      {(profiles ?? []).length === 0 ? (
+      {profileList.length === 0 ? (
         <EmptyState icon={Users} title={dict.analytics.empty} />
       ) : (
         <>

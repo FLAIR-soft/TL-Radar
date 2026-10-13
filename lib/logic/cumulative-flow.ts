@@ -1,4 +1,4 @@
-import type { Task, ActivityLog, TaskStatus } from '@/lib/supabase/types';
+import type { Task, ActivityLog, TaskStatus } from '@/lib/db/types';
 import { berlinCalendarDate } from './berlin-time';
 
 export interface DailyStatusCounts {

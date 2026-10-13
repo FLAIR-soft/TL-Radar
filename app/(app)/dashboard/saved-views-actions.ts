@@ -1,44 +1,48 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { exec } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 
+// Прежний redirect('/login') убран: за шлюзом MIDAS неаутентифицированный
+// посетитель сюда не доходит, а getCurrentUser() бросает исключение, если
+// заголовка с почтой нет. Язык берётся из куки, а не из профиля.
 async function requireAuth() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  return { supabase, userId: user.id, dict };
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
+  return { user, dict };
 }
 
 // Sokhranyayem tselikom stroku zaprosa dashboard'a (filtry + rezhim
 // otobrazheniya) — pri primenenii predstavleniya prosto perekhodim na
 // /dashboard?<qs>, bez otdel'nogo razbora kazhdogo parametra.
 export async function saveView(name: string, qs: string): Promise<{ error?: string }> {
-  const { supabase, userId, dict } = await requireAuth();
+  const { user, dict } = await requireAuth();
   const trimmed = name.trim();
   if (!trimmed) return { error: dict.savedViews.errors.missingName };
 
-  const { error } = await supabase.from('saved_views').insert({
-    user_id: userId,
-    name: trimmed,
-    filters: { qs },
-  });
+  try {
+    await exec(
+      `insert into saved_views (email, name, filters) values ($1, $2, $3::jsonb)`,
+      [user.email, trimmed, JSON.stringify({ qs })]
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : dict.savedViews.errors.missingName };
+  }
 
-  if (error) return { error: error.message };
   revalidatePath('/dashboard');
   return {};
 }
 
 export async function deleteSavedView(id: string): Promise<void> {
-  const { supabase } = await requireAuth();
-  await supabase.from('saved_views').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  const { user } = await requireAuth();
+  // Раньше «только свои представления» держала политика RLS; её больше нет,
+  // поэтому владелец проверяется прямо в условии запроса.
+  await exec(
+    `update saved_views set deleted_at = $1 where id = $2 and email = $3`,
+    [new Date().toISOString(), id, user.email]
+  );
   revalidatePath('/dashboard');
 }

@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
 import { Radar } from 'lucide-react';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getInitials } from '@/lib/logic/initials';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
@@ -15,17 +15,12 @@ import { ToastProvider } from '@/components/ToastProvider';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCachedUser();
+  // Личность приходит от шлюза MIDAS. Неаутентифицированный посетитель до
+  // приложения не доходит, проверять и перенаправлять некого.
+  const user = await getCurrentUser();
 
-  if (!user) {
-    redirect('/login');
-  }
-
-  const profile = await getCachedProfile(user.id);
-
-  const name = profile?.name ?? user.email ?? 'Пользователь';
-  const role = profile?.role ?? 'editor';
-  const locale = profile?.locale ?? 'de';
+  const name = user.displayName;
+  const locale = await getLocaleCookie();
   const dict = getDictionary(locale);
   const theme = await getThemeCookie();
 
@@ -42,11 +37,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </span>
                 <span className="topbar-brand-name">TL-Organizer</span>
               </div>
-              <TopTabs role={role} />
+              <TopTabs />
             </div>
             <div className="who">
-              <CommandPalette role={role} />
-              <NotificationBell userId={user.id} />
+              <CommandPalette />
+              <NotificationBell />
               <ThemeToggle theme={theme} />
               <LanguageSwitcher />
               <div className="topbar-profile">

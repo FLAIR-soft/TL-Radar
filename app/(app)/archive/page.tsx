@@ -1,14 +1,18 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { Pause, Play, Archive as ArchiveIcon, SearchX, ChevronRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+// Хелпер назван dbRows: ниже в компоненте есть своя переменная `rows`
+// (готовые строки таблицы), и без переименования импорта она бы затенила
+// хелпер на всю функцию — обращение к нему наверху упало бы в TDZ.
+import { rows as dbRows } from '@/lib/db/client';
+import { loadArchivedTasks } from '@/lib/db/queries/tasks';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDateTimeCompact, fmtTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
-import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
+import { buildTaskRelationMaps } from '@/lib/logic/task-relations';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
-import type { Task, TaskPause } from '@/lib/supabase/types';
+import type { Label, Person, Project, TaskPause } from '@/lib/db/types';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
 import { ExportButtons } from '@/components/ExportButtons';
@@ -45,17 +49,13 @@ function pageWindow(current: number, count: number): (number | 'gap')[] {
   return out;
 }
 
-// Размер страницы архива. Без фильтров страница и счётчик считаются в базе
-// через range() + count: 'exact'; с фильтрами — в памяти, см. комментарий
-// у filtersActive ниже.
+// Размер страницы архива. Раньше страница без фильтров резалась в базе через
+// range() + count: 'exact', а с фильтрами — в памяти, потому что фильтры по
+// исполнителям и меткам живут в связанных таблицах и в один запрос с range()
+// не укладывались. Теперь архив целиком приходит одним запросом со связями
+// (loadArchivedTasks), поэтому ветка одна: режем в памяти всегда — счётчик и
+// номера страниц считаются по одному и тому же массиву и не могут разойтись.
 const PAGE_SIZE = 25;
-
-const TASKS_SELECT = `
-  *,
-  task_pauses(*),
-  task_assignees(assignee_id),
-  task_labels(label_id)
-`;
 
 export default async function ArchivePage({
   searchParams,
@@ -65,57 +65,34 @@ export default async function ArchivePage({
   const rawSearchParams = await searchParams;
   const filters = parseTaskFilters(rawSearchParams);
   const exportQuery = toQueryString(rawSearchParams);
-  const supabase = await createClient();
 
-  const user = await getCachedUser();
-  const profile = await getCachedProfile(user!.id);
-
-  const dict = getDictionary(profile?.locale ?? 'de');
+  const dict = getDictionary(await getLocaleCookie());
 
   const filtersActive = hasActiveFilters(filters);
   const page = Math.max(1, Number(firstValue(rawSearchParams.page)) || 1);
 
-  // Часть фильтров (исполнители, метки) живёт в связанных таблицах, а поиск —
-  // по двум колонкам сразу, поэтому одним запросом с range() они не выражаются
-  // без inner-join'ов, которые заодно обрезали бы список исполнителей в строке.
-  // Компромисс: без фильтров страницу и общее число берёт база (там список и
-  // бывает длинным), с фильтрами задачи грузятся целиком и режутся в памяти —
-  // так счётчик и номера страниц не врут ни в одном из случаев.
-  const tasksQuery = supabase
-    .from('tasks')
-    .select(TASKS_SELECT, { count: 'exact' })
-    .eq('status', 'done')
-    .is('deleted_at', null)
-    .is('task_assignees.removed_at', null)
-    .order('created_at', { ascending: false })
-    .order('paused_at', { ascending: true, referencedTable: 'task_pauses' });
+  const [done, people, projectList, labelList] = await Promise.all([
+    loadArchivedTasks(),
+    dbRows<Pick<Person, 'email' | 'display_name'>>(
+      `select email, display_name from people order by coalesce(display_name, email)`
+    ),
+    dbRows<Pick<Project, 'id' | 'name' | 'color'>>(
+      `select id, name, color from projects where deleted_at is null order by name`
+    ),
+    dbRows<Label>(`select * from labels where deleted_at is null order by name`),
+  ]);
 
-  if (!filtersActive) {
-    tasksQuery.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  }
-
-  const [{ data: taskRows, count: totalCount }, { data: profiles }, { data: projects }, { data: labels }] =
-    await Promise.all([
-      tasksQuery,
-      supabase.from('profiles').select('id, name').order('name'),
-      supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
-      supabase.from('labels').select('*').is('deleted_at', null).order('name'),
-    ]);
-
-  const done = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
-  const profileList = profiles ?? [];
-  const projectList = projects ?? [];
-  const labelList = labels ?? [];
+  // Фильтры и компоненты принимают список людей в форме { id, name }.
+  // Идентификатором человека теперь служит почта — форму не меняем, чтобы
+  // не тащить переименование через всё дерево компонентов.
+  const profileList = people.map((p) => ({ id: p.email, name: p.display_name ?? p.email }));
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
   const projectColors = new Map(projectList.map((p) => [p.id, p.color]));
   const labelById = new Map(labelList.map((l) => [l.id, l]));
 
-  const { pausesByTask, assigneeNamesByTask, assigneeIdsByTask, labelIdsByTask, labelsByTask } = buildTaskRelationMaps(
-    done,
-    profileNames,
-    labelById
-  );
+  const { pausesByTask, assigneeNamesByTask, assigneeEmailsByTask, labelIdsByTask, labelsByTask } =
+    buildTaskRelationMaps(done, profileNames, labelById);
 
   if (!done.length) {
     return (
@@ -132,15 +109,13 @@ export default async function ArchivePage({
   }
 
   const filteredDone = filtersActive
-    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
+    ? done.filter((t) => matchesTaskFilters(t, assigneeEmailsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
-  const total = filtersActive ? filteredDone.length : totalCount ?? done.length;
+  const total = filteredDone.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
-  const pageDone = filtersActive
-    ? filteredDone.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-    : filteredDone;
+  const pageDone = filteredDone.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function pageHref(target: number): string {
     const qs = new URLSearchParams(exportQuery);

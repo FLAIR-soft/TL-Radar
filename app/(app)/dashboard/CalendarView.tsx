@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import type { Task, TaskPause, Label } from '@/lib/supabase/types';
+import type { Task, TaskPause, Label } from '@/lib/db/types';
 
 function parseMonth(month?: string): { year: number; month: number } {
   if (month && /^\d{4}-\d{2}$/.test(month)) {

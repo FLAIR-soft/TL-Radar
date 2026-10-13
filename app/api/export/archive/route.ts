@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
+import { rows } from '@/lib/db/client';
+import { loadArchivedTasks } from '@/lib/db/queries/tasks';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import {
@@ -7,94 +9,47 @@ import {
   matchesTaskFilters,
   searchParamsRecordFromURL,
 } from '@/lib/logic/task-filters';
+import { buildTaskRelationMaps } from '@/lib/logic/task-relations';
 import { exportResponse, parseFormat } from '@/lib/export/respond';
-import type { TaskPause } from '@/lib/supabase/types';
+import type { Label, Person, Project } from '@/lib/db/types';
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response('Unauthorized', { status: 401 });
-
+  // Проверки сессии здесь больше нет: аутентификацию делает шлюз MIDAS,
+  // неаутентифицированный запрос до маршрута не доходит. Личность для
+  // выгрузки архива всё равно не нужна — она одинакова для всех.
   const { searchParams } = new URL(request.url);
   const format = parseFormat(searchParams);
   const filters = parseTaskFilters(searchParamsRecordFromURL(searchParams));
 
-  const { data: profile } = await supabase.from('profiles').select('locale').eq('id', user.id).single();
-  const dict = getDictionary(profile?.locale ?? 'de');
+  const dict = getDictionary(await getLocaleCookie());
 
-  const [{ data: tasks }, { data: profiles }, { data: projects }] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select('*')
-      .eq('status', 'done')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false }),
-    supabase.from('profiles').select('id, name').order('name'),
-    supabase.from('projects').select('id, name').is('deleted_at', null).order('name'),
+  // Тот же запрос, что и у страницы архива: связи приходят вместе с задачами,
+  // поэтому выгрузка и экран гарантированно показывают один и тот же набор
+  // строк в одном и том же порядке.
+  const [done, people, projectList] = await Promise.all([
+    loadArchivedTasks(),
+    rows<Pick<Person, 'email' | 'display_name'>>(
+      `select email, display_name from people order by coalesce(display_name, email)`
+    ),
+    rows<Pick<Project, 'id' | 'name'>>(
+      `select id, name from projects where deleted_at is null order by name`
+    ),
   ]);
 
-  const done = tasks ?? [];
-  const profileNames = new Map((profiles ?? []).map((p) => [p.id, p.name]));
-  const projectNames = new Map((projects ?? []).map((p) => [p.id, p.name]));
+  const profileNames = new Map(people.map((p) => [p.email, p.display_name ?? p.email]));
+  const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
 
-  let pauses: TaskPause[] = [];
-  const assigneeNamesByTask = new Map<string, string[]>();
-  const assigneeIdsByTask = new Map<string, string[]>();
-  const labelIdsByTask = new Map<string, string[]>();
-  if (done.length) {
-    const [{ data: pauseData }, { data: assigneeData }, { data: labelData }] = await Promise.all([
-      supabase
-        .from('task_pauses')
-        .select('*')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        ),
-      supabase
-        .from('task_assignees')
-        .select('task_id, assignee_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        )
-        .is('removed_at', null),
-      supabase
-        .from('task_labels')
-        .select('task_id, label_id')
-        .in(
-          'task_id',
-          done.map((t) => t.id)
-        ),
-    ]);
-    pauses = pauseData ?? [];
-    for (const a of assigneeData ?? []) {
-      const names = assigneeNamesByTask.get(a.task_id) ?? [];
-      const name = profileNames.get(a.assignee_id);
-      if (name) names.push(name);
-      assigneeNamesByTask.set(a.task_id, names);
-
-      const ids = assigneeIdsByTask.get(a.task_id) ?? [];
-      ids.push(a.assignee_id);
-      assigneeIdsByTask.set(a.task_id, ids);
-    }
-    for (const l of labelData ?? []) {
-      const ids = labelIdsByTask.get(l.task_id) ?? [];
-      ids.push(l.label_id);
-      labelIdsByTask.set(l.task_id, ids);
-    }
-  }
-
-  const pausesByTask = new Map<string, TaskPause[]>();
-  for (const p of pauses) {
-    const list = pausesByTask.get(p.task_id) ?? [];
-    list.push(p);
-    pausesByTask.set(p.task_id, list);
-  }
+  // Метки в выгрузке не печатаются — нужны только их id, чтобы отработал
+  // фильтр по меткам. Поэтому справочник меток не запрашивается, и
+  // labelsByTask из раскладки остаётся пустым: его здесь никто не читает.
+  const { pausesByTask, assigneeNamesByTask, assigneeEmailsByTask, labelIdsByTask } = buildTaskRelationMaps(
+    done,
+    profileNames,
+    new Map<string, Label>()
+  );
 
   const filteredDone = hasActiveFilters(filters)
-    ? done.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
+    ? done.filter((t) => matchesTaskFilters(t, assigneeEmailsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : done;
 
   const header = [
@@ -110,7 +65,7 @@ export async function GET(request: Request) {
     dict.archive.colAssignees,
   ];
 
-  const rows = filteredDone.map((t) => {
+  const exportRows = filteredDone.map((t) => {
     const taskPauses = pausesByTask.get(t.id) ?? [];
     const net = netDuration(t, taskPauses);
     const lateMs = completedLateBy(t);
@@ -131,5 +86,5 @@ export async function GET(request: Request) {
     ];
   });
 
-  return exportResponse([header, ...rows], format, 'archive', dict.archive.title);
+  return exportResponse([header, ...exportRows], format, 'archive', dict.archive.title);
 }

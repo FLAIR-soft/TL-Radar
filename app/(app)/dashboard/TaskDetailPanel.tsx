@@ -25,7 +25,7 @@ import {
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useNowTick } from '@/lib/hooks/useNowTick';
-import type { Task, TaskPause, ActivityLog, TaskChecklistItem } from '@/lib/supabase/types';
+import type { Task, TaskPause, ActivityLog, TaskChecklistItem } from '@/lib/db/types';
 
 export function TaskDetailPanel({
   task,

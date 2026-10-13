@@ -1,4 +1,4 @@
-import type { Locale } from '@/lib/supabase/types';
+import type { Locale } from '@/lib/db/types';
 import type { Dictionary } from './dictionaries/ru';
 import ru from './dictionaries/ru';
 import de from './dictionaries/de';

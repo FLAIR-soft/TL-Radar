@@ -1,4 +1,4 @@
-import type { Task, Priority } from '@/lib/supabase/types';
+import type { Task, Priority } from '@/lib/db/types';
 import { isOverdue, completedLateBy } from './tasks';
 
 export type DeadlineFilter = 'any' | 'has' | 'overdue';

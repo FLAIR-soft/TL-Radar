@@ -13,7 +13,7 @@ import { LabelSelect } from './LabelSelect';
 import { IconPicker } from '@/components/IconPicker';
 import { PrioritySegmented } from '@/components/PrioritySegmented';
 import type { TaskFormState } from '../actions';
-import type { Label } from '@/lib/supabase/types';
+import type { Label } from '@/lib/db/types';
 
 const initialState: TaskFormState = { error: null };
 

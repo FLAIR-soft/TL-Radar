@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { ChevronDown, Check, X } from 'lucide-react';
-import type { Label } from '@/lib/supabase/types';
+import type { Label } from '@/lib/db/types';
 
 // Kontroliruyemyy variant LabelSelect (kak AssigneeFilterSelect dlya
 // AssigneeSelect) — dlya fil'tra nad kanbanom/arkhivom, gde vybor pishetsya v URL.
