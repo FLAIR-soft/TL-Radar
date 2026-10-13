@@ -30,6 +30,12 @@ const en = {
       profileSaveFailed: 'Account created, but the profile could not be saved:',
     },
   },
+  dialog: {
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    delete: 'Delete',
+    save: 'Save',
+  },
   topbar: {
     dashboard: 'Task Manager',
     newTask: 'New Task',
@@ -89,6 +95,7 @@ const en = {
     notAllowed: 'Only assignees and the creator can change this task.',
     lateReasonRequired: 'The task is overdue — please explain the delay.',
     lateReasonPrompt: 'The deadline has passed. Why was the task finished late?',
+    lateReasonPlaceholder: 'For example: waited for a parts delivery',
     deadlineImmutable: 'The deadline is fixed when the task is created and cannot be changed.',
   },
   taskForm: {

@@ -30,6 +30,12 @@ const de = {
       profileSaveFailed: 'Konto erstellt, aber das Profil konnte nicht gespeichert werden:',
     },
   },
+  dialog: {
+    cancel: 'Abbrechen',
+    confirm: 'Bestätigen',
+    delete: 'Löschen',
+    save: 'Speichern',
+  },
   topbar: {
     dashboard: 'Task-Manager',
     newTask: 'Neue Aufgabe',
@@ -89,6 +95,7 @@ const de = {
     notAllowed: 'Nur Zugewiesene und der Ersteller können diese Aufgabe ändern.',
     lateReasonRequired: 'Die Aufgabe ist überfällig — bitte begründen Sie die Verspätung.',
     lateReasonPrompt: 'Die Frist ist abgelaufen. Warum wurde die Aufgabe später fertig?',
+    lateReasonPlaceholder: 'Zum Beispiel: Lieferung der Komponenten verzögert',
     deadlineImmutable: 'Die Frist wird bei der Erstellung festgelegt und ist unveränderlich.',
   },
   taskForm: {

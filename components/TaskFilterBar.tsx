@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Search, ChevronDown, LayoutGrid, Table2, CalendarDays, Bookmark, Plus, Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from './ToastProvider';
+import { useDialog } from './DialogProvider';
 import { AssigneeFilterSelect } from './AssigneeFilterSelect';
 import { LabelFilterSelect } from './LabelFilterSelect';
 import { saveView, deleteSavedView } from '@/app/(app)/dashboard/saved-views-actions';
@@ -25,6 +26,7 @@ export function TaskFilterBar({
 }) {
   const dict = useDictionary();
   const toast = useToast();
+  const dialog = useDialog();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -106,8 +108,13 @@ export function TaskFilterBar({
     });
   }
 
-  function handleSaveView() {
-    const name = prompt(dict.savedViews.namePlaceholder);
+  async function handleSaveView() {
+    const name = await dialog.prompt({
+      title: dict.savedViews.saveButton,
+      placeholder: dict.savedViews.namePlaceholder,
+      confirmLabel: dict.dialog.save,
+      required: true,
+    });
     if (name === null) return;
     startTransition(() => {
       saveView(name, searchParams.toString()).then((result) => {
@@ -116,8 +123,14 @@ export function TaskFilterBar({
     });
   }
 
-  function handleDeleteSelectedView() {
-    if (!selectedViewId || !confirm(dict.savedViews.deleteConfirm)) return;
+  async function handleDeleteSelectedView() {
+    if (!selectedViewId) return;
+    const ok = await dialog.confirm({
+      title: dict.savedViews.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(() => {
       deleteSavedView(selectedViewId);
     });

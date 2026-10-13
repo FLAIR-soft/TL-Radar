@@ -4376,3 +4376,115 @@ p.section-sub {
 .row-placeholder {
   color: var(--text-3);
 }
+
+
+/* ---------- Диалог вместо confirm()/prompt() браузера ---------- */
+/* Раскладка и тайминги те же, что у командной палитры: всплывающие слои
+   приложения должны появляться одинаково. Мягкая тень — только здесь и у
+   других плавающих слоёв, карточкам она не положена. */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.15s ease;
+}
+.dialog-backdrop.is-closing {
+  animation: fadeOut 0.15s ease forwards;
+}
+.dialog-panel {
+  width: 440px;
+  max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hover);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeSlideIn 0.15s ease both;
+}
+.dialog-panel.is-closing {
+  animation: fadeSlideOut 0.15s ease forwards;
+}
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.dialog-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hover-bg);
+  color: var(--ink-muted);
+}
+.dialog-icon-danger {
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-border);
+  color: var(--brand-ink);
+}
+.dialog-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.dialog-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.35;
+}
+.dialog-description {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+.dialog-field {
+  width: 100%;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.btn-danger {
+  background: var(--brand);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--brand-dark);
+}
+@media (max-width: 480px) {
+  .dialog-panel {
+    width: 100%;
+  }
+  /* На телефоне кнопки во всю ширину: цель нажатия не меньше 44 px. */
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+  .dialog-actions .btn {
+    width: 100%;
+    padding: 12px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog-backdrop,
+  .dialog-backdrop.is-closing,
+  .dialog-panel,
+  .dialog-panel.is-closing {
+    animation: none;
+  }
+}

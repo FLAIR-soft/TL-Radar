@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useDialog } from '@/components/DialogProvider';
 import { getInitials, getAvatarColor } from '@/lib/logic/initials';
 import { useToast } from './ToastProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
@@ -32,6 +33,7 @@ export function CommentList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const dialog = useDialog();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [body, setBody] = useState('');
@@ -132,8 +134,13 @@ export function CommentList({
     });
   }
 
-  function handleDelete(commentId: string, rowEl: HTMLElement | null) {
-    if (!confirm(dict.comments.deleteConfirm)) return;
+  async function handleDelete(commentId: string, rowEl: HTMLElement | null) {
+    const ok = await dialog.confirm({
+      title: dict.comments.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
 
     if (rowEl) {
       rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;

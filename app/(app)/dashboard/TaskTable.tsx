@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowUp, ArrowDown, Pencil, Trash2, ListChecks, MessageSquare } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
+import { useDialog } from '@/components/DialogProvider';
 import { STATUS_COLOR, isOverdue, fmtDate, isWithinWorkHours } from '@/lib/logic/tasks';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
@@ -156,6 +157,7 @@ function TaskTableRow({
 }) {
   const dict = useDictionary();
   const toast = useToast();
+  const dialog = useDialog();
   const [isPending, startTransition] = useTransition();
   const overdue = isOverdue(task);
   const withinWorkHours = isWithinWorkHours();
@@ -181,8 +183,13 @@ function TaskTableRow({
     });
   }
 
-  function handleDelete() {
-    if (!confirm(dict.taskCard.deleteConfirm)) return;
+  async function handleDelete() {
+    const ok = await dialog.confirm({
+      title: dict.taskCard.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(() => {
       deleteTask(task.id);
     });

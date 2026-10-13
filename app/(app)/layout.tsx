@@ -12,6 +12,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { CommandPalette } from '@/components/CommandPalette';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import { ToastProvider } from '@/components/ToastProvider';
+import { DialogProvider } from '@/components/DialogProvider';
 import { signOut } from './actions';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,36 +28,38 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <LocaleProvider locale={locale} dict={dict}>
       <ToastProvider>
-        <ServiceWorkerRegister />
-        <div className="app-root">
-          <div className="topbar">
-            <div className="topbar-left">
-              <div className="topbar-brand">
-                <span className="topbar-brand-icon">
-                  <Radar size={20} strokeWidth={2.25} />
-                </span>
-                <span className="topbar-brand-name">TL-Organizer</span>
+        <DialogProvider>
+          <ServiceWorkerRegister />
+          <div className="app-root">
+            <div className="topbar">
+              <div className="topbar-left">
+                <div className="topbar-brand">
+                  <span className="topbar-brand-icon">
+                    <Radar size={20} strokeWidth={2.25} />
+                  </span>
+                  <span className="topbar-brand-name">TL-Organizer</span>
+                </div>
+                <TopTabs />
               </div>
-              <TopTabs />
-            </div>
-            <div className="who">
-              <CommandPalette />
-              <NotificationBell />
-              <ThemeToggle theme={theme} />
-              <LanguageSwitcher />
-              <div className="topbar-profile">
-                <span className="topbar-avatar">{getInitials(name)}</span>
-                <span className="topbar-profile-name">{name}</span>
-                <form action={signOut}>
-                  <button className="topbar-logout" type="submit">
-                    {dict.topbar.logout}
-                  </button>
-                </form>
+              <div className="who">
+                <CommandPalette />
+                <NotificationBell />
+                <ThemeToggle theme={theme} />
+                <LanguageSwitcher />
+                <div className="topbar-profile">
+                  <span className="topbar-avatar">{getInitials(name)}</span>
+                  <span className="topbar-profile-name">{name}</span>
+                  <form action={signOut}>
+                    <button className="topbar-logout" type="submit">
+                      {dict.topbar.logout}
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
+            <main>{children}</main>
           </div>
-          <main>{children}</main>
-        </div>
+        </DialogProvider>
       </ToastProvider>
     </LocaleProvider>
   );

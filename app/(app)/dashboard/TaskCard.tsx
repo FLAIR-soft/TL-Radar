@@ -42,6 +42,7 @@ import { plural } from '@/lib/i18n/plural';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
+import { useDialog } from '@/components/DialogProvider';
 import { useNowTick } from '@/lib/hooks/useNowTick';
 import { setStatus, deleteTask } from './actions';
 import { TaskDetailPanel } from './TaskDetailPanel';
@@ -89,6 +90,7 @@ export function TaskCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [uncollapsed, setUncollapsed] = useState(false);
   const dict = useDictionary();
+  const dialog = useDialog();
   const toast = useToast();
   const overdue = isOverdue(task);
   // Секунды в живом таймере видны только пока задача в работе (этап 2), значит
@@ -111,25 +113,34 @@ export function TaskCard({
   const actions = nextActions[task.status] || [];
   const withinWorkHours = isWithinWorkHours();
 
-  function handleDelete() {
-    if (!confirm(dict.taskCard.deleteConfirm)) return;
+  async function handleDelete() {
+    const ok = await dialog.confirm({
+      title: dict.taskCard.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(() => {
       deleteTask(task.id);
     });
   }
 
-  function handleStatus(to: TaskStatus) {
+  async function handleStatus(to: TaskStatus) {
     // Просроченную задачу нельзя закрыть молча: спрашиваем объяснение.
-    // Диалог браузера — тот же приём, что уже используется для удаления.
+    // Пустой ответ диалог не принимает сам — отдельной проверки и тоста
+    // с ошибкой здесь больше не нужно.
     let lateReason: string | undefined;
     if (to === 'done' && overdue) {
-      const answer = prompt(dict.taskCard.lateReasonPrompt);
+      const answer = await dialog.prompt({
+        title: dict.taskCard.lateReasonPrompt,
+        description: dict.taskCard.lateReasonRequired,
+        placeholder: dict.taskCard.lateReasonPlaceholder,
+        confirmLabel: dict.taskCard.done,
+        required: true,
+        multiline: true,
+      });
       if (answer === null) return;
-      if (!answer.trim()) {
-        toast.error(dict.taskCard.lateReasonRequired);
-        return;
-      }
-      lateReason = answer.trim();
+      lateReason = answer;
     }
 
     startTransition(() => {

@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { Trash2, Pencil, MapPin, User } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useDialog } from '@/components/DialogProvider';
 import type { Project } from '@/lib/db/types';
 import { PRIORITY_COLOR } from '@/lib/logic/priority';
 import { ICON_MAP, isIconName } from '@/lib/logic/icons';
@@ -25,12 +26,18 @@ export function ProjectRow({
   style?: React.CSSProperties;
 }) {
   const dict = useDictionary();
+  const dialog = useDialog();
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const profileNames = useMemo(() => new Map(profiles.map((p) => [p.id, p.name])), [profiles]);
 
-  function handleDelete() {
-    if (!confirm(dict.projects.deleteConfirm)) return;
+  async function handleDelete() {
+    const ok = await dialog.confirm({
+      title: dict.projects.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(() => {
       deleteProject(project.id);
     });

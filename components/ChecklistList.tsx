@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Trash2, ChevronUp, ChevronDown, Plus } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useDialog } from '@/components/DialogProvider';
 import { useToast } from './ToastProvider';
 import {
   addChecklistItem,
@@ -27,6 +28,7 @@ export function ChecklistList({
   onChange: () => void;
 }) {
   const dict = useDictionary();
+  const dialog = useDialog();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState('');
@@ -56,8 +58,13 @@ export function ChecklistList({
     });
   }
 
-  function handleDelete(id: string, rowEl: HTMLElement | null) {
-    if (!confirm(dict.checklist.deleteConfirm)) return;
+  async function handleDelete(id: string, rowEl: HTMLElement | null) {
+    const ok = await dialog.confirm({
+      title: dict.checklist.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
 
     if (rowEl) {
       rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;

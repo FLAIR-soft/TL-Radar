@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { Trash2, Repeat } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
+import { useDialog } from '@/components/DialogProvider';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { toggleRecurringRule, deleteRecurringRule } from './rules-actions';
 import type { RecurringRule } from '@/lib/db/types';
@@ -23,6 +24,7 @@ export function RecurringRuleRow({
   style?: React.CSSProperties;
 }) {
   const dict = useDictionary();
+  const dialog = useDialog();
   const [isPending, startTransition] = useTransition();
   const [removing, setRemoving] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -33,8 +35,13 @@ export function RecurringRuleRow({
     });
   }
 
-  function handleDelete() {
-    if (!confirm(dict.recurring.deleteConfirm)) return;
+  async function handleDelete() {
+    const ok = await dialog.confirm({
+      title: dict.recurring.deleteConfirm,
+      confirmLabel: dict.dialog.delete,
+      danger: true,
+    });
+    if (!ok) return;
     const rowEl = rowRef.current;
     if (rowEl) {
       rowEl.style.maxHeight = `${rowEl.scrollHeight}px`;
