@@ -431,7 +431,7 @@ const en = {
     eyebrow: 'For team leads and small teams',
     headline: 'Always know who is doing what and where.',
     subheadline:
-      'TL-Radar is a real-time task tracker: the status, time, and location of every task, visible without asking around or holding meetings.',
+      'TL-Organizer is a real-time task tracker: the status, time, and location of every task, visible without asking around or holding meetings.',
     ctaDemo: 'See demo',
     screenshotCaption: 'Real-time task manager',
     featuresTitle: 'Everything you need, nothing you don’t',

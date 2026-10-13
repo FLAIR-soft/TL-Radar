@@ -27,7 +27,7 @@ export function LoginForm({ dict, theme }: { dict: Dictionary; theme: Theme }) {
             <LanguageSwitcher />
           </div>
         </div>
-        <h1>TL-Radar</h1>
+        <h1>TL-Organizer</h1>
         <p className="sub">{dict.auth.subtitle}</p>
 
         <div className="auth-tabs">

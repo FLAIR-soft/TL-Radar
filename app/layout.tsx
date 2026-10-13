@@ -11,12 +11,12 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "TL-Radar",
+  title: "TL-Organizer",
   description: "Wer macht was und wo — ohne lange Nachfragen.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "TL-Radar",
+    title: "TL-Organizer",
   },
   icons: {
     apple: "/apple-touch-icon.png",
@@ -25,8 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c0c0e" },
+    { media: "(prefers-color-scheme: light)", color: "#EDEDED" },
+    { media: "(prefers-color-scheme: dark)", color: "#1B1B1B" },
   ],
 };
 

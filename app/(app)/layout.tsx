@@ -40,7 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <span className="topbar-brand-icon">
                   <Radar size={20} strokeWidth={2.25} />
                 </span>
-                <span className="topbar-brand-name">TL-Radar</span>
+                <span className="topbar-brand-name">TL-Organizer</span>
               </div>
               <TopTabs role={role} />
             </div>
