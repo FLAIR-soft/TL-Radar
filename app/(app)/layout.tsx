@@ -1,10 +1,10 @@
 import { Radar } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getInitials } from '@/lib/logic/initials';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LocaleProvider } from '@/lib/i18n/LocaleContext';
-import { getThemeCookie } from '@/lib/theme/cookie';
+import { getTheme } from '@/lib/theme/theme';
 import { TopTabs } from './TopTabs';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -21,9 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await getCurrentUser();
 
   const name = user.displayName;
-  const locale = await getLocaleCookie();
+  const locale = await getLocale();
   const dict = getDictionary(locale);
-  const theme = await getThemeCookie();
+  const theme = await getTheme();
 
   return (
     <LocaleProvider locale={locale} dict={dict}>

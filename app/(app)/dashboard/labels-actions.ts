@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { row, rows } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { LABEL_COLORS } from '@/lib/logic/label-colors';
 import type { Label } from '@/lib/db/types';
@@ -13,7 +13,7 @@ import type { Label } from '@/lib/db/types';
 // бросает исключение, если заголовка с почтой нет. Язык — из куки.
 async function requireAuth() {
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   return { user, dict };
 }
 

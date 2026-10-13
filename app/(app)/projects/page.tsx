@@ -1,6 +1,6 @@
 import { FolderKanban } from 'lucide-react';
 import { rows } from '@/lib/db/client';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { ProjectRow } from './ProjectRow';
 import { CreateProjectPanel } from './CreateProjectPanel';
@@ -9,7 +9,7 @@ import type { Person, Project } from '@/lib/db/types';
 
 export default async function ProjectsPage() {
   // Язык больше не хранится в профиле — он живёт в куке, как на дашборде.
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   // Число задач в проекте (D2 в PLAN.md) — одним запросом на все проекты,
   // а не по запросу на каждый. Раньше тянули project_id всех неудалённых

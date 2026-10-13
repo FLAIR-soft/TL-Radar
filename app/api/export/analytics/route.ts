@@ -1,5 +1,5 @@
 import { rows } from '@/lib/db/client';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { availableWorkingMs, computePersonStats, workedPercent } from '@/lib/logic/analytics';
 import { fmtDuration } from '@/lib/logic/tasks';
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   // Ролей в новой схеме нет, своей сессии у приложения тоже: кто дошёл до
   // маршрута, того пропустил шлюз MIDAS. Прежние ответы 401/403 по
   // profile.role убраны вместе с ролями — см. страницу /analytics.
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   const { searchParams } = new URL(request.url);
   const format = parseFormat(searchParams);
   const days = parsePeriod(searchParams.get('days'));

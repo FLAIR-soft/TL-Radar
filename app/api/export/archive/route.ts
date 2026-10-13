@@ -1,6 +1,6 @@
 import { rows } from '@/lib/db/client';
 import { loadArchivedTasks } from '@/lib/db/queries/tasks';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const format = parseFormat(searchParams);
   const filters = parseTaskFilters(searchParamsRecordFromURL(searchParams));
 
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   // Тот же запрос, что и у страницы архива: связи приходят вместе с задачами,
   // поэтому выгрузка и экран гарантированно показывают один и тот же набор

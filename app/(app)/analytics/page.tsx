@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { rows } from '@/lib/db/client';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { availableWorkingMs, computePersonStats } from '@/lib/logic/analytics';
 import { computeCumulativeFlow } from '@/lib/logic/cumulative-flow';
@@ -32,7 +32,7 @@ export default async function AnalyticsPage({
   // Ролей в новой схеме нет: кто дошёл до приложения, тот прошёл Entra через
   // шлюз MIDAS. Прежняя проверка canViewStats(profile.role) вместе с редиректом
   // на /login и /dashboard отсюда убрана — проверять больше нечего.
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   const rangeEnd = new Date();
   const rangeStart = new Date(rangeEnd.getTime() - days * 24 * 3600 * 1000);

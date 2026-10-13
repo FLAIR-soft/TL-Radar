@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { exec, row, rows, tx } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { canEditTask } from '@/lib/auth/task-access';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { isWithinWorkHours, completedLateBy } from '@/lib/logic/tasks';
 import { logActivity } from '@/lib/logic/activity-log';
@@ -18,7 +18,7 @@ import type { TaskStatus, Priority, Task } from '@/lib/db/types';
 // таблицы profiles с настройками больше нет.
 async function requireAuth() {
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   return { user, dict };
 }
 

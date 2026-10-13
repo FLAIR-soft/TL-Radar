@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { getThemeCookie } from "@/lib/theme/cookie";
+import { getTheme } from "@/lib/theme/theme";
+import { getLocale } from "@/lib/i18n/locale";
 import "./globals.css";
 
 
@@ -28,10 +29,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = await getThemeCookie();
+  const [theme, locale] = await Promise.all([getTheme(), getLocale()]);
 
   return (
-    <html lang="de" data-theme={theme}>
+    <html lang={locale} data-theme={theme}>
       <body>{children}</body>
     </html>
   );

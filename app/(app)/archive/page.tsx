@@ -6,7 +6,7 @@ import { Pause, Play, Archive as ArchiveIcon, SearchX, ChevronRight } from 'luci
 // хелпер на всю функцию — обращение к нему наверху упало бы в TDZ.
 import { rows as dbRows } from '@/lib/db/client';
 import { loadArchivedTasks } from '@/lib/db/queries/tasks';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { fmtDateTime, fmtDateTimeCompact, fmtTime, fmtDuration, netDuration, completedLateBy } from '@/lib/logic/tasks';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
@@ -66,7 +66,7 @@ export default async function ArchivePage({
   const filters = parseTaskFilters(rawSearchParams);
   const exportQuery = toQueryString(rawSearchParams);
 
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   const filtersActive = hasActiveFilters(filters);
   const page = Math.max(1, Number(firstValue(rawSearchParams.page)) || 1);

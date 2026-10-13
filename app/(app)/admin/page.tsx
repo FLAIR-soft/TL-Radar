@@ -2,7 +2,7 @@ import { TriangleAlert } from 'lucide-react';
 import { plural } from '@/lib/i18n/plural';
 import { rows } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { getInitials, getAvatarColor } from '@/lib/logic/initials';
 import { WipLimitsForm } from './WipLimitsForm';
@@ -12,7 +12,7 @@ export default async function AdminPage() {
   // Сброса паролей и удаления учётных записей здесь больше нет: ими
   // распоряжается Entra, а не приложение. Остались WIP-лимиты и список людей.
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   const [people, wipLimits, activeTasks] = await Promise.all([
     rows<Person>(`select * from people order by coalesce(display_name, email)`),

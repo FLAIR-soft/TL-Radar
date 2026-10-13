@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { exec, rows } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import type { WipLimit, WipStatus } from '@/lib/db/types';
 
@@ -18,7 +18,7 @@ export async function getWipLimits(): Promise<WipLimit[]> {
 // заголовка с почтой нет. Язык берётся из куки.
 export async function updateWipLimit(status: WipStatus, limit: number | null): Promise<{ error?: string }> {
   await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   try {
     await exec(

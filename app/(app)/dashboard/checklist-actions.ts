@@ -4,13 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { exec, row, rows, tx } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { canEditTask, canEditChecklistItem } from '@/lib/auth/task-access';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 
 // Чек-лист — часть содержимого задачи, поэтому правило то же: менять может
 // назначенный или создатель. Проверка на сервере, не только в интерфейсе.
 async function denied() {
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   return { error: dict.taskCard.notAllowed };
 }
 
@@ -23,7 +23,7 @@ import type { TaskChecklistItem } from '@/lib/db/types';
 // ветки «не вошёл → errors.unauthorized» больше нет. Язык — из куки.
 async function requireAuth() {
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   return { user, dict };
 }
 

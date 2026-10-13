@@ -1,6 +1,6 @@
 import { LayoutTemplate } from 'lucide-react';
 import { rows } from '@/lib/db/client';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { EmptyState } from '@/components/EmptyState';
 import { TemplateRow } from './TemplateRow';
@@ -10,7 +10,7 @@ import type { Project, RecurringRule, TaskTemplate } from '@/lib/db/types';
 
 export default async function TemplatesPage() {
   // Язык больше не хранится в профиле — он живёт в куке, как на дашборде.
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   const [templates, projects, rules] = await Promise.all([
     rows<TaskTemplate>(

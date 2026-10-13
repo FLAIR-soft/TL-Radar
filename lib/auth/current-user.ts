@@ -1,12 +1,18 @@
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { exec } from '@/lib/db/client';
+import { row } from '@/lib/db/client';
+import { defaultLocale, isLocale } from '@/lib/i18n/config';
+import type { Locale } from '@/lib/db/types';
 
 export type CurrentUser = {
   /** Почта в нижнем регистре. Ключ пользователя во всей системе. */
   email: string;
   /** Отображаемое имя из Entra, либо почта, если имени нет. */
   displayName: string;
+  /** Язык интерфейса. Хранится в профиле: куки шлюз вырезает (этап 7). */
+  locale: Locale;
+  /** Светлая или тёмная тема. Там же и по той же причине. */
+  theme: 'light' | 'dark';
 };
 
 /**
@@ -44,14 +50,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   // Человек заводится сам при первом заходе. Имя обновляется, если его
   // сменили в Entra; строка, созданная «добавлением по почте», получает имя
   // в момент первого входа этого человека.
-  await exec(
+  const person = await row<{ locale: string; theme: string }>(
     `insert into people (email, display_name, last_seen_at)
      values ($1, $2, now())
      on conflict (email) do update
        set display_name = excluded.display_name,
-           last_seen_at = now()`,
+           last_seen_at = now()
+     returning locale, theme`,
     [email, displayName]
   );
 
-  return { email, displayName };
+  return {
+    email,
+    displayName,
+    locale: isLocale(person?.locale) ? person.locale : defaultLocale,
+    theme: person?.theme === 'dark' ? 'dark' : 'light',
+  };
 });

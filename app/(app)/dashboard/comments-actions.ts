@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { exec, row, rows } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { logActivity } from '@/lib/logic/activity-log';
 import { notifyMany } from '@/lib/logic/notifications';
@@ -21,7 +21,7 @@ const IS_ADMIN = false;
 // «не вошёл → errors.unauthorized» больше нет. Язык берётся из куки.
 async function requireAuth() {
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
   return { user, dict };
 }
 

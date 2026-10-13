@@ -4,7 +4,7 @@ import { Inbox, SearchX, Plus } from 'lucide-react';
 import { rows } from '@/lib/db/client';
 import { loadActiveTasks } from '@/lib/db/queries/tasks';
 import { getCurrentUser } from '@/lib/auth/current-user';
-import { getLocaleCookie } from '@/lib/i18n/cookie';
+import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
 import { buildTaskRelationMaps } from '@/lib/logic/task-relations';
@@ -26,7 +26,7 @@ export default async function DashboardPage({
   const view = rawView === 'table' ? 'table' : rawView === 'calendar' ? 'calendar' : 'kanban';
 
   const user = await getCurrentUser();
-  const dict = getDictionary(await getLocaleCookie());
+  const dict = getDictionary(await getLocale());
 
   const [active, people, projectList, savedViewList, labelList, wipLimits] = await Promise.all([
     loadActiveTasks(),

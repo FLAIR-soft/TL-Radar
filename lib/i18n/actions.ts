@@ -1,18 +1,17 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { exec } from '@/lib/db/client';
+import { getCurrentUser } from '@/lib/auth/current-user';
 import { isLocale } from '@/lib/i18n/config';
-import { LOCALE_COOKIE } from '@/lib/i18n/cookie';
 
 export async function setLocale(locale: string) {
   if (!isLocale(locale)) return;
 
-  // Язык больше не хранится в профиле: таблицы profiles нет.
-  // ВНИМАНИЕ: за шлюзом MIDAS куки вырезаются, поэтому выбор языка сейчас
-  // не переживает перезагрузку. Переезд в localStorage — этап 7.
-  const cookieStore = await cookies();
-  cookieStore.set(LOCALE_COOKIE, locale, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+  const { email } = await getCurrentUser();
+  await exec(`update people set locale = $1 where email = $2`, [locale, email]);
 
-  revalidatePath('/dashboard', 'layout');
+  // Словарь выбирается на сервере, поэтому перерисовать нужно всё дерево,
+  // а не только страницу.
+  revalidatePath('/', 'layout');
 }
