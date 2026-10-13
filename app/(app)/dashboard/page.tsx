@@ -8,6 +8,7 @@ import { getLocale } from '@/lib/i18n/locale';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
 import { buildTaskRelationMaps } from '@/lib/logic/task-relations';
+import { runDueMaintenance } from '@/lib/logic/maintenance';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskTable } from './TaskTable';
 import { CalendarView } from './CalendarView';
@@ -27,6 +28,12 @@ export default async function DashboardPage({
 
   const user = await getCurrentUser();
   const dict = getDictionary(await getLocale());
+
+  // Планировщика на MIDAS нет: автопауза в 16:00 и повторяющиеся правила
+  // выполняются здесь, при заходе на доску, до чтения задач — иначе доска
+  // показала бы состояние, которое через миллисекунду перестанет быть верным.
+  // Сбой обслуживания не должен закрывать человеку доступ к задачам.
+  await runDueMaintenance().catch(() => {});
 
   const [active, people, projectList, savedViewList, labelList, wipLimits] = await Promise.all([
     loadActiveTasks(),

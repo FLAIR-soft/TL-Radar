@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { Bell, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 'lucide-react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Bell, BellRing, UserPlus, UserMinus, MessageSquare, CalendarClock, AtSign } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { fmtDateTime } from '@/lib/logic/tasks';
 import { useAnimatedUnmount } from '@/lib/hooks/useAnimatedUnmount';
@@ -10,6 +10,15 @@ import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import type { Dictionary } from '@/lib/i18n/get-dictionary';
 import type { NotificationView } from '@/lib/logic/notifications';
 import type { NotificationType } from '@/lib/db/types';
+import {
+  desktopPermission,
+  desktopPermissionOnServer,
+  lastSeenAt,
+  rememberSeen,
+  requestDesktopPermission,
+  showDesktopNotification,
+  subscribeDesktopPermission,
+} from '@/lib/notifications/desktop';
 
 const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   assigned: UserPlus,
@@ -56,16 +65,49 @@ export function NotificationBell() {
   const [count, setCount] = useState(0);
   const [items, setItems] = useState<NotificationView[] | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const permission = useSyncExternalStore(
+    subscribeDesktopPermission,
+    desktopPermission,
+    desktopPermissionOnServer
+  );
+  // Счётчик из прошлого опроса: тост показываем только когда он вырос.
+  const lastCount = useRef<number | null>(null);
   const { phase, onAnimationEnd } = useAnimatedUnmount(open);
   const panelRef = useFocusTrap<HTMLDivElement>(phase !== 'closed');
 
   useEffect(() => {
     let cancelled = false;
+
+    // Новые уведомления с прошлого раза — показываем системным тостом.
+    // Не больше трёх за опрос: вернувшись после отпуска, человек не должен
+    // разбирать стопку окон Windows.
+    async function toastNew() {
+      if (desktopPermission() !== 'granted') return;
+      const since = lastSeenAt();
+      try {
+        const data = await fetch('/api/notifications?full=1').then((r) => r.json());
+        const fresh: NotificationView[] = (data.items ?? [])
+          .filter((n: NotificationView) => !n.read_at && n.created_at > since)
+          .slice(0, 3);
+        if (!fresh.length) return;
+        for (const n of fresh) {
+          showDesktopNotification(dict.notifications.title, describe(n, dict), n.task_id ?? n.id);
+        }
+        rememberSeen(fresh[0].created_at);
+      } catch {
+        /* сеть моргнула — тост не показался, счётчик всё равно обновится */
+      }
+    }
+
     function fetchCount() {
       fetch('/api/notifications')
         .then((r) => r.json())
         .then((data) => {
-          if (!cancelled) setCount(data.count ?? 0);
+          if (cancelled) return;
+          const next = data.count ?? 0;
+          if (lastCount.current !== null && next > lastCount.current) void toastNew();
+          lastCount.current = next;
+          setCount(next);
         })
         .catch(() => {});
     }
@@ -83,7 +125,7 @@ export function NotificationBell() {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', pollIfVisible);
     };
-  }, []);
+  }, [dict]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -120,6 +162,13 @@ export function NotificationBell() {
       }).catch(() => {});
     }
     setOpen(false);
+  }
+
+  async function handleEnableDesktop() {
+    const result = await requestDesktopPermission();
+    // Всё, что пришло до включения, уже не новость — иначе первое же
+    // срабатывание опроса высыпет тосты по старым уведомлениям.
+    if (result === 'granted') rememberSeen(new Date().toISOString());
   }
 
   function handleMarkAll() {
@@ -164,6 +213,18 @@ export function NotificationBell() {
               {dict.notifications.markAllRead}
             </button>
           </div>
+          {/* Разрешение спрашиваем по нажатию, а не при загрузке страницы:
+              браузеры отклоняют такой запрос, а Chrome потом блокирует
+              и повторные попытки. */}
+          {permission === 'default' && (
+            <button type="button" className="notif-enable" onClick={handleEnableDesktop}>
+              <BellRing size={14} strokeWidth={1.75} />
+              {dict.notifications.enableDesktop}
+            </button>
+          )}
+          {permission === 'denied' && (
+            <p className="notif-enable-note">{dict.notifications.desktopBlocked}</p>
+          )}
           {items === null ? (
             <div className="empty-note loading-row">
               <span className="loading-spinner" />

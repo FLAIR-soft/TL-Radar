@@ -215,6 +215,8 @@ const ru = {
   },
   notifications: {
     title: 'Уведомления',
+    enableDesktop: 'Включить уведомления Windows',
+    desktopBlocked: 'Уведомления заблокированы в настройках браузера для этого сайта.',
     empty: 'Уведомлений пока нет.',
     loading: 'Загрузка…',
     markAllRead: 'Прочитать все',

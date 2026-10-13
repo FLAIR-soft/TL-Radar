@@ -217,6 +217,8 @@ const en = {
   },
   notifications: {
     title: 'Notifications',
+    enableDesktop: 'Turn on Windows notifications',
+    desktopBlocked: 'Notifications are blocked for this site in the browser settings.',
     empty: 'No notifications yet.',
     loading: 'Loading…',
     markAllRead: 'Mark all read',

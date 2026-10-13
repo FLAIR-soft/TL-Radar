@@ -217,6 +217,8 @@ const de = {
   },
   notifications: {
     title: 'Benachrichtigungen',
+    enableDesktop: 'Windows-Benachrichtigungen aktivieren',
+    desktopBlocked: 'Benachrichtigungen sind in den Browser-Einstellungen für diese Seite blockiert.',
     empty: 'Noch keine Benachrichtigungen.',
     loading: 'Wird geladen…',
     markAllRead: 'Alle als gelesen markieren',

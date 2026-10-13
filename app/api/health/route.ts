@@ -55,6 +55,34 @@ async function probe(label: string, ssl: false | { rejectUnauthorized: boolean }
   }
 }
 
+// Этап 8. Два неизвестных о платформе, которые решают, как делать
+// планировщик и уведомления:
+//
+//   1. Живёт ли контейнер между заходами. Если да — таймер внутри процесса
+//      надёжнее ленивого пересчёта при первом визите.
+//   2. Выпускает ли MIDAS контейнер в интернет. От этого зависит, возможен ли
+//      Web Push (уведомления при закрытом приложении): службе доставки нужен
+//      исходящий HTTPS.
+//
+// Время старта процесса фиксируем в модуле: он грузится один раз за жизнь
+// контейнера, поэтому растущий uptime между заходами означает, что контейнер
+// не перезапускался.
+const processStarted = Date.now();
+
+async function outboundProbe(url: string) {
+  const started = Date.now();
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(4000),
+      cache: 'no-store',
+    });
+    return { url, ok: true, status: res.status, ms: Date.now() - started };
+  } catch (e) {
+    return { url, ok: false, ms: Date.now() - started, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 async function migrations() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) return { ok: false, error: 'DATABASE_URL отсутствует' };
@@ -100,7 +128,7 @@ export async function GET() {
 
   const body = {
     service: 'tl-organizer',
-    stage: 'этап 0 — каркас и диагностика',
+    stage: 'диагностика: этапы 0 и 8',
     now: new Date().toISOString(),
     node: process.version,
     env: {
@@ -119,6 +147,21 @@ export async function GET() {
       plain: await probe('без ssl', false),
     },
     migrations: await migrations(),
+    runtime: {
+      uptimeSeconds: Math.round(process.uptime()),
+      processStartedAt: new Date(processStarted).toISOString(),
+      note: 'растущий uptime между заходами = контейнер живёт постоянно, таймер внутри процесса возможен',
+    },
+    outbound: {
+      probes: await Promise.all([
+        // Служба доставки Web Push у Chrome и у Firefox: именно до них нужен
+        // доступ, а не до интернета вообще.
+        outboundProbe('https://fcm.googleapis.com/'),
+        outboundProbe('https://updates.push.services.mozilla.com/'),
+        outboundProbe('https://example.com/'),
+      ]),
+      note: 'ok=true хотя бы у fcm — Web Push при закрытом приложении возможен',
+    },
     identity,
     cookies,
     forwarding: {

@@ -4488,3 +4488,33 @@ p.section-sub {
     animation: none;
   }
 }
+
+
+/* ---------- Включение уведомлений Windows (этап 8) ---------- */
+.notif-enable {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: calc(100% - 20px);
+  margin: 0 10px 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.notif-enable:hover {
+  border-color: var(--ink-muted);
+  background: var(--hover-bg);
+}
+.notif-enable-note {
+  margin: 0 10px 8px;
+  font-size: var(--fs-xs);
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
