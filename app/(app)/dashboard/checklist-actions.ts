@@ -3,8 +3,17 @@
 import { revalidatePath } from 'next/cache';
 import { exec, row, rows, tx } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
+import { canEditTask, canEditChecklistItem } from '@/lib/auth/task-access';
 import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
+
+// Чек-лист — часть содержимого задачи, поэтому правило то же: менять может
+// назначенный или создатель. Проверка на сервере, не только в интерфейсе.
+async function denied() {
+  const dict = getDictionary(await getLocaleCookie());
+  return { error: dict.taskCard.notAllowed };
+}
+
 import { logActivity } from '@/lib/logic/activity-log';
 import type { TaskChecklistItem } from '@/lib/db/types';
 
@@ -33,6 +42,10 @@ export async function getChecklistItems(taskId: string): Promise<TaskChecklistIt
 
 export async function addChecklistItem(taskId: string, formData: FormData): Promise<{ error?: string }> {
   const { user, dict } = await requireAuth();
+
+  if (!(await canEditTask(taskId, user.email))) {
+    return { error: dict.taskCard.notAllowed };
+  }
 
   const title = String(formData.get('title') || '').trim();
   if (!title) {
@@ -68,7 +81,8 @@ export async function addChecklistItem(taskId: string, formData: FormData): Prom
 // Otmetka done ne menyayet status zadachi i ne trogayet uchyot vremeni —
 // eto prosto update polya done, nikakoy dopolnitel'noy logiki.
 export async function toggleChecklistItem(id: string, done: boolean): Promise<{ error?: string }> {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  if (!(await canEditChecklistItem(id, user.email))) return denied();
 
   await exec(`update task_checklist_items set done = $1 where id = $2`, [done, id]);
 
@@ -78,7 +92,8 @@ export async function toggleChecklistItem(id: string, done: boolean): Promise<{ 
 }
 
 export async function deleteChecklistItem(id: string): Promise<{ error?: string }> {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  if (!(await canEditChecklistItem(id, user.email))) return denied();
 
   await exec(
     `update task_checklist_items set deleted_at = $1 where id = $2`,
@@ -93,7 +108,8 @@ export async function deleteChecklistItem(id: string): Promise<{ error?: string 
 // Pereupryadochivaniye strelkami (bez DnD, po roadmapu): menyayem position
 // mestami s sosedom v nuzhnuyu storonu.
 export async function moveChecklistItem(taskId: string, id: string, direction: 'up' | 'down'): Promise<{ error?: string }> {
-  await getCurrentUser();
+  const user = await getCurrentUser();
+  if (!(await canEditTask(taskId, user.email))) return denied();
 
   const items = await rows<{ id: string; position: number }>(
     `select id, position from task_checklist_items

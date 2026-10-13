@@ -86,6 +86,9 @@ const en = {
     },
     details: 'Details',
     outsideWorkHours: 'Status changes are unavailable from 16:00 to 7:30.',
+    notAllowed: 'Only assignees and the creator can change this task.',
+    lateReasonRequired: 'The task is overdue — please explain the delay.',
+    lateReasonPrompt: 'The deadline has passed. Why was the task finished late?',
   },
   taskForm: {
     newTitle: 'New Task',

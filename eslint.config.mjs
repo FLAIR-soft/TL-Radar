@@ -13,6 +13,12 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // Раннер миграций запускается обычным node до старта сервера, вне сборки
+    // Next: это намеренно простой CommonJS без транспиляции.
+    files: ['db/**/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
 ]);
 
 export default eslintConfig;

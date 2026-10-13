@@ -4,12 +4,13 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { exec, row, rows, tx } from '@/lib/db/client';
 import { getCurrentUser } from '@/lib/auth/current-user';
+import { canEditTask } from '@/lib/auth/task-access';
 import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
-import { isWithinWorkHours } from '@/lib/logic/tasks';
+import { isWithinWorkHours, completedLateBy } from '@/lib/logic/tasks';
 import { logActivity } from '@/lib/logic/activity-log';
 import { notifyMany } from '@/lib/logic/notifications';
-import type { TaskStatus, Priority } from '@/lib/db/types';
+import type { TaskStatus, Priority, Task } from '@/lib/db/types';
 
 // Проверять вход здесь больше нечего: за шлюзом MIDAS неаутентифицированный
 // посетитель до приложения не доходит, а getCurrentUser() бросает исключение,
@@ -201,12 +202,18 @@ export async function quickCreateTask(title: string): Promise<{ error?: string; 
   return { taskId };
 }
 
+// Проверка права обязана быть на сервере: спрятать кнопку недостаточно,
+// серверное действие вызывается напрямую.
 export async function editTaskFields(
   taskId: string,
   _prevState: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
   const { user, dict } = await requireAuth();
+
+  if (!(await canEditTask(taskId, user.email))) {
+    return { error: dict.taskCard.notAllowed };
+  }
   const fields = readTaskFields(formData);
   const assigneeEmails = readAssigneeEmails(formData);
   const labelIds = readLabelIds(formData);
@@ -324,6 +331,9 @@ export async function editTaskFields(
 
 export async function deleteTask(taskId: string) {
   const { user } = await requireAuth();
+
+  if (!(await canEditTask(taskId, user.email))) return;
+
   await exec(
     `update tasks set deleted_at = $1, updated_by = $2 where id = $3`,
     [new Date().toISOString(), user.email, taskId]
@@ -333,15 +343,25 @@ export async function deleteTask(taskId: string) {
   revalidatePath('/archive');
 }
 
-export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<{ error?: string }> {
+// lateReason нужен только при завершении просроченной задачи: закрыть её
+// молча нельзя ни отсюда, ни прямым запросом — в базе стоит триггер.
+export async function setStatus(
+  taskId: string,
+  newStatus: TaskStatus,
+  lateReason?: string
+): Promise<{ error?: string }> {
   const { user, dict } = await requireAuth();
+
+  if (!(await canEditTask(taskId, user.email))) {
+    return { error: dict.taskCard.notAllowed };
+  }
 
   if (!isWithinWorkHours()) {
     return { error: dict.taskCard.outsideWorkHours };
   }
 
-  const task = await row<{ status: TaskStatus; started_at: string | null }>(
-    `select status, started_at from tasks where id = $1`,
+  const task = await row<{ status: TaskStatus; started_at: string | null; deadline: string | null }>(
+    `select status, started_at, deadline from tasks where id = $1`,
     [taskId]
   );
 
@@ -364,6 +384,18 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
   }
 
   const now = new Date().toISOString();
+
+  // Срок истекает в 16:00 по Мюнхену в свою дату. Считаем той же функцией,
+  // что рисует бейдж опоздания, чтобы правило было одно на всё приложение.
+  const reason = (lateReason ?? '').trim();
+  const lateBy =
+    newStatus === 'done'
+      ? completedLateBy({ deadline: task.deadline, completed_at: now } as Task)
+      : null;
+  if (lateBy !== null && !reason) {
+    return { error: dict.taskCard.lateReasonRequired };
+  }
+
   // Открыть паузу при уходе в paused; закрыть открытую — при возврате в работу
   // и при завершении. started_at ставится только если его ещё не было,
   // completed_at — только при переходе в done.
@@ -402,9 +434,11 @@ export async function setStatus(taskId: string, newStatus: TaskStatus): Promise<
           set status = $1,
               updated_by = $2,
               started_at = coalesce(started_at, $3::timestamptz),
-              completed_at = coalesce($4::timestamptz, completed_at)
+              completed_at = coalesce($4::timestamptz, completed_at),
+              late_reason = coalesce($6, late_reason)
         where id = $5`,
-      [newStatus, user.email, startsNow ? now : null, completesNow ? now : null, taskId]
+      [newStatus, user.email, startsNow ? now : null, completesNow ? now : null, taskId,
+       reason || null]
     );
   });
 

@@ -18,7 +18,6 @@ types.setTypeParser(1184, (v) => new Date(v).toISOString());       // timestampt
 // создаёт новый пул, и соединения к базе копятся до исчерпания лимита.
 
 declare global {
-  // eslint-disable-next-line no-var
   var __tlOrganizerPool: Pool | undefined;
 }
 

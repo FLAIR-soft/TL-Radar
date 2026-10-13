@@ -86,6 +86,9 @@ const de = {
     },
     details: 'Details',
     outsideWorkHours: 'Statusänderung nicht möglich von 16:00 bis 7:30 Uhr.',
+    notAllowed: 'Nur Zugewiesene und der Ersteller können diese Aufgabe ändern.',
+    lateReasonRequired: 'Die Aufgabe ist überfällig — bitte begründen Sie die Verspätung.',
+    lateReasonPrompt: 'Die Frist ist abgelaufen. Warum wurde die Aufgabe später fertig?',
   },
   taskForm: {
     newTitle: 'Neue Aufgabe',

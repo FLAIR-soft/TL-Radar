@@ -119,8 +119,21 @@ export function TaskCard({
   }
 
   function handleStatus(to: TaskStatus) {
+    // Просроченную задачу нельзя закрыть молча: спрашиваем объяснение.
+    // Диалог браузера — тот же приём, что уже используется для удаления.
+    let lateReason: string | undefined;
+    if (to === 'done' && overdue) {
+      const answer = prompt(dict.taskCard.lateReasonPrompt);
+      if (answer === null) return;
+      if (!answer.trim()) {
+        toast.error(dict.taskCard.lateReasonRequired);
+        return;
+      }
+      lateReason = answer.trim();
+    }
+
     startTransition(() => {
-      setStatus(task.id, to).then((result) => {
+      setStatus(task.id, to, lateReason).then((result) => {
         if (result?.error) toast.error(result.error);
       });
     });
