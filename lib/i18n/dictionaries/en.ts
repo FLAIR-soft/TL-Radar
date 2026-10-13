@@ -89,6 +89,7 @@ const en = {
     notAllowed: 'Only assignees and the creator can change this task.',
     lateReasonRequired: 'The task is overdue — please explain the delay.',
     lateReasonPrompt: 'The deadline has passed. Why was the task finished late?',
+    deadlineImmutable: 'The deadline is fixed when the task is created and cannot be changed.',
   },
   taskForm: {
     newTitle: 'New Task',
@@ -107,6 +108,7 @@ const en = {
     groupingEyebrow: 'Classification',
     timeEyebrow: 'Time',
     deadlineInPast: 'In the past — the task starts out overdue',
+    deadlineLocked: 'Deadline is fixed and cannot be changed',
     presetDay: '1 day',
     title: 'Task title',
     titlePlaceholder: 'Short summary of the task',

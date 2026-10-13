@@ -89,6 +89,7 @@ const de = {
     notAllowed: 'Nur Zugewiesene und der Ersteller können diese Aufgabe ändern.',
     lateReasonRequired: 'Die Aufgabe ist überfällig — bitte begründen Sie die Verspätung.',
     lateReasonPrompt: 'Die Frist ist abgelaufen. Warum wurde die Aufgabe später fertig?',
+    deadlineImmutable: 'Die Frist wird bei der Erstellung festgelegt und ist unveränderlich.',
   },
   taskForm: {
     newTitle: 'Neue Aufgabe',
@@ -107,6 +108,7 @@ const de = {
     groupingEyebrow: 'Einordnung',
     timeEyebrow: 'Zeit',
     deadlineInPast: 'Liegt in der Vergangenheit — Aufgabe startet als überfällig',
+    deadlineLocked: 'Frist ist fixiert und unveränderlich',
     presetDay: '1 Tag',
     title: 'Aufgabentitel',
     titlePlaceholder: 'Kurz, worum es geht',

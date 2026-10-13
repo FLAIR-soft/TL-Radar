@@ -22,6 +22,18 @@ async function requireAuth() {
   return { user, dict };
 }
 
+// Правила из этапа 6 живут в триггерах базы, а не только в интерфейсе, —
+// поэтому их нарушение приходит сюда исключением драйвера. У каждого правила
+// свой SQLSTATE (миграция 0003), по нему и выбираем фразу из словаря:
+// текст самого исключения приходит из Postgres по-русски и в немецком
+// интерфейсе выглядел бы чужеродно.
+function guardMessage(e: unknown, dict: ReturnType<typeof getDictionary>): string {
+  const code = (e as { code?: string } | null)?.code;
+  if (code === 'TL001') return dict.taskCard.deadlineImmutable;
+  if (code === 'TL002') return dict.taskCard.lateReasonRequired;
+  return e instanceof Error ? e.message : dict.taskForm.errors.missingFields;
+}
+
 export interface TaskFormState {
   error: string | null;
 }
@@ -121,7 +133,7 @@ export async function createTask(_prevState: TaskFormState, formData: FormData):
       return id;
     });
   } catch (e) {
-    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
+    return { error: guardMessage(e, dict) };
   }
 
   await logActivity('task', taskId, 'created', user.email, { title: fields.title });
@@ -193,7 +205,7 @@ export async function quickCreateTask(title: string): Promise<{ error?: string; 
       return id;
     });
   } catch (e) {
-    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
+    return { error: guardMessage(e, dict) };
   }
 
   await logActivity('task', taskId, 'created', user.email, { title: trimmed });
@@ -252,7 +264,7 @@ export async function editTaskFields(
       ]
     );
   } catch (e) {
-    return { error: e instanceof Error ? e.message : dict.taskForm.errors.missingFields };
+    return { error: guardMessage(e, dict) };
   }
 
   await logActivity('task', taskId, 'updated', user.email, { title: fields.title });
@@ -405,8 +417,9 @@ export async function setStatus(
   const completesNow = newStatus === 'done';
 
   // Смена статуса и работа с паузой обязаны произойти вместе: наполовину
-  // применённый переход ломает весь учёт времени по задаче.
-  await tx(async (client) => {
+  // применённый переход ломает весь учёт времени по задаче. Если сработал
+  // триггер базы, возвращаем фразу из словаря, а не роняем действие в 500.
+  const guardError = await tx(async (client) => {
     if (opensPause) {
       await client.query(
         `insert into task_pauses (task_id, paused_at, resumed_at, auto, created_by)
@@ -440,7 +453,12 @@ export async function setStatus(
       [newStatus, user.email, startsNow ? now : null, completesNow ? now : null, taskId,
        reason || null]
     );
-  });
+  }).then(
+    () => null,
+    (e: unknown) => guardMessage(e, dict)
+  );
+
+  if (guardError) return { error: guardError };
 
   await logActivity('task', taskId, 'status_changed', user.email, {
     from: task.status,

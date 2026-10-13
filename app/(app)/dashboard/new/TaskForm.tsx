@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CalendarClock, CircleAlert, MapPin } from 'lucide-react';
+import { CalendarClock, CircleAlert, Lock, MapPin } from 'lucide-react';
 import { useDictionary } from '@/lib/i18n/LocaleContext';
 import { useToast } from '@/components/ToastProvider';
 import { fmtDuration } from '@/lib/logic/tasks';
@@ -72,6 +72,12 @@ export function TaskForm({
   // yyyy-mm-dd, как и остальной код, — без часовых поясов.
   const todayIso = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' });
   const deadlineInPast = !!deadline && deadline < todayIso;
+
+  // Дедлайн фиксируется при постановке задачи: менять его запрещает триггер
+  // в базе (миграция 0002). Поле блокируем, чтобы человек не вводил дату,
+  // которую всё равно отклонят. Задаче, заведённой без срока, срок можно
+  // проставить один раз — тогда поле остаётся обычным.
+  const deadlineLocked = isEditingExisting && !!editing?.deadline;
   const estimateMinutes = Number(estimate);
   const estimateReadable = estimateMinutes > 0 ? fmtDuration(estimateMinutes * 60000, dict.duration) : null;
 
@@ -198,16 +204,28 @@ export function TaskForm({
                 <CalendarClock size={15} strokeWidth={1.75} />
                 <input
                   type="date"
-                  name="deadline"
+                  name={deadlineLocked ? undefined : 'deadline'}
                   value={deadline}
+                  disabled={deadlineLocked}
                   onChange={(e) => setDeadline(e.target.value)}
                 />
               </span>
-              {deadlineInPast && (
-                <p className="field-hint field-hint-warning">
-                  <CircleAlert size={13} strokeWidth={2} />
-                  {dict.taskForm.deadlineInPast}
+              {/* Отключённое поле браузер не отправляет, а пустой дедлайн
+                  триггер тоже считает изменением. Поэтому исходное значение
+                  уходит скрытым полем. */}
+              {deadlineLocked && <input type="hidden" name="deadline" value={deadline} />}
+              {deadlineLocked ? (
+                <p className="field-hint">
+                  <Lock size={13} strokeWidth={2} />
+                  {dict.taskForm.deadlineLocked}
                 </p>
+              ) : (
+                deadlineInPast && (
+                  <p className="field-hint field-hint-warning">
+                    <CircleAlert size={13} strokeWidth={2} />
+                    {dict.taskForm.deadlineInPast}
+                  </p>
+                )
               )}
             </div>
             <div className="field">

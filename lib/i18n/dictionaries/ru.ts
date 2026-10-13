@@ -87,6 +87,7 @@ const ru = {
     notAllowed: 'Менять задачу могут только назначенные на неё и её создатель.',
     lateReasonRequired: 'Задача просрочена — объясните, почему опоздали.',
     lateReasonPrompt: 'Срок истёк. Почему задача завершена позже?',
+    deadlineImmutable: 'Дедлайн зафиксирован при постановке задачи и не меняется.',
   },
   taskForm: {
     newTitle: 'Новая задача',
@@ -105,6 +106,7 @@ const ru = {
     groupingEyebrow: 'Отнесение',
     timeEyebrow: 'Время',
     deadlineInPast: 'Дата в прошлом — задача сразу станет просроченной',
+    deadlineLocked: 'Дедлайн зафиксирован и не меняется',
     presetDay: '1 день',
     title: 'Название задачи',
     titlePlaceholder: 'Кратко, суть задачи',
