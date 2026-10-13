@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Собирается при упаковке для hostit, в git не хранится
 .env.production
+
+# Временный архив для проверки сборки
+_build-check.tgz

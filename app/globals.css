@@ -30,7 +30,12 @@
   --shadow-soft: rgba(0, 0, 0, 0.06);
   --shadow-card: rgba(24, 24, 27, 0.08);
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
-  --sans: var(--font-archivo), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+  /* Шрифт временно системный. next/font/google скачивал Archivo во время
+     сборки, а у сборщика MIDAS нет доступа в интернет — сборка падала.
+     Фирменный шрифт (Titillium Web / Eurostile) ставится файлами в проект
+     на этапе 9: дизайн-система требует самостоятельного хостинга шрифтов,
+     а не загрузки с чужого домена. */
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
 
   /* Border-radius (Этап 6 редизайна) — единая шкала вместо разброса
