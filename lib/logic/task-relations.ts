@@ -1,32 +1,30 @@
-import type { Label, TaskPause } from '@/lib/supabase/types';
+import type { Label, TaskPause } from '@/lib/db/types';
 import { lastPausedBy } from './tasks';
 
-// Форма строки задачи, полученной одним PostgREST-запросом с embedded
-// task_pauses/task_assignees/task_labels (и опционально task_comments/
-// task_checklist_items — не на всех страницах они нужны).
+// Форма строки задачи из одного SQL-запроса с боковыми соединениями
+// (lib/db/queries/tasks.ts): связи приходят JSON-массивами, счётчики числами.
+// Ту же форму раньше давал PostgREST через embedded-ресурсы.
 export type EmbeddedTaskRelations = {
   id: string;
   task_pauses: TaskPause[];
-  task_assignees: { assignee_id: string }[];
+  task_assignees: { assignee_email: string }[];
   task_labels: { label_id: string }[];
-  // Дашборд выбирает комментарии строками (нужен текст последнего для превью
-  // на карточке), другие страницы — агрегатом task_comments(count). Считаем
-  // оба варианта, чтобы карты собирались одинаково.
-  task_comments?: { count?: number; id?: string; body?: string; author_id?: string | null; created_at?: string }[];
-  // На дашборде выбираются с заголовками (для превью чек-листа на карточке),
-  // в архиве embed'а нет вовсе — отсюда необязательные поля.
-  task_checklist_items?: { id?: string; title?: string; done: boolean; position?: number }[];
-  task_watchers?: { count: number }[];
+  // Дашборд берёт комментарии строками — на карточке показывается превью
+  // последнего. Архиву достаточно счётчика, поэтому запрос там легче.
+  task_comments?: { id: string; body: string; author: string | null; created_at: string }[];
+  comment_count?: number;
+  task_checklist_items?: { id: string; title: string; done: boolean; position: number }[];
+  watcher_count?: number;
 };
 
 export type ChecklistPreviewItem = { id: string; title: string; done: boolean };
-export type LastComment = { id: string; body: string; authorId: string | null; createdAt: string };
+export type LastComment = { id: string; body: string; author: string | null; createdAt: string };
 
 export type TaskRelationMaps = {
   pausesByTask: Map<string, TaskPause[]>;
   pausedByNameByTask: Map<string, string | null>;
   assigneeNamesByTask: Map<string, string[]>;
-  assigneeIdsByTask: Map<string, string[]>;
+  assigneeEmailsByTask: Map<string, string[]>;
   commentCountsByTask: Map<string, number>;
   checklistProgressByTask: Map<string, { done: number; total: number }>;
   checklistItemsByTask: Map<string, ChecklistPreviewItem[]>;
@@ -40,13 +38,13 @@ export type TaskRelationMaps = {
 // которые раньше собирались из 4-5 отдельных запросов по task_id.
 export function buildTaskRelationMaps(
   tasks: EmbeddedTaskRelations[],
-  profileNames: Map<string, string>,
+  nameByEmail: Map<string, string>,
   labelById: Map<string, Label>
 ): TaskRelationMaps {
   const pausesByTask = new Map<string, TaskPause[]>();
   const pausedByNameByTask = new Map<string, string | null>();
   const assigneeNamesByTask = new Map<string, string[]>();
-  const assigneeIdsByTask = new Map<string, string[]>();
+  const assigneeEmailsByTask = new Map<string, string[]>();
   const commentCountsByTask = new Map<string, number>();
   const checklistProgressByTask = new Map<string, { done: number; total: number }>();
   const checklistItemsByTask = new Map<string, ChecklistPreviewItem[]>();
@@ -58,26 +56,25 @@ export function buildTaskRelationMaps(
   for (const t of tasks) {
     pausesByTask.set(t.id, t.task_pauses);
     const pausedById = lastPausedBy(t.task_pauses);
-    pausedByNameByTask.set(t.id, pausedById ? profileNames.get(pausedById) ?? null : null);
+    pausedByNameByTask.set(t.id, pausedById ? nameByEmail.get(pausedById) ?? null : null);
 
-    const assigneeIds = t.task_assignees.map((a) => a.assignee_id);
-    assigneeIdsByTask.set(t.id, assigneeIds);
-    assigneeNamesByTask.set(
-      t.id,
-      assigneeIds.map((id) => profileNames.get(id)).filter((n): n is string => !!n)
-    );
+    const assigneeEmails = t.task_assignees.map((a) => a.assignee_email);
+    assigneeEmailsByTask.set(t.id, assigneeEmails);
+    // Человек, добавленный по почте и ещё не заходивший, имени не имеет —
+    // показываем адрес, а не выбрасываем его из списка исполнителей.
+    assigneeNamesByTask.set(t.id, assigneeEmails.map((e) => nameByEmail.get(e) ?? e));
 
+    if (t.comment_count !== undefined) commentCountsByTask.set(t.id, t.comment_count);
     if (t.task_comments) {
       const rows = t.task_comments;
-      commentCountsByTask.set(t.id, rows[0]?.count ?? rows.length);
-      const newest = rows
-        .filter((c): c is { id: string; body: string; author_id: string | null; created_at: string } => !!c.id && !!c.created_at)
-        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+      if (t.comment_count === undefined) commentCountsByTask.set(t.id, rows.length);
+      // SQL отдаёт комментарии по возрастанию created_at — последний в конце.
+      const newest = rows[rows.length - 1];
       if (newest) {
         lastCommentByTask.set(t.id, {
           id: newest.id,
           body: newest.body,
-          authorId: newest.author_id ?? null,
+          author: newest.author,
           createdAt: newest.created_at,
         });
       }
@@ -85,16 +82,14 @@ export function buildTaskRelationMaps(
     if (t.task_checklist_items) {
       const done = t.task_checklist_items.filter((c) => c.done).length;
       checklistProgressByTask.set(t.id, { done, total: t.task_checklist_items.length });
+      // Порядок задан в SQL (order by position), пересортировка не нужна.
       checklistItemsByTask.set(
         t.id,
-        t.task_checklist_items
-          .filter((c): c is { id: string; title: string; done: boolean; position?: number } => !!c.id && !!c.title)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-          .map((c) => ({ id: c.id, title: c.title, done: c.done }))
+        t.task_checklist_items.map((c) => ({ id: c.id, title: c.title, done: c.done }))
       );
     }
-    if (t.task_watchers) {
-      watcherCountsByTask.set(t.id, t.task_watchers[0]?.count ?? 0);
+    if (t.watcher_count !== undefined) {
+      watcherCountsByTask.set(t.id, t.watcher_count);
     }
 
     const labelIds = t.task_labels.map((l) => l.label_id);
@@ -109,7 +104,7 @@ export function buildTaskRelationMaps(
     pausesByTask,
     pausedByNameByTask,
     assigneeNamesByTask,
-    assigneeIdsByTask,
+    assigneeEmailsByTask,
     commentCountsByTask,
     checklistProgressByTask,
     checklistItemsByTask,

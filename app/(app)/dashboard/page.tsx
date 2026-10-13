@@ -1,27 +1,19 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { Inbox, SearchX, Plus } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { getCachedUser, getCachedProfile } from '@/lib/supabase/request-cache';
+import { rows } from '@/lib/db/client';
+import { loadActiveTasks } from '@/lib/db/queries/tasks';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import { getLocaleCookie } from '@/lib/i18n/cookie';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { parseTaskFilters, hasActiveFilters, matchesTaskFilters, type SearchParamsRecord } from '@/lib/logic/task-filters';
-import { buildTaskRelationMaps, type EmbeddedTaskRelations } from '@/lib/logic/task-relations';
+import { buildTaskRelationMaps } from '@/lib/logic/task-relations';
 import { KanbanBoard } from './KanbanBoard';
 import { TaskTable } from './TaskTable';
 import { CalendarView } from './CalendarView';
 import { EmptyState } from '@/components/EmptyState';
 import { TaskFilterBar } from '@/components/TaskFilterBar';
-import type { Task } from '@/lib/supabase/types';
-
-const TASKS_SELECT = `
-  *,
-  task_pauses(*),
-  task_assignees(assignee_id),
-  task_comments(id, body, author_id, created_at),
-  task_checklist_items(id, title, done, position),
-  task_watchers(count),
-  task_labels(label_id)
-`;
+import type { Label, Person, Project, SavedView, WipLimit } from '@/lib/db/types';
 
 export default async function DashboardPage({
   searchParams,
@@ -33,37 +25,33 @@ export default async function DashboardPage({
   const rawView = resolvedSearchParams.view;
   const view = rawView === 'table' ? 'table' : rawView === 'calendar' ? 'calendar' : 'kanban';
 
-  const supabase = await createClient();
+  const user = await getCurrentUser();
+  const dict = getDictionary(await getLocaleCookie());
 
-  const user = await getCachedUser();
-  const profile = await getCachedProfile(user!.id);
+  const [active, people, projectList, savedViewList, labelList, wipLimits] = await Promise.all([
+    loadActiveTasks(),
+    rows<Pick<Person, 'email' | 'display_name'>>(
+      `select email, display_name from people order by coalesce(display_name, email)`
+    ),
+    rows<Pick<Project, 'id' | 'name' | 'color'>>(
+      `select id, name, color from projects where deleted_at is null order by name`
+    ),
+    // Сохранённые представления теперь фильтруются явно по владельцу: раньше
+    // это делала политика RLS, которой больше нет.
+    rows<SavedView>(
+      `select id, name, filters from saved_views
+       where email = $1 and deleted_at is null order by created_at`,
+      [user.email]
+    ),
+    rows<Label>(`select * from labels where deleted_at is null order by name`),
+    rows<WipLimit>(`select * from wip_limits`),
+  ]);
 
-  const dict = getDictionary(profile?.locale ?? 'de');
-
-  const [{ data: taskRows }, { data: profiles }, { data: projects }, { data: savedViews }, { data: labels }, { data: wipLimits }] =
-    await Promise.all([
-      supabase
-        .from('tasks')
-        .select(TASKS_SELECT)
-        .neq('status', 'done')
-        .is('deleted_at', null)
-        .is('task_assignees.removed_at', null)
-        .is('task_comments.deleted_at', null)
-        .is('task_checklist_items.deleted_at', null)
-        .order('created_at', { ascending: true }),
-      supabase.from('profiles').select('id, name').order('name'),
-      supabase.from('projects').select('id, name, color').is('deleted_at', null).order('name'),
-      supabase.from('saved_views').select('id, name, filters').is('deleted_at', null).order('created_at', { ascending: true }),
-      supabase.from('labels').select('*').is('deleted_at', null).order('name'),
-      supabase.from('wip_limits').select('*'),
-    ]);
-
-  const active = (taskRows ?? []) as unknown as (Task & EmbeddedTaskRelations)[];
-  const profileList = profiles ?? [];
-  const projectList = projects ?? [];
-  const savedViewList = savedViews ?? [];
-  const labelList = labels ?? [];
-  const limitByStatus = new Map((wipLimits ?? []).map((w) => [w.status, w.limit_count]));
+  // Фильтры и компоненты принимают список людей в форме { id, name }.
+  // Идентификатором человека теперь служит почта — форму не меняем, чтобы
+  // не тащить переименование через всё дерево компонентов.
+  const profileList = people.map((p) => ({ id: p.email, name: p.display_name ?? p.email }));
+  const limitByStatus = new Map(wipLimits.map((w) => [w.status, w.limit_count]));
   const profileNames = new Map(profileList.map((p) => [p.id, p.name]));
   const projectNames = new Map(projectList.map((p) => [p.id, p.name]));
   const projectColors = new Map(projectList.map((p) => [p.id, p.color]));
@@ -73,7 +61,7 @@ export default async function DashboardPage({
     pausesByTask,
     pausedByNameByTask,
     assigneeNamesByTask,
-    assigneeIdsByTask,
+    assigneeEmailsByTask,
     commentCountsByTask,
     checklistProgressByTask,
     checklistItemsByTask,
@@ -103,7 +91,7 @@ export default async function DashboardPage({
 
   const filtersActive = hasActiveFilters(filters);
   const filteredActive = filtersActive
-    ? active.filter((t) => matchesTaskFilters(t, assigneeIdsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
+    ? active.filter((t) => matchesTaskFilters(t, assigneeEmailsByTask.get(t.id) ?? [], filters, labelIdsByTask.get(t.id) ?? []))
     : active;
 
   return (
